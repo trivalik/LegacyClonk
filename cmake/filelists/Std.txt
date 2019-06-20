@@ -1,5 +1,7 @@
 src/Bitmap256.cpp
 src/Bitmap256.h
+src/C4Lua.cpp
+src/C4Lua.h
 src/CStdFile.cpp
 src/CStdFile.h
 src/Fixed.cpp

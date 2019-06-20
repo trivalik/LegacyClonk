@@ -34,6 +34,8 @@ set(EXTRA_DEPS_DIR "deps" CACHE PATH "Additional directory to search for librari
 include_directories(${EXTRA_DEPS_DIR}/include)
 list(APPEND CMAKE_PREFIX_PATH ${EXTRA_DEPS_DIR})
 
+add_subdirectory(src/LuaBridge/Source)
+
 # Check which header files and functions are present
 
 CHECK_INCLUDE_FILE_CXX(direct.h           HAVE_DIRECT_H)
@@ -175,7 +177,8 @@ target_compile_definitions(standard PRIVATE C4ENGINE)
 if (WIN32)
 	target_link_libraries(standard vfw32)
 endif ()
-target_link_libraries(clonk standard)
+target_link_libraries(standard ${LUA_LIBRARIES} LuaBridge)
+target_link_libraries(clonk standard ${LUA_LIBRARIES} LuaBridge)
 
 # Link libraries
 

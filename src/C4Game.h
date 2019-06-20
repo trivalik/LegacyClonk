@@ -56,6 +56,8 @@
 #include <C4Network2Reference.h>
 #include <C4RoundResults.h>
 
+#include "C4Lua.h"
+
 class C4Game
 {
 private:

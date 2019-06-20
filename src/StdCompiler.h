@@ -23,6 +23,8 @@
 #include <string>
 #include <utility>
 
+#include "C4Lua.h"
+
 // Try to avoid casting NotFoundExceptions for trivial cases (MSVC log flood workaround)
 #if defined(_MSC_VER)
 #define STDCOMPILER_EXCEPTION_WORKAROUND
@@ -672,4 +674,70 @@ protected:
 	unsigned long ReadUNum();
 
 	void notFound(const char *szWhat);
+};
+
+class StdCompilerLuaWrite : public StdCompiler
+{
+public:
+	typedef StdStrBuf OutT;
+	// Properties
+	virtual bool hasNaming() override { return true; }
+
+	// Naming
+	virtual bool Name(const char *szName) override;
+	virtual int NameCount(const char *szName = nullptr) override;
+
+	// Data readers
+	virtual void DWord(int32_t &rInt) override;
+	virtual void DWord(uint32_t &rInt) override;
+	virtual void Word(int16_t &rShort) override;
+	virtual void Word(uint16_t &rShort) override;
+	virtual void Byte(int8_t &rByte) override;
+	virtual void Byte(uint8_t &rByte) override;
+	virtual void Boolean(bool &rBool) override;
+	virtual void Character(char &rChar) override;
+	virtual void String(char *szString, size_t iMaxLength, RawCompileType eType = RCT_Escaped) override;
+	virtual void String(char **pszString, RawCompileType eType = RCT_Escaped) override;
+	virtual void Raw(void *pData, size_t iSize, RawCompileType eType = RCT_Escaped) override;
+
+private:
+	C4Lua lua;
+};
+
+#define LUAREF lua_State *L = lua.state(); LuaRef ref = getGlobal(L, section.getData());
+
+class StdCompilerLuaRead : public StdCompiler
+{
+public:
+	typedef StdStrBuf InT;
+	void setInput(const InT &in) { buf = in; }
+	// Properties
+	virtual bool isCompiler() override { return true; }
+	virtual bool hasNaming() override { return true; }
+
+	// Naming
+	virtual bool Name(const char *szName) override;
+	virtual void NameEnd(bool fBreak = false) override;
+
+	// Data readers
+	virtual void DWord(int32_t &rInt) override;
+	virtual void DWord(uint32_t &rInt) override;
+	virtual void Word(int16_t &rShort) override;
+	virtual void Word(uint16_t &rShort) override;
+	virtual void Byte(int8_t &rByte) override;
+	virtual void Byte(uint8_t &rByte) override;
+	virtual void Boolean(bool &rBool) override;
+	virtual void Character(char &rChar) override;
+	virtual void String(char *szString, size_t iMaxLength, RawCompileType eType = RCT_Escaped) override;
+	virtual void String(char **pszString, RawCompileType eType = RCT_Escaped) override;
+	virtual void Raw(void *pData, size_t iSize, RawCompileType eType = RCT_Escaped) override;
+
+	virtual void Begin() override;
+	virtual void End() override;
+
+private:
+	C4Lua lua;
+	InT buf;
+	StdStrBuf key;
+	StdStrBuf section;
 };

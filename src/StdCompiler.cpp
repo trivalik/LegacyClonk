@@ -1062,3 +1062,131 @@ void StdCompilerINIRead::notFound(const char *szWhat)
 {
 	excNotFound("%s expected", szWhat);
 }
+
+bool StdCompilerLuaRead::Name(const char *szName)
+{
+	bool first = section.getLength() == 0;
+	if (!first)
+	{
+		key.Copy(szName);
+		return true;
+	}
+
+	section.Copy(szName);
+
+	lua_State *L = lua.state();
+	if (luaL_dostring(L, buf.getData()))
+	{
+		excCorrupt("%s", lua_tostring(L, -1));
+	}
+
+	if (!getGlobal(L, szName).isTable())
+	{
+		excCorrupt("Value is not a table (type: %d)",
+				   getGlobal(L, szName).type());
+	}
+	return true;
+}
+
+void StdCompilerLuaRead::NameEnd(bool fBreak)
+{
+	(void) fBreak;
+	key.Clear();
+}
+
+void StdCompilerLuaRead::Begin()
+{
+	if (!lua.Init())
+	{
+		excCorrupt("Cannot initialize Lua");
+		return;
+	}
+}
+
+#define CAST(type, val, check) \
+	LUAREF \
+	LuaRef value = ref[key.getData()]; \
+	if (value.check()) \
+	{ \
+		val = value.cast<type>(); \
+	}
+
+void StdCompilerLuaRead::DWord(int32_t &rInt)
+{
+	CAST(int32_t, rInt, isNumber)
+}
+
+void StdCompilerLuaRead::DWord(uint32_t &rInt)
+{
+	CAST(uint32_t, rInt, isNumber)
+}
+
+void StdCompilerLuaRead::Word(int16_t &rShort)
+{
+	CAST(int16_t, rShort, isNumber)
+}
+
+void StdCompilerLuaRead::Word(uint16_t &rShort)
+{
+	CAST(uint16_t, rShort, isNumber)
+}
+
+void StdCompilerLuaRead::Byte(int8_t &rByte)
+{
+	CAST(int8_t, rByte, isNumber)
+}
+
+void StdCompilerLuaRead::Byte(uint8_t &rByte)
+{
+	CAST(uint8_t, rByte, isNumber)
+}
+
+void StdCompilerLuaRead::Boolean(bool &rBool)
+{
+	CAST(bool, rBool, isBool)
+}
+
+void StdCompilerLuaRead::Character(char &rChar)
+{
+	(void) rChar;
+	excNotFound("Can't read chars");
+}
+
+void StdCompilerLuaRead::String(char *szString, size_t iMaxLength, RawCompileType eType)
+{
+	LUAREF
+	(void) eType;
+	LuaRef value = ref[key.getData()];
+	if (value.isString())
+	{
+		std::string s = value.tostring();
+		std::strncpy(szString, s.c_str(), std::min<size_t>(s.length(), iMaxLength));
+	}
+}
+
+void StdCompilerLuaRead::String(char **pszString, RawCompileType eType)
+{
+	LUAREF
+	(void) eType;
+	LuaRef value = ref[key.getData()];
+	if (value.isString())
+	{
+		std::string s = value.tostring();
+		auto *target = reinterpret_cast<char *>(std::malloc(s.length() / sizeof(char)));
+		std::strncpy(target, s.c_str(), s.length() + 1);
+		*pszString = target;
+	}
+}
+
+void StdCompilerLuaRead::Raw(void *pData, size_t iSize, RawCompileType eType)
+{
+	(void) pData;
+	(void) iSize;
+	(void) eType;
+	assert(!"Not implemented");
+}
+
+void StdCompilerLuaRead::End()
+{
+	section.Clear();
+}

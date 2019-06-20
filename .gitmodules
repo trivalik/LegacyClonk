@@ -1,0 +1,4 @@
+[submodule "src/LuaBridge"]
+	path = src/LuaBridge
+	url = https://github.com/Fulgen301/LuaBridge
+	branch = LegacyClonk
