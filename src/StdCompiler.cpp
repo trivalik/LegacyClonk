@@ -1178,6 +1178,17 @@ void StdCompilerLuaRead::String(char **pszString, RawCompileType eType)
 	}
 }
 
+void StdCompilerLuaRead::String(std::string &str, RawCompileType eType)
+{
+	LUAREF
+	(void) eType;
+	LuaRef value = ref[key.getData()];
+	if (value.isString())
+	{
+		str = value.tostring();
+	}
+}
+
 void StdCompilerLuaRead::Raw(void *pData, size_t iSize, RawCompileType eType)
 {
 	(void) pData;
