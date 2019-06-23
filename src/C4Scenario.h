@@ -20,6 +20,11 @@
 
 #include <C4NameList.h>
 #include <C4IDList.h>
+#ifndef BIG_C4INCLUDE
+#include <C4Components.h>
+#endif
+
+#include <set>
 
 class C4SVal
 {
@@ -102,12 +107,12 @@ class C4SDefinitions
 public:
 	int32_t LocalOnly;
 	int32_t AllowUserChange;
-	char Definition[C4S_MaxDefinitions][_MAX_PATH + 1];
+	std::set<std::string> Definitions;
 	C4IDList SkipDefs;
 
 public:
-	void SetModules(const char *szList, const char *szRelativeToPath = nullptr, const char *szRelativeToPath2 = nullptr);
-	bool GetModules(StdStrBuf *psOutModules) const;
+	void SetModules(const std::set<std::string> &modules, const std::string &relativeToPath = "", const std::string &relativeToPath2 = "");
+	std::set<std::string> GetModules() const;
 	void Default();
 	void CompileFunc(StdCompiler *pComp);
 };

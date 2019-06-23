@@ -56,7 +56,10 @@
 #include <C4Network2Reference.h>
 #include <C4RoundResults.h>
 
-#include "C4Lua.h"
+#include "C4LuaScriptEngine.h"
+
+#include <set>
+
 
 class C4Game
 {
@@ -143,7 +146,7 @@ public:
 	char ScenarioFilename[_MAX_PATH + 1];
 	StdStrBuf ScenarioTitle;
 	char PlayerFilenames[20 * _MAX_PATH + 1];
-	char DefinitionFilenames[20 * _MAX_PATH + 1];
+	std::set<std::string> DefinitionFilenames;
 	char DirectJoinAddress[_MAX_PATH + 1];
 	class C4Network2Reference *pJoinReference;
 	int32_t FPS, cFPS;
@@ -294,7 +297,7 @@ protected:
 	void DeleteObjects(bool fDeleteInactive);
 	void ExecObjects();
 	void Ticks();
-	const char *FoldersWithLocalsDefs(const char *szPath);
+	std::set<std::string> FoldersWithLocalsDefs(std::string path);
 	bool CheckObjectEnumeration();
 	bool DefinitionFilenamesFromSaveGame();
 	bool LoadScenarioComponents();
