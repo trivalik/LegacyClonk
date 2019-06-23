@@ -609,16 +609,17 @@ void C4GraphicsOverlay::UpdateFacet()
 	case MODE_Action: // graphics of specified action
 	{
 		// Find act in ActMap of object
-		int32_t cnt;
-		for (cnt = 0; cnt < pDef->ActNum; cnt++)
-			if (SEqual(Action, pDef->ActMap[cnt].Name))
-				break;
-		if (cnt == pDef->ActNum) { fctBlit.Default(); break; }
-		// assign base gfx of action
-		// doesn't catch any special action parameters (FacetBase, etc.)...
-		C4ActionDef *pAct = pDef->ActMap + cnt;
-		fctBlit.Set(pSourceGfx->GetBitmap(), pAct->Facet.x, pAct->Facet.y, pAct->Facet.Wdt, pAct->Facet.Hgt);
+		for (const auto &action : pDef->ActMap)
+		{
+			if (action.Name == Action)
+			{
+				fctBlit.Set(pSourceGfx->GetBitmap(), action.Facet.x, action.Facet.y, action.Facet.Wdt, action.Facet.Hgt);
+				goto end;
+			}
+		}
+		fctBlit.Default();
 	}
+end:
 	break;
 
 	case MODE_IngamePicture:

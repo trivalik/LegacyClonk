@@ -16,35 +16,34 @@
 
 #include "C4Lua.h"
 
+C4Lua::~C4Lua()
+{
+	Clear();
+}
+
 bool C4Lua::Init()
 {
-	if (L != nullptr)
-	{
-		lua_close(L);
-	}
+	Clear();
 	L = luaL_newstate();
 	if (L == nullptr)
 	{
 		return false;
 	}
-	luaL_openlibs(L);
+	luaopen_base(L);
+	luaopen_bit32(L);
+	luaopen_coroutine(L);
+	luaopen_math(L);
+	luaopen_string(L);
+	luaopen_table(L);
 	return true;
 }
 
-C4Lua::~C4Lua()
+void C4Lua::Clear()
 {
 	if (L != nullptr)
 	{
 		lua_settop(L, 0);
 		lua_close(L);
 		L = nullptr;
-	}
-}
-
-bool C4LuaScriptEngine::Init()
-{
-	if (!C4Lua::Init())
-	{
-		return false;
 	}
 }

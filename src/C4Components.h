@@ -55,7 +55,7 @@
 #define C4CFN_LandscapePNG     "Landscape.png"
 #define C4CFN_DiffLandscape    "DiffLandscape.bmp"
 #define C4CFN_Sky              "Sky"
-#define C4CFN_Script           "*.lua"
+#define C4CFN_Script           "Script.c|Script%s.c|C4Script%s.c"
 #define C4CFN_ScriptStringTbl  "StringTbl.txt|StringTbl%s.txt"
 #define C4CFN_Info             "Info.txt"
 #define C4CFN_Author           "Author.txt"
@@ -81,6 +81,7 @@
 #define C4CFN_DefGraphicsEx    "Graphics*.bmp"
 #define C4CFN_DefGraphicsExPNG "Graphics*.png"
 #define C4CFN_ClrByOwnerExPNG  "Overlay*.png"
+#define C4CFN_LuaGraphics      "*.png"
 #define C4CFN_DefNames         "Names%s.txt|Names.txt"
 #define C4CFN_DefActMap        "ActMap.txt"
 #define C4CFN_DefDesc          "Desc%s.txt"
@@ -107,7 +108,6 @@
 #define C4CFN_Parameters       "Parameters.txt"
 #define C4CFN_RoundResults     "RoundResults.txt"
 
-#define C4CFN_ScenarioSettings "Scenario.lua"
 #define C4CFN_MapFolderData "FolderMap.txt"
 #define C4CFN_MapFolderBG   "FolderMap"
 

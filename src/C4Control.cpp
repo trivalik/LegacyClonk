@@ -247,6 +247,36 @@ void C4ControlScript::Execute() const
 	// user script: forbidden in league mode, from anyone in debug mode, otherwise from host only
 	if (Game.Parameters.isLeague() || (iByClient != C4ClientIDHost) && !Console.Active)
 		return;
+
+	if (type == CID_Lua)
+	{
+		LogF("-> %s", szScript);
+		try
+		{
+			luabridge::LuaRef result = Game.LuaEngine.Evaluate(Script.getData());
+			result.push();
+			if (!LocalControl())
+			{
+				C4Network2Client *pClient = nullptr;
+				if (Game.Network.isEnabled())
+					pClient = Game.Network.Clients.GetClientByID(iByClient);
+				if (pClient)
+					LogF(" = %s (by %s)", luaL_tolstring(Game.LuaEngine.state(), -1, nullptr), pClient->getName());
+				else
+					LogF(" = %s (by client %d)", luaL_tolstring(Game.LuaEngine.state(), -1, nullptr), iByClient);
+			}
+			else
+			{
+				LogF(" = %s", luaL_tolstring(Game.LuaEngine.state(), -1, nullptr));
+			}
+			lua_pop(Game.LuaEngine.state(), 1);
+		}
+		catch (luabridge::LuaException const &e)
+		{
+			LogF("-> %s", e.what());
+		}
+		return;
+	}
 	// execute
 	C4Object *pObj = nullptr;
 	C4AulScript *pScript;

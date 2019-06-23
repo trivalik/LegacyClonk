@@ -705,13 +705,12 @@ private:
 	C4Lua lua;
 };
 
-#define LUAREF lua_State *L = lua.state(); LuaRef ref = getGlobal(L, section.getData());
-
 class StdCompilerLuaRead : public StdCompiler
 {
 public:
 	typedef StdStrBuf InT;
 	void setInput(const InT &in) { buf = in; }
+	void setInput(luabridge::LuaRef in);
 	// Properties
 	virtual bool isCompiler() override { return true; }
 	virtual bool hasNaming() override { return true; }
@@ -733,13 +732,40 @@ public:
 	virtual void String(char **pszString, RawCompileType eType = RCT_Escaped) override;
 	virtual void String(std::string &str, RawCompileType eType = RCT_Escaped) override;
 	virtual void Raw(void *pData, size_t iSize, RawCompileType eType = RCT_Escaped) override;
+	template<class T> void Value(std::vector<T> &vector)
+	{
+		castValue<decltype(vector)>(vector);
+	}
+	template<class K, class V> void Value(std::map<K, V> &map)
+	{
+		castValue<decltype(map)>(map);
+	}
 
 	virtual void Begin() override;
 	virtual void End() override;
 
+	virtual bool Separator(Sep eSep = SEP_SEP) override;
+	virtual std::map<std::string, luabridge::LuaRef> Entries();
+
+private:
+	luabridge::LuaRef getValue();
+	template<class T> void castValue(T &target, bool (luabridge::LuaRef::*check)() const = nullptr)
+	{
+		luabridge::LuaRef value = getValue();
+		if (check == nullptr || (value.*check)())
+		{
+			target = value.cast<T>();
+		}
+	}
+
 private:
 	C4Lua lua;
 	InT buf;
-	StdStrBuf key;
-	StdStrBuf section;
+	std::vector<luabridge::LuaRef> flatEntries; // section, subsections, current value
+	size_t index = 1;
 };
+
+template<class T> constexpr bool isStdCompiler()
+{
+	return std::is_base_of<StdCompiler, T>::value;
+}

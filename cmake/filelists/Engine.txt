@@ -1,6 +1,11 @@
 src/C4Action.cpp
 src/C4Application.cpp
 src/C4Application.h
+src/C4Aul.cpp
+src/C4Aul.h
+src/C4AulExec.cpp
+src/C4AulLink.cpp
+src/C4AulParse.cpp
 src/C4ChatDlg.cpp
 src/C4ChatDlg.h
 src/C4Client.cpp
@@ -121,8 +126,8 @@ src/C4Log.cpp
 src/C4Log.h
 src/C4LogBuf.cpp
 src/C4LogBuf.h
-src/C4Lua.cpp
-src/C4Lua.h
+src/C4LuaScriptEngine.cpp
+src/C4LuaScriptEngine.h
 src/C4MainMenu.cpp
 src/C4MainMenu.h
 src/C4Map.cpp

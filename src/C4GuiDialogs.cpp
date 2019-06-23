@@ -58,14 +58,15 @@ bool FrameDecoration::SetFacetByAction(C4Def *pOfDef, C4FacetEx &rfctTarget, con
 	// get action
 	StdStrBuf sActName;
 	sActName.Format("FrameDeco%s", szFacetName);
-	int cnt; C4ActionDef *pAct = pOfDef->ActMap;
-	for (cnt = pOfDef->ActNum; cnt; --cnt, ++pAct)
-		if (sActName == pAct->Name)
-			break;
-	if (!cnt) return false;
-	// set facet by it
-	rfctTarget.Set(pOfDef->Graphics.GetBitmap(), pAct->Facet.x, pAct->Facet.y, pAct->Facet.Wdt, pAct->Facet.Hgt, pAct->Facet.tx, pAct->Facet.ty);
-	return true;
+	for (const auto &action : pOfDef->ActMap)
+	{
+		if (action.Name == sActName.getData())
+		{
+			rfctTarget.Set(pOfDef->Graphics.GetBitmap(), action.Facet.x, action.Facet.y, action.Facet.Wdt, action.Facet.Hgt, action.Facet.tx, action.Facet.ty);
+			return true;
+		}
+	}
+	return false;
 }
 
 bool FrameDecoration::SetByDef(C4ID idSourceDef)

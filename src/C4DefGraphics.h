@@ -69,6 +69,7 @@ public:
 	void DrawClr(C4Facet &cgo, bool fAspect = true, uint32_t dwClr = 0); // set surface color and draw
 
 	friend class C4DefGraphicsPtrBackup;
+	friend class C4Def;
 };
 
 // additional definition graphics

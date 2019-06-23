@@ -23,6 +23,7 @@
 #include <C4Game.h>
 #include <C4Object.h>
 #include <C4Script.h>
+#include "C4LuaScriptEngine.h"
 #include <C4Gui.h>
 #include <C4Console.h>
 #include <C4Application.h>
@@ -430,6 +431,7 @@ bool C4MessageInput::ProcessCommand(const char *szCommand)
 		LogF("/set faircrew [on/off] - %s", LoadResStr("IDS_TEXT_ENABLEORDISABLEFAIRCREW"));
 		LogF("/set maxplayer [4] - %s", LoadResStr("IDS_TEXT_SETANEWMAXIMUMNUMBEROFPLA"));
 		LogF("/script [script] - %s", LoadResStr("IDS_TEXT_EXECUTEASCRIPTCOMMAND"));
+		LogF("/lua [script] - %s", LoadResStr("IDS_TEXT_EXECUTEASCRIPTCOMMAND"));
 		LogF("/clear - %s", LoadResStr("IDS_MSG_CLEARTHEMESSAGEBOARD"));
 		return true;
 	}
@@ -441,6 +443,15 @@ bool C4MessageInput::ProcessCommand(const char *szCommand)
 		if (Game.Network.isEnabled() && !Game.Network.isHost()) return false;
 
 		Game.Control.DoInput(CID_Script, new C4ControlScript(pCmdPar, C4ControlScript::SCOPE_Console), CDT_Decide);
+		return true;
+	}
+	if (SEqual(szCmdName, "lua"))
+	{
+		if (!Game.IsRunning) return false;
+		if (!Game.DebugMode) return false;
+		if (Game.Network.isEnabled() && !Game.Network.isHost()) return false;
+
+		Game.Control.DoInput(CID_Lua, new C4ControlScript(pCmdPar, C4ControlScript::SCOPE_Console, false, CID_Lua), CDT_Decide);
 		return true;
 	}
 	// set runtimte properties

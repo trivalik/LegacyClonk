@@ -24,8 +24,6 @@
 #include <C4Components.h>
 #endif
 
-#include <set>
-
 class C4SVal
 {
 public:
@@ -107,12 +105,12 @@ class C4SDefinitions
 public:
 	int32_t LocalOnly;
 	int32_t AllowUserChange;
-	std::set<std::string> Definitions;
+	std::vector<std::string> Definitions;
 	C4IDList SkipDefs;
 
 public:
-	void SetModules(const std::set<std::string> &modules, const std::string &relativeToPath = "", const std::string &relativeToPath2 = "");
-	std::set<std::string> GetModules() const;
+	void SetModules(const std::vector<std::string> &modules, const std::string &relativeToPath = "", const std::string &relativeToPath2 = "");
+	std::vector<std::string> GetModules() const;
 	void Default();
 	void CompileFunc(StdCompiler *pComp);
 };
@@ -318,7 +316,10 @@ public:
 	int32_t GetMinPlayer(); // will try to determine the minimum player count for this scenario
 
 protected:
-	bool Compile(const char *szSource, bool fLoadSection = false);
+	template<class Compiler, typename = typename std::enable_if<isStdCompiler<Compiler>()>::type>
+	bool Compile(const char *szSource, bool fLoadSection = false, const char *file = C4CFN_ScenarioCore);
+
+	template<class Decompiler, typename = typename std::enable_if<isStdCompiler<Decompiler>()>::type>
 	bool Decompile(char **ppOutput, int32_t *ipSize, bool fSaveSection = false);
 };
 

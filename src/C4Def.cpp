@@ -27,9 +27,9 @@
 #include <C4Components.h>
 #include <C4Config.h>
 #include <C4ValueList.h>
+#include <C4Wrappers.h>
 
 #ifdef C4ENGINE
-#include <C4Wrappers.h>
 #include <C4Object.h>
 #include "C4Network2Res.h"
 #endif
@@ -73,25 +73,35 @@ C4ActionDef::C4ActionDef()
 
 void C4ActionDef::Default()
 {
-	std::memset(this, 0, sizeof(C4ActionDef));
+	Name = ProcedureName = NextActionName = InLiquidAction = TurnAction = Sound = "";
 	Procedure = DFA_NONE;
+	NextActionName = "";
 	NextAction = ActIdle;
 	Directions = 1;
 	FlipDir = 0;
 	Length = 1;
 	Delay = 0;
+	Attach = 0;
 	FacetBase = 0;
+	FacetTopFace = 0;
+	NoOtherAction = 0;
+	Disabled = 0;
+	DigFree = 0;
+	FacetTargetStretch = 0;
+	EnergyUsage = 0;
+	Reverse = 0;
 	Step = 1;
+	SStartCall = SPhaseCall = SEndCall = SAbortCall = "";
 	StartCall = PhaseCall = EndCall = AbortCall = nullptr;
 }
 
 void C4ActionDef::CompileFunc(StdCompiler *pComp)
 {
-	pComp->Value(mkNamingAdapt(toC4CStr(Name),          "Name",       ""));
-	pComp->Value(mkNamingAdapt(toC4CStr(ProcedureName), "Procedure",  ""));
-	pComp->Value(mkNamingAdapt(Directions,              "Directions", 1));
-	pComp->Value(mkNamingAdapt(FlipDir,                 "FlipDir",    0));
-	pComp->Value(mkNamingAdapt(Length,                  "Length",     1));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(Name),          "Name",       ""));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(ProcedureName), "Procedure",  ""));
+	pComp->Value(mkNamingAdapt(Directions,                    "Directions", 1));
+	pComp->Value(mkNamingAdapt(FlipDir,                       "FlipDir",    0));
+	pComp->Value(mkNamingAdapt(Length,                        "Length",     1));
 
 	StdBitfieldEntry<int32_t> CNATs[] =
 	{
@@ -110,30 +120,30 @@ void C4ActionDef::CompileFunc(StdCompiler *pComp)
 	pComp->Value(mkNamingAdapt(mkBitfieldAdapt(Attach, CNATs),
 		"Attach", 0));
 
-	pComp->Value(mkNamingAdapt(Delay,                    "Delay",              0));
-	pComp->Value(mkNamingAdapt(Facet,                    "Facet",              TargetRect0));
-	pComp->Value(mkNamingAdapt(FacetBase,                "FacetBase",          0));
-	pComp->Value(mkNamingAdapt(FacetTopFace,             "FacetTopFace",       0));
-	pComp->Value(mkNamingAdapt(FacetTargetStretch,       "FacetTargetStretch", 0));
-	pComp->Value(mkNamingAdapt(toC4CStr(NextActionName), "NextAction",         ""));
-	pComp->Value(mkNamingAdapt(NoOtherAction,            "NoOtherAction",      0));
-	pComp->Value(mkNamingAdapt(toC4CStr(SStartCall),     "StartCall",          ""));
-	pComp->Value(mkNamingAdapt(toC4CStr(SEndCall),       "EndCall",            ""));
-	pComp->Value(mkNamingAdapt(toC4CStr(SAbortCall),     "AbortCall",          ""));
-	pComp->Value(mkNamingAdapt(toC4CStr(SPhaseCall),     "PhaseCall",          ""));
-	pComp->Value(mkNamingAdapt(toC4CStr(Sound),          "Sound",              ""));
-	pComp->Value(mkNamingAdapt(Disabled,                 "ObjectDisabled",     0));
-	pComp->Value(mkNamingAdapt(DigFree,                  "DigFree",            0));
-	pComp->Value(mkNamingAdapt(EnergyUsage,              "EnergyUsage",        0));
-	pComp->Value(mkNamingAdapt(toC4CStr(InLiquidAction), "InLiquidAction",     ""));
-	pComp->Value(mkNamingAdapt(toC4CStr(TurnAction),     "TurnAction",         ""));
-	pComp->Value(mkNamingAdapt(Reverse,                  "Reverse",            0));
-	pComp->Value(mkNamingAdapt(Step,                     "Step",               1));
+	pComp->Value(mkNamingAdapt(Delay,                                      "Delay",              0));
+	pComp->Value(mkNamingAdapt(Facet,                                      "Facet",              TargetRect0));
+	pComp->Value(mkNamingAdapt(FacetBase,                                  "FacetBase",          0));
+	pComp->Value(mkNamingAdapt(FacetTopFace,                               "FacetTopFace",       0));
+	pComp->Value(mkNamingAdapt(FacetTargetStretch,                         "FacetTargetStretch", 0));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(NextActionName),             "NextAction",         ""));
+	pComp->Value(mkNamingAdapt(NoOtherAction,                              "NoOtherAction",      0));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(SStartCall),                 "StartCall",          ""));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(SEndCall),                   "EndCall",            ""));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(SAbortCall),                 "AbortCall",          ""));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(SPhaseCall),                 "PhaseCall",          ""));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(Sound),                      "Sound",              ""));
+	pComp->Value(mkNamingAdapt(Disabled,                                   "ObjectDisabled",     0));
+	pComp->Value(mkNamingAdapt(DigFree,                                    "DigFree",            0));
+	pComp->Value(mkNamingAdapt(EnergyUsage,                                "EnergyUsage",        0));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(InLiquidAction),             "InLiquidAction",     ""));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(TurnAction),                 "TurnAction",         ""));
+	pComp->Value(mkNamingAdapt(Reverse,                                    "Reverse",            0));
+	pComp->Value(mkNamingAdapt(Step,                                       "Step",               1));
 }
 
 // C4DefCore
 
-C4DefCore::C4DefCore()
+C4DefCore::C4DefCore() : LuaDef(Game.LuaEngine.state())
 {
 	Default();
 }
@@ -142,6 +152,7 @@ void C4DefCore::Default()
 {
 	rC4XVer[0] = rC4XVer[1] = rC4XVer[2] = rC4XVer[3] = 0;
 	RequireDef.Clear();
+	LuaDef = luabridge::LuaRef(Game.LuaEngine.state());
 	Name.Ref("Undefined");
 	Physical.Default();
 	Shape.Default();
@@ -153,9 +164,9 @@ void C4DefCore::Default()
 	Component.Default();
 	BurnTurnTo = C4ID_None;
 	BuildTurnTo = C4ID_None;
-	STimerCall[0] = 0;
+	STimerCall.clear();
 	Timer = 35;
-	ColorByMaterial[0] = 0;
+	ColorByMaterial.clear();
 	GrowthType = 0;
 	Basement = 0;
 	CanBeBase = 0;
@@ -227,43 +238,30 @@ bool C4DefCore::Load(C4Group &hGroup)
 	if (hGroup.LoadEntryString(C4CFN_DefCore, Source))
 	{
 		StdStrBuf Name = hGroup.GetFullName() + (const StdStrBuf &)FormatString("%cDefCore.txt", DirectorySeparator);
-		if (!Compile(Source.getData(), Name.getData()))
+		if (!Compile<StdCompilerINIRead>(Source.getData(), Name.getData()))
 			return false;
+
 		Source.Clear();
-
-		// Adjust category: C4D_CrewMember by CrewMember flag
-		if (CrewMember) Category |= C4D_CrewMember;
-
-		// Adjust picture rect
-		if ((PictureRect.Wdt == 0) || (PictureRect.Hgt == 0))
-			PictureRect.Set(0, 0, Shape.Wdt, Shape.Hgt);
-
-		// Check category
-#ifdef C4ENGINE
-		if (!(Category & C4D_SortLimit))
-		{
-			// special: Allow this for spells
-			if (~Category & C4D_Magic)
-				DebugLogF("WARNING: Def %s (%s) at %s has invalid category!", GetName(), C4IdText(id), hGroup.GetFullName().getData());
-			// assign a default category here
-			Category = (Category & ~C4D_SortLimit) | 1;
-		}
-		// Check mass
-		if (Mass < 0)
-		{
-			DebugLogF("WARNING: Def %s (%s) at %s has invalid mass!", GetName(), C4IdText(id), hGroup.GetFullName().getData());
-			Mass = 0;
-		}
-#endif
-
 		return true;
 	}
 	return false;
 }
 
-bool C4DefCore::Compile(const char *szSource, const char *szName)
+bool C4DefCore::Compile(luabridge::LuaRef def)
 {
-	return CompileFromBuf_LogWarn<StdCompilerINIRead>(mkNamingAdapt(*this, "DefCore"), StdStrBuf::MakeRef(szSource), szName);
+	LuaDef = luabridge::LuaRef(def);
+	StdCompilerLuaRead comp;
+	comp.setInput(def);
+	try
+	{
+		comp.Compile(*this);
+		return true;
+	}
+	catch (StdCompiler::Exception *e)
+	{
+		delete e;
+		return false;
+	}
 }
 
 void C4DefCore::CompileFunc(StdCompiler *pComp)
@@ -273,7 +271,7 @@ void C4DefCore::CompileFunc(StdCompiler *pComp)
 	pComp->Value(mkNamingAdapt(toC4CStrBuf(Name),             "Name",       "Undefined"));
 	pComp->Value(mkNamingAdapt(mkParAdapt(RequireDef, false), "RequireDef", C4IDList()));
 
-	const StdBitfieldEntry<int32_t> Categories[] =
+	const StdBitfieldEntry<uint32_t> Categories[] =
 	{
 		{ "C4D_StaticBack", C4D_StaticBack },
 		{ "C4D_Structure",  C4D_Structure },
@@ -309,37 +307,33 @@ void C4DefCore::CompileFunc(StdCompiler *pComp)
 		{ nullptr, 0 }
 	};
 
-	pComp->Value(mkNamingAdapt(mkBitfieldAdapt<int32_t>(Category, Categories),
+	pComp->Value(mkNamingAdapt(mkBitfieldAdapt<uint32_t>(Category, Categories),
 		"Category", 0));
 
-	pComp->Value(mkNamingAdapt(MaxUserSelect,           "MaxUserSelect",     0));
-	pComp->Value(mkNamingAdapt(Timer,                   "Timer",             35));
-	pComp->Value(mkNamingAdapt(toC4CStr(STimerCall),    "TimerCall",         ""));
-	pComp->Value(mkNamingAdapt(ContactFunctionCalls,    "ContactCalls",      0));
-	pComp->Value(mkParAdapt(Shape,                      false));
-	pComp->Value(mkNamingAdapt(Value,                   "Value",             0));
-	pComp->Value(mkNamingAdapt(Mass,                    "Mass",              0));
-	pComp->Value(mkNamingAdapt(Component,               "Components",        C4IDList()));
-	pComp->Value(mkNamingAdapt(SolidMask,               "SolidMask",         TargetRect0));
-	pComp->Value(mkNamingAdapt(TopFace,                 "TopFace",           TargetRect0));
+	pComp->Value(mkNamingAdapt(MaxUserSelect,                 "MaxUserSelect",     0));
+	pComp->Value(mkNamingAdapt(Timer,                         "Timer",             35));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(STimerCall),    "TimerCall",         ""));
+	pComp->Value(mkNamingAdapt(ContactFunctionCalls,          "ContactCalls",      0));
+	pComp->Value(mkParAdapt(Shape,                            false));
+	pComp->Value(mkNamingAdapt(Value,                         "Value",             0));
+	pComp->Value(mkNamingAdapt(Mass,                          "Mass",              0));
+	pComp->Value(mkNamingAdapt(Component,                     "Components",        C4IDList()));
+	pComp->Value(mkNamingAdapt(SolidMask,                     "SolidMask",         TargetRect0));
+	pComp->Value(mkNamingAdapt(TopFace,                       "TopFace",           TargetRect0));
 #ifdef C4ENGINE
-	pComp->Value(mkNamingAdapt(PictureRect,             "Picture",           Rect0));
-	pComp->Value(mkNamingAdapt(StdNullAdapt(),          "PictureFE"));
-#else
-	pComp->Value(mkNamingAdapt(PictureRect,             "Picture",           Rect0));
-	pComp->Value(mkNamingAdapt(PictureRectFE,           "PictureFE",         Rect0));
+	pComp->Value(mkNamingAdapt(PictureRect,                   "Picture",           Rect0));
 #endif
-	pComp->Value(mkNamingAdapt(Entrance,                "Entrance",          Rect0));
-	pComp->Value(mkNamingAdapt(Collection,              "Collection",        Rect0));
-	pComp->Value(mkNamingAdapt(CollectionLimit,         "CollectionLimit",   0));
-	pComp->Value(mkNamingAdapt(Placement,               "Placement",         0));
-	pComp->Value(mkNamingAdapt(Exclusive,               "Exclusive",         0));
-	pComp->Value(mkNamingAdapt(ContactIncinerate,       "ContactIncinerate", 0));
-	pComp->Value(mkNamingAdapt(BlastIncinerate,         "BlastIncinerate",   0));
-	pComp->Value(mkNamingAdapt(mkC4IDAdapt(BurnTurnTo), "BurnTo",            C4ID_None));
-	pComp->Value(mkNamingAdapt(CanBeBase,               "Base",              0));
+	pComp->Value(mkNamingAdapt(Entrance,                      "Entrance",          Rect0));
+	pComp->Value(mkNamingAdapt(Collection,                    "Collection",        Rect0));
+	pComp->Value(mkNamingAdapt(CollectionLimit,               "CollectionLimit",   0));
+	pComp->Value(mkNamingAdapt(Placement,                     "Placement",         0));
+	pComp->Value(mkNamingAdapt(Exclusive,                     "Exclusive",         0));
+	pComp->Value(mkNamingAdapt(ContactIncinerate,             "ContactIncinerate", 0));
+	pComp->Value(mkNamingAdapt(BlastIncinerate,               "BlastIncinerate",   0));
+	pComp->Value(mkNamingAdapt(mkC4IDAdapt(BurnTurnTo),       "BurnTo",            C4ID_None));
+	pComp->Value(mkNamingAdapt(CanBeBase,                     "Base",              0));
 
-	const StdBitfieldEntry<int32_t> LineTypes[] =
+	const StdBitfieldEntry<uint32_t> LineTypes[] =
 	{
 		{ "C4D_LinePower",     C4D_Line_Power },
 		{ "C4D_LineSource",    C4D_Line_Source },
@@ -355,7 +349,7 @@ void C4DefCore::CompileFunc(StdCompiler *pComp)
 
 	pComp->Value(mkNamingAdapt(mkBitfieldAdapt(Line, LineTypes), "Line", 0));
 
-	const StdBitfieldEntry<int32_t> LineConnectTypes[] =
+	const StdBitfieldEntry<uint32_t> LineConnectTypes[] =
 	{
 		{ "C4D_PowerInput",     C4D_Power_Input },
 		{ "C4D_PowerOutput",    C4D_Power_Output },
@@ -384,7 +378,7 @@ void C4DefCore::CompileFunc(StdCompiler *pComp)
 	pComp->Value(mkNamingAdapt(mkC4IDAdapt(BuildTurnTo), "ConstructTo",    0));
 	pComp->Value(mkNamingAdapt(Grab,                     "Grab",           0));
 
-	const StdBitfieldEntry<int32_t> GrabPutGetTypes[] =
+	const StdBitfieldEntry<uint32_t> GrabPutGetTypes[] =
 	{
 		{ "C4D_GrabGet", C4D_Grab_Get },
 		{ "C4D_GrabPut", C4D_Grab_Put },
@@ -395,51 +389,51 @@ void C4DefCore::CompileFunc(StdCompiler *pComp)
 	pComp->Value(mkNamingAdapt(mkBitfieldAdapt(GrabPutGet, GrabPutGetTypes),
 		"GrabPutGet", 0));
 
-	pComp->Value(mkNamingAdapt(Carryable,                 "Collectible",        0));
-	pComp->Value(mkNamingAdapt(Rotateable,                "Rotate",             0));
-	pComp->Value(mkNamingAdapt(RotatedEntrance,           "RotatedEntrance",    0));
-	pComp->Value(mkNamingAdapt(Chopable,                  "Chop",               0));
-	pComp->Value(mkNamingAdapt(Float,                     "Float",              0));
-	pComp->Value(mkNamingAdapt(ContainBlast,              "ContainBlast",       0));
-	pComp->Value(mkNamingAdapt(ColorByOwner,              "ColorByOwner",       0));
-	pComp->Value(mkNamingAdapt(toC4CStr(ColorByMaterial), "ColorByMaterial",    ""));
-	pComp->Value(mkNamingAdapt(NoHorizontalMove,          "HorizontalFix",      0));
-	pComp->Value(mkNamingAdapt(BorderBound,               "BorderBound",        0));
-	pComp->Value(mkNamingAdapt(LiftTop,                   "LiftTop",            0));
-	pComp->Value(mkNamingAdapt(UprightAttach,             "UprightAttach",      0));
-	pComp->Value(mkNamingAdapt(GrowthType,                "StretchGrowth",      0));
-	pComp->Value(mkNamingAdapt(Basement,                  "Basement",           0));
-	pComp->Value(mkNamingAdapt(NoBurnDecay,               "NoBurnDecay",        0));
-	pComp->Value(mkNamingAdapt(IncompleteActivity,        "IncompleteActivity", 0));
-	pComp->Value(mkNamingAdapt(AttractLightning,          "AttractLightning",   0));
-	pComp->Value(mkNamingAdapt(Oversize,                  "Oversize",           0));
-	pComp->Value(mkNamingAdapt(Fragile,                   "Fragile",            0));
-	pComp->Value(mkNamingAdapt(Explosive,                 "Explosive",          0));
-	pComp->Value(mkNamingAdapt(Projectile,                "Projectile",         0));
-	pComp->Value(mkNamingAdapt(NoPushEnter,               "NoPushEnter",        0));
-	pComp->Value(mkNamingAdapt(DragImagePicture,          "DragImagePicture",   0));
-	pComp->Value(mkNamingAdapt(VehicleControl,            "VehicleControl",     0));
-	pComp->Value(mkNamingAdapt(Pathfinder,                "Pathfinder",         0));
-	pComp->Value(mkNamingAdapt(MoveToRange,               "MoveToRange",        0));
-	pComp->Value(mkNamingAdapt(NoComponentMass,           "NoComponentMass",    0));
-	pComp->Value(mkNamingAdapt(NoStabilize,               "NoStabilize",        0));
-	pComp->Value(mkNamingAdapt(ClosedContainer,           "ClosedContainer",    0));
-	pComp->Value(mkNamingAdapt(SilentCommands,            "SilentCommands",     0));
-	pComp->Value(mkNamingAdapt(NoBurnDamage,              "NoBurnDamage",       0));
-	pComp->Value(mkNamingAdapt(TemporaryCrew,             "TemporaryCrew",      0));
-	pComp->Value(mkNamingAdapt(SmokeRate,                 "SmokeRate",          100));
-	pComp->Value(mkNamingAdapt(BlitMode,                  "BlitMode",           C4D_Blit_Normal));
-	pComp->Value(mkNamingAdapt(NoBreath,                  "NoBreath",           0));
-	pComp->Value(mkNamingAdapt(ConSizeOff,                "ConSizeOff",         0));
-	pComp->Value(mkNamingAdapt(NoSell,                    "NoSell",             0));
-	pComp->Value(mkNamingAdapt(NoGet,                     "NoGet",              0));
-	pComp->Value(mkNamingAdapt(NoFight,                   "NoFight",            0));
-	pComp->Value(mkNamingAdapt(RotatedSolidmasks,         "RotatedSolidmasks",  0));
-	pComp->Value(mkNamingAdapt(NoTransferZones,           "NoTransferZones",    0));
-	pComp->Value(mkNamingAdapt(AutoContextMenu,           "AutoContextMenu",    0));
-	pComp->Value(mkNamingAdapt(NeededGfxMode,             "NeededGfxMode",      0));
+	pComp->Value(mkNamingAdapt(Carryable,                       "Collectible",        0));
+	pComp->Value(mkNamingAdapt(Rotateable,                      "Rotate",             0));
+	pComp->Value(mkNamingAdapt(RotatedEntrance,                 "RotatedEntrance",    0));
+	pComp->Value(mkNamingAdapt(Chopable,                        "Chop",               0));
+	pComp->Value(mkNamingAdapt(Float,                           "Float",              0));
+	pComp->Value(mkNamingAdapt(ContainBlast,                    "ContainBlast",       0));
+	pComp->Value(mkNamingAdapt(ColorByOwner,                    "ColorByOwner",       0));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(ColorByMaterial), "ColorByMaterial",    ""));
+	pComp->Value(mkNamingAdapt(NoHorizontalMove,                "HorizontalFix",      0));
+	pComp->Value(mkNamingAdapt(BorderBound,                     "BorderBound",        0));
+	pComp->Value(mkNamingAdapt(LiftTop,                         "LiftTop",            0));
+	pComp->Value(mkNamingAdapt(UprightAttach,                   "UprightAttach",      0));
+	pComp->Value(mkNamingAdapt(GrowthType,                      "StretchGrowth",      0));
+	pComp->Value(mkNamingAdapt(Basement,                        "Basement",           0));
+	pComp->Value(mkNamingAdapt(NoBurnDecay,                     "NoBurnDecay",        0));
+	pComp->Value(mkNamingAdapt(IncompleteActivity,              "IncompleteActivity", 0));
+	pComp->Value(mkNamingAdapt(AttractLightning,                "AttractLightning",   0));
+	pComp->Value(mkNamingAdapt(Oversize,                        "Oversize",           0));
+	pComp->Value(mkNamingAdapt(Fragile,                         "Fragile",            0));
+	pComp->Value(mkNamingAdapt(Explosive,                       "Explosive",          0));
+	pComp->Value(mkNamingAdapt(Projectile,                      "Projectile",         0));
+	pComp->Value(mkNamingAdapt(NoPushEnter,                     "NoPushEnter",        0));
+	pComp->Value(mkNamingAdapt(DragImagePicture,                "DragImagePicture",   0));
+	pComp->Value(mkNamingAdapt(VehicleControl,                  "VehicleControl",     0));
+	pComp->Value(mkNamingAdapt(Pathfinder,                      "Pathfinder",         0));
+	pComp->Value(mkNamingAdapt(MoveToRange,                     "MoveToRange",        0));
+	pComp->Value(mkNamingAdapt(NoComponentMass,                 "NoComponentMass",    0));
+	pComp->Value(mkNamingAdapt(NoStabilize,                     "NoStabilize",        0));
+	pComp->Value(mkNamingAdapt(ClosedContainer,                 "ClosedContainer",    0));
+	pComp->Value(mkNamingAdapt(SilentCommands,                  "SilentCommands",     0));
+	pComp->Value(mkNamingAdapt(NoBurnDamage,                    "NoBurnDamage",       0));
+	pComp->Value(mkNamingAdapt(TemporaryCrew,                   "TemporaryCrew",      0));
+	pComp->Value(mkNamingAdapt(SmokeRate,                       "SmokeRate",          100));
+	pComp->Value(mkNamingAdapt(BlitMode,                        "BlitMode",           C4D_Blit_Normal));
+	pComp->Value(mkNamingAdapt(NoBreath,                        "NoBreath",           0));
+	pComp->Value(mkNamingAdapt(ConSizeOff,                      "ConSizeOff",         0));
+	pComp->Value(mkNamingAdapt(NoSell,                          "NoSell",             0));
+	pComp->Value(mkNamingAdapt(NoGet,                           "NoGet",              0));
+	pComp->Value(mkNamingAdapt(NoFight,                         "NoFight",            0));
+	pComp->Value(mkNamingAdapt(RotatedSolidmasks,               "RotatedSolidmasks",  0));
+	pComp->Value(mkNamingAdapt(NoTransferZones,                 "NoTransferZones",    0));
+	pComp->Value(mkNamingAdapt(AutoContextMenu,                 "AutoContextMenu",    0));
+	pComp->Value(mkNamingAdapt(NeededGfxMode,                   "NeededGfxMode",      0));
 
-	const StdBitfieldEntry<int32_t> AllowPictureStackModes[] =
+	const StdBitfieldEntry<uint32_t> AllowPictureStackModes[] =
 	{
 		{ "APS_Color",    APS_Color },
 		{ "APS_Graphics", APS_Graphics },
@@ -448,11 +442,39 @@ void C4DefCore::CompileFunc(StdCompiler *pComp)
 		{ nullptr,        0 }
 	};
 
-	pComp->Value(mkNamingAdapt(mkBitfieldAdapt<int32_t>(AllowPictureStack, AllowPictureStackModes),
+	pComp->Value(mkNamingAdapt(mkBitfieldAdapt<uint32_t>(AllowPictureStack, AllowPictureStackModes),
 		"AllowPictureStack", 0));
 
 	pComp->FollowName("Physical");
 	pComp->Value(Physical);
+}
+
+void C4DefCore::UpdateValues(C4Group &hGroup)
+{
+	// Adjust category: C4D_CrewMember by CrewMember flag
+	if (CrewMember) Category |= C4D_CrewMember;
+
+	// Adjust picture rect
+	if ((PictureRect.Wdt == 0) || (PictureRect.Hgt == 0))
+		PictureRect.Set(0, 0, Shape.Wdt, Shape.Hgt);
+
+	// Check category
+#ifdef C4ENGINE
+	if (!(Category & C4D_SortLimit))
+	{
+		// special: Allow this for spells
+		if (~Category & C4D_Magic)
+			DebugLogF("WARNING: Def %s (%s) at %s has invalid category!", GetName(), C4IdText(id), hGroup.GetFullName().getData());
+		// assign a default category here
+		Category = (Category & ~C4D_SortLimit) | 1;
+	}
+	// Check mass
+	if (Mass < 0)
+	{
+		DebugLogF("WARNING: Def %s (%s) at %s has invalid mass!", GetName(), C4IdText(id), hGroup.GetFullName().getData());
+		Mass = 0;
+	}
+#endif
 }
 
 // C4Def
@@ -473,12 +495,12 @@ void C4Def::Default()
 	Picture = nullptr;
 	Image = nullptr;
 #endif
-	ActNum = 0;
-	ActMap = nullptr;
+	ActMap.clear();
 	Next = nullptr;
 	Temporary = false;
-	Maker[0] = 0;
-	Filename[0] = 0;
+	Maker.clear();
+	Filename.clear();
+	Desc.clear();
 	Creation = 0;
 	Count = 0;
 	TimerCall = nullptr;
@@ -507,6 +529,7 @@ void C4Def::Clear()
 #ifdef C4ENGINE
 	Graphics.Clear();
 
+	LuaDef = luabridge::LuaRef(Game.LuaEngine.state());
 	Script.Clear();
 	StringTable.Clear();
 	if (fClonkNamesOwned)  delete pClonkNames;  pClonkNames  = nullptr;
@@ -520,8 +543,8 @@ void C4Def::Clear()
 
 #endif
 
-	delete[] ActMap; ActMap = nullptr;
-	Desc.Clear();
+	ActMap.clear();
+	Desc.clear();
 }
 
 bool C4Def::Load(C4Group &hGroup,
@@ -533,13 +556,13 @@ bool C4Def::Load(C4Group &hGroup,
 
 #ifdef C4ENGINE
 	bool AddFileMonitoring = false;
-	if (Game.pFileMonitor && !SEqual(hGroup.GetFullName().getData(), Filename) && !hGroup.IsPacked())
+	if (Game.pFileMonitor && Filename != hGroup.GetFullName().getData() && !hGroup.IsPacked())
 		AddFileMonitoring = true;
 #endif
 
 	// Store filename, maker, creation
-	SCopy(hGroup.GetFullName().getData(), Filename);
-	SCopy(hGroup.GetMaker(), Maker, C4MaxName);
+	Filename = hGroup.GetFullName().getData();
+	Maker = hGroup.GetMaker();
 	Creation = hGroup.GetCreation();
 
 #ifdef C4ENGINE
@@ -547,7 +570,7 @@ bool C4Def::Load(C4Group &hGroup,
 	if (Config.Graphics.VerboseObjectLoading >= 3)
 		Log(hGroup.GetFullName().getData());
 
-	if (AddFileMonitoring) Game.pFileMonitor->AddDirectory(Filename);
+	if (AddFileMonitoring) Game.pFileMonitor->AddDirectory(Filename.c_str());
 
 	// particle def?
 	if (hGroup.AccessEntry(C4CFN_ParticleCore))
@@ -565,28 +588,47 @@ bool C4Def::Load(C4Group &hGroup,
 		// done
 	}
 
-#endif
+	char filename[_MAX_FNAME];
+	bool isLuaDefinition = false;
 
-	// Read DefCore
-	if (fSuccess) fSuccess = C4DefCore::Load(hGroup);
-	// check id
-	if (fSuccess) if (!LooksLikeID(id))
+	if (hGroup.AccessEntry(C4CFN_Lua, nullptr, filename) && !SEqual(filename, C4CFN_ScenarioLua))
 	{
-#ifdef C4ENGINE
-		// wie geth ID?????ßßßß
-		if (!Name[0]) Name = GetFilename(hGroup.GetName());
-		LogF(LoadResStr("IDS_ERR_INVALIDID"), Name.getData());
-#endif
+		isLuaDefinition = true;
+		hGroup.ResetSearch();
 		fSuccess = false;
+		do
+		{
+			fSuccess = Game.LuaEngine.Load(hGroup, filename, szLanguage, &StringTable);
+		}
+		while (hGroup.AccessNextEntry(C4CFN_Lua, nullptr, filename));
 	}
 
-#ifdef C4ENGINE
-	// skip def: don't even read sounds!
-	if (fSuccess && Game.C4S.Definitions.SkipDefs.GetIDCount(id, 1)) return false;
-
-	// OldGfx is no longer supported
-	if (NeededGfxMode == C4DGFXMODE_OLDGFX) return false;
 #endif
+
+	if (!isLuaDefinition)
+	{
+		// Read DefCore
+		if (fSuccess) fSuccess = C4DefCore::Load(hGroup);
+		// check id
+		if (fSuccess) if (!LooksLikeID(id))
+		{
+	#ifdef C4ENGINE
+			// wie geth ID?????ßßßß
+			if (!Name[0]) Name = GetFilename(hGroup.GetName());
+			sprintf(OSTR, LoadResStr("IDS_ERR_INVALIDID"), Name.getData());
+			Log(OSTR);
+	#endif
+			fSuccess = false;
+		}
+
+	#ifdef C4ENGINE
+		// skip def: don't even read sounds!
+		if (fSuccess && Game.C4S.Definitions.SkipDefs.GetIDCount(id, 1)) return false;
+
+		// OldGfx is no longer supported
+		if (NeededGfxMode == C4DGFXMODE_OLDGFX) return false;
+#endif
+	}
 
 	if (!fSuccess)
 	{
@@ -596,203 +638,320 @@ bool C4Def::Load(C4Group &hGroup,
 			if (pSoundSystem)
 				pSoundSystem->LoadEffects(hGroup);
 #endif
-
-		return false;
+		if (!isLuaDefinition)
+		{
+			return false;
+		}
 	}
 
 #ifdef C4ENGINE
 	// Read surface bitmap
 	if (dwLoadWhat & C4D_Load_Bitmap)
-		if (!Graphics.LoadBitmaps(hGroup, !!ColorByOwner))
-		{
-			DebugLogF("  Error loading graphics of %s (%s)", hGroup.GetFullName().getData(), C4IdText(id));
-			return false;
-		}
-
-	// Read portraits
-	if (dwLoadWhat & C4D_Load_Bitmap)
-		if (!LoadPortraits(hGroup))
-		{
-			DebugLogF("  Error loading portrait graphics of %s (%s)", hGroup.GetFullName().getData(), C4IdText(id));
-			return false;
-		}
-
-#endif
-
-#if !defined(C4ENGINE) && !defined(C4GROUP)
-
-	// Override PictureRect if PictureRectFE is given
-	if (PictureRectFE.Wdt > 0)
-		PictureRect = PictureRectFE;
-
-	// Read picture section (this option is currently unused...)
-	if (dwLoadWhat & C4D_Load_Picture)
-		// Load from PNG graphics
-		if (!hGroup.AccessEntry(C4CFN_DefGraphicsPNG)
-			|| !hGroup.ReadPNGSection(&Picture, nullptr, PictureRect.x, PictureRect.y, PictureRect.Wdt, PictureRect.Hgt))
-			// Load from BMP graphics
-			if (!hGroup.AccessEntry(C4CFN_DefGraphics)
-				|| !hGroup.ReadDDBSection(&Picture, nullptr, PictureRect.x, PictureRect.y, PictureRect.Wdt, PictureRect.Hgt))
-				// None loaded
-				return false;
-
-	// Read picture section for use in image list
-	if (dwLoadWhat & C4D_Load_Image)
-		// Load from PNG title
-		if (!hGroup.AccessEntry(C4CFN_ScenarioTitlePNG)
-			|| !hGroup.ReadPNGSection(&Image, nullptr, -1, -1, -1, -1, 32, 32))
-			// Load from BMP title
-			if (!hGroup.AccessEntry(C4CFN_ScenarioTitle)
-				|| !hGroup.ReadDDBSection(&Image, nullptr, -1, -1, -1, -1, 32, 32, true))
-				// Load from PNG graphics
-				if (!hGroup.AccessEntry(C4CFN_DefGraphicsPNG)
-					|| !hGroup.ReadPNGSection(&Image, nullptr, PictureRect.x, PictureRect.y, PictureRect.Wdt, PictureRect.Hgt, 32, 32))
-					// Load from BMP graphics
-					if (!hGroup.AccessEntry(C4CFN_DefGraphics)
-						|| !hGroup.ReadDDBSection(&Image, nullptr, PictureRect.x, PictureRect.y, PictureRect.Wdt, PictureRect.Hgt, 32, 32, true))
-						// None loaded
-						return false;
-#endif
-
-#ifdef C4ENGINE
-	// Read ActMap
-	if (dwLoadWhat & C4D_Load_ActMap)
-		if (!LoadActMap(hGroup))
-		{
-			DebugLogF("  Error loading ActMap of %s (%s)", hGroup.GetFullName().getData(), C4IdText(id));
-			return false;
-		}
-#endif
-
-#ifdef C4ENGINE
-	// Read script
-	if (dwLoadWhat & C4D_Load_Script)
 	{
-		// reg script to engine
-		Script.Reg2List(&Game.ScriptEngine, &Game.ScriptEngine);
-		// Load script - loads string table as well, because that must be done after script load
-		// for downwards compatibility with packing order
-		Script.Load("Script", hGroup, C4CFN_Script, szLanguage, this, &StringTable, true);
-	}
-#endif
-
-	// Read name
-	C4ComponentHost DefNames;
-	if (DefNames.LoadEx("Names", hGroup, C4CFN_DefNames, szLanguage))
-		DefNames.GetLanguageString(szLanguage, Name);
-	DefNames.Close();
-
-#ifdef C4ENGINE
-	// read clonknames
-	if (dwLoadWhat & C4D_Load_ClonkNames)
-	{
-		// clear any previous
-		delete pClonkNames; pClonkNames = nullptr;
-		if (hGroup.FindEntry(C4CFN_ClonkNameFiles))
+		if (isLuaDefinition)
 		{
-			// create new
-			pClonkNames = new C4ComponentHost();
-			if (!pClonkNames->LoadEx(LoadResStr("IDS_CNS_NAMES"), hGroup, C4CFN_ClonkNames, szLanguage))
+			C4DefGraphics graphics(this);
+			std::memset(filename, 0, sizeof(filename));
+			hGroup.ResetSearch();
+			while (hGroup.FindNextEntry(C4CFN_LuaGraphics, filename, nullptr, nullptr, !!*filename))
 			{
-				delete pClonkNames; pClonkNames = nullptr;
-			}
-			else
-				fClonkNamesOwned = true;
-		}
-	}
-
-	// read clonkranks
-	if (dwLoadWhat & C4D_Load_RankNames)
-	{
-		// clear any previous
-		delete pRankNames; pRankNames = nullptr;
-		if (hGroup.FindEntry(C4CFN_RankNameFiles))
-		{
-			// create new
-			pRankNames = new C4RankSystem();
-			// load from group
-			if (!pRankNames->Load(hGroup, C4CFN_RankNames, 1000, szLanguage))
-			{
-				delete pRankNames; pRankNames = nullptr;
-			}
-			else
-				fRankNamesOwned = true;
-		}
-	}
-
-	// read rankfaces
-	if (dwLoadWhat & C4D_Load_RankFaces)
-	{
-		// clear any previous
-		delete pRankSymbols; pRankSymbols = nullptr;
-		// load new: try png first
-		if (hGroup.AccessEntry(C4CFN_RankFacesPNG))
-		{
-			pRankSymbols = new C4FacetExSurface();
-			if (!pRankSymbols->GetFace().ReadPNG(hGroup)) { delete pRankSymbols; pRankSymbols = nullptr; }
-		}
-		else if (hGroup.AccessEntry(C4CFN_RankFaces))
-		{
-			pRankSymbols = new C4FacetExSurface();
-			if (!pRankSymbols->GetFace().Read(hGroup)) { delete pRankSymbols; pRankSymbols = nullptr; }
-		}
-		// set size
-		if (pRankSymbols)
-		{
-			pRankSymbols->Set(&pRankSymbols->GetFace(), 0, 0, pRankSymbols->GetFace().Hgt, pRankSymbols->GetFace().Hgt);
-			int32_t Q; pRankSymbols->GetPhaseNum(iNumRankSymbols, Q);
-			if (!iNumRankSymbols) { delete pRankSymbols; pRankSymbols = nullptr; }
-			else
-			{
-				if (pRankNames)
+				if (WildcardMatch(C4CFN_DefGraphicsExPNG, filename))
 				{
-					// if extended rank names are defined, subtract those from the symbol count. The last symbols are used as overlay
-					iNumRankSymbols = std::max<int32_t>(1, iNumRankSymbols - pRankNames->GetExtendedRankNum());
+					continue;
 				}
-				fRankSymbolsOwned = true;
+				if (Game.LuaGraphics.find(filename) != Game.LuaGraphics.end())
+				{
+					DebugLogF("  Error loading graphics %s as another one with the same name already exists", hGroup.GetFullName().getData());
+					continue;
+				}
+				if (!graphics.LoadBitmap(hGroup, nullptr, filename, nullptr, false))
+				{
+					DebugLogF("  Error loading graphics of %s", hGroup.GetFullName().getData());
+					continue;
+				}
+				Game.LuaGraphics[filename] = graphics.GetBitmap();
+				graphics.Bitmap = graphics.BitmapClr = nullptr; // gets deleted otherwise
+			}
+
+			/*// link surfaces
+			for (auto it = Game.LuaGraphics.begin(); it != Game.LuaGraphics.end(); )
+			{
+				if (SEqual2NoCase("Overlay", it->first) && SEqualNoCase("png", GetExtension(it->first.c_str())))
+				{
+					auto base = Game.LuaGraphics.find(it->first.substr(std::strlen("Overlay"), it->first.size() - std::strlen("Overlay") - std::strlen(".png")));
+					if (base == Game.LuaGraphics.end())
+					{
+						DebugLogF("  Error matching overlay %s: No base graphics", it->first.c_str());
+						continue;
+					}
+					if (!it->second->SetAsClrByOwnerOf(base->second))
+					{
+
+					}
+				}
+			}*/
+		}
+		else
+		{
+			if (!Graphics.LoadBitmaps(hGroup, !!ColorByOwner))
+			{
+				DebugLogF("  Error loading graphics of %s (%s)", hGroup.GetFullName().getData(), C4IdText(id));
+				return false;
+			}
+			if (!LoadPortraits())
+			{
+				DebugLogF("  Error loading portrait graphics of %s (%s)", hGroup.GetFullName().getData(), C4IdText(id));
+				return false;
 			}
 		}
 	}
+#endif
+	if (!isLuaDefinition)
+	{
+#ifdef C4ENGINE
+		// Read ActMap
+		if (dwLoadWhat & C4D_Load_ActMap)
+			if (!LoadActMap(hGroup))
+			{
+				DebugLogF("  Error loading ActMap of %s (%s)", hGroup.GetFullName().getData(), C4IdText(id));
+				return false;
+			}
 
+		// Read script
+		if (dwLoadWhat & C4D_Load_Script)
+		{
+			// reg script to engine
+			Script.Reg2List(&Game.ScriptEngine, &Game.ScriptEngine);
+			// Load script - loads string table as well, because that must be done after script load
+			// for downwards compatibility with packing order
+			Script.Load("Script", hGroup, C4CFN_Script, szLanguage, this, &StringTable, true);
+		}
 #endif
 
-	// Read desc
-	if (dwLoadWhat & C4D_Load_Desc)
-	{
-		Desc.LoadEx("Desc", hGroup, C4CFN_DefDesc, szLanguage);
-		Desc.TrimSpaces();
-	}
+		// Read name
+		C4ComponentHost DefNames;
+		if (DefNames.LoadEx("Names", hGroup, C4CFN_DefNames, szLanguage))
+			DefNames.GetLanguageString(szLanguage, Name);
+		DefNames.Close();
 
 #ifdef C4ENGINE
+		// read clonknames
+		if (dwLoadWhat & C4D_Load_ClonkNames)
+		{
+			// clear any previous
+			delete pClonkNames; pClonkNames = nullptr;
+			if (hGroup.FindEntry(C4CFN_ClonkNameFiles))
+			{
+				// create new
+				pClonkNames = new C4ComponentHost();
+				if (!pClonkNames->LoadEx(LoadResStr("IDS_CNS_NAMES"), hGroup, C4CFN_ClonkNames, szLanguage))
+				{
+					delete pClonkNames; pClonkNames = nullptr;
+				}
+				else
+					fClonkNamesOwned = true;
+			}
+		}
 
-	// Read sounds
-	if (dwLoadWhat & C4D_Load_Sounds)
-		if (pSoundSystem)
-			pSoundSystem->LoadEffects(hGroup);
+		// read clonkranks
+		if (dwLoadWhat & C4D_Load_RankNames)
+		{
+			// clear any previous
+			delete pRankNames; pRankNames = nullptr;
+			if (hGroup.FindEntry(C4CFN_RankNameFiles))
+			{
+				// create new
+				pRankNames = new C4RankSystem();
+				// load from group
+				if (!pRankNames->Load(hGroup, C4CFN_RankNames, 1000, szLanguage))
+				{
+					delete pRankNames; pRankNames = nullptr;
+				}
+				else
+					fRankNamesOwned = true;
+			}
+		}
 
-	// Bitmap post-load settings
-	if (Graphics.GetBitmap())
-	{
-		// check SolidMask
-		if (SolidMask.x < 0 || SolidMask.y < 0 || SolidMask.x + SolidMask.Wdt > Graphics.Bitmap->Wdt || SolidMask.y + SolidMask.Hgt > Graphics.Bitmap->Hgt) SolidMask.Default();
-		// Set MainFace (unassigned bitmap: will be set by GetMainFace())
-		MainFace.Set(nullptr, 0, 0, Shape.Wdt, Shape.Hgt);
-	}
-
-	// validate TopFace
-	if (TopFace.x < 0 || TopFace.y < 0 || TopFace.x + TopFace.Wdt > Graphics.Bitmap->Wdt || TopFace.y + TopFace.Hgt > Graphics.Bitmap->Hgt)
-	{
-		TopFace.Default();
-		// warn in debug mode
-		DebugLogF("invalid TopFace in %s(%s)", Name.getData(), C4IdText(id));
-	}
+		// read rankfaces
+		if (dwLoadWhat & C4D_Load_RankFaces)
+		{
+			// clear any previous
+			delete pRankSymbols; pRankSymbols = nullptr;
+			// load new: try png first
+			if (hGroup.AccessEntry(C4CFN_RankFacesPNG))
+			{
+				pRankSymbols = new C4FacetExSurface();
+				if (!pRankSymbols->GetFace().ReadPNG(hGroup)) { delete pRankSymbols; pRankSymbols = nullptr; }
+			}
+			else if (hGroup.AccessEntry(C4CFN_RankFaces))
+			{
+				pRankSymbols = new C4FacetExSurface();
+				if (!pRankSymbols->GetFace().Read(hGroup)) { delete pRankSymbols; pRankSymbols = nullptr; }
+			}
+		}
 
 #endif
+
+		// Read desc
+		if (dwLoadWhat & C4D_Load_Desc)
+		{
+			C4ComponentHost desc;
+			if (desc.LoadEx("Desc", hGroup, C4CFN_DefDesc, szLanguage))
+			{
+				desc.TrimSpaces();
+				Desc = desc.GetData();
+			}
+		}
+
+#ifdef C4ENGINE
+		// Read sounds
+		if (dwLoadWhat & C4D_Load_Sounds)
+			if (pSoundSystem)
+				pSoundSystem->LoadEffects(hGroup);
+#endif
+	}
+	UpdateValues();
 
 	// Temporary flag
 	if (dwLoadWhat & C4D_Load_Temporary) Temporary = true;
 
 	return true;
+}
+
+bool C4Def::Compile(luabridge::LuaRef def, C4ID newID)
+{
+	C4DefCore::Compile(def);
+	id = newID;
+	Desc = def["Description"].isString() ? def["Description"].tostring() : "";
+	std::map<std::string, luabridge::LuaRef> test = def.cast<decltype(test)>();
+	if (def["ActMap"].isTable())
+	{
+		StdCompilerLuaRead comp;
+		comp.setInput(def);
+		auto actions = def["ActMap"].cast<std::vector<std::map<std::string, luabridge::LuaRef>>>();
+		ActMap.resize(actions.size());
+		for (auto &action : ActMap)
+		{
+			try
+			{
+				action.CompileFunc(&comp);
+				if (!comp.Separator())
+				{
+					break;
+				}
+			}
+			catch (StdCompiler::Exception *e)
+			{
+				DebugLogF("ERROR: Definition with name %s has invalid ActMap entry: %s: %s", Name.getData(), e->Pos.getData(), e->Msg.getData());
+				action.Default();
+				delete e;
+				break;
+			}
+		}
+		CrossMapActMap();
+	}
+
+	luabridge::LuaRef graphics = def["Graphics"];
+	if (!graphics.isTable())
+	{
+		DebugLogF("ERROR: Definition with name %s has invalid graphics specified", Name.getData());
+		return false;
+	}
+	if (graphics["Default"].isNil() || !graphics["Default"].isTable() || !graphics["Default"]["Base"].isString())
+	{
+		DebugLogF("ERROR: Definition with name %s is missing default graphics", Name.getData());
+	}
+	else
+	{
+		Graphics.Clear();
+		LoadGraphics(graphics["Default"]["Base"], graphics["Default"]["Overlay"].isString() ? graphics["Default"]["Overlay"].tostring() : "");
+
+		for (const auto &pair : graphics.cast<std::map<std::string, luabridge::LuaRef>>())
+		{
+			if (pair.second.isString())
+			{
+				LoadGraphics(pair.second.tostring(), "", true);
+			}
+			else if (pair.second.isTable())
+			{
+				if (!pair.second["Base"].isString())
+				{
+					DebugLogF("Definition with name %s has invalid graphics set %s", Name.getData(), pair.first.c_str());
+					continue;
+				}
+				LoadGraphics(pair.second["Base"].tostring(), pair.second["Overlay"].isString() ? pair.second["Overlay"].tostring() : "");
+			}
+		}
+	}
+	if (def["Portrait"].isTable() && def["Portrait"]["Base"].isString())
+	{
+		LoadGraphics(def["Portrait"]["Base"], def["Portrait"]["Overlay"].isString() ? def["Portrait"]["Overlay"].tostring() : "", true, true);
+		LoadPortraits();
+	}
+	UpdateValues();
+	return true;
+}
+
+void C4Def::LoadGraphics(const std::string &base, const std::string &overlay, bool additional, bool portrait)
+{
+	static auto getGraphics = [this](const std::string &name) -> C4Surface *
+	{
+		auto i = Game.LuaGraphics.find(name);
+		if (i == Game.LuaGraphics.end())
+		{
+			DebugLogF("ERROR: Definition with name %s specifies missing graphics: %s", Name.getData(), name.c_str());
+			return nullptr;
+		}
+		return i->second;
+	};
+
+	auto *surface = getGraphics(base);
+	if (surface != nullptr)
+	{
+		C4Surface *overlaySurface = nullptr;
+		if (ColorByOwner)
+		{
+			if (overlay.size())
+			{
+				overlaySurface = getGraphics(overlay);
+				if (overlaySurface)
+				{
+					if (!overlaySurface->SetAsClrByOwnerOf(surface))
+					{
+						DebugLogF("Gfx loading error: %s (%d x %d) doesn't match overlay %s (%d x %d) - invalid file or size mismatch",
+							base.c_str(), surface->Wdt, surface->Hgt,
+							overlay.c_str(), overlaySurface->Wdt, overlaySurface->Hgt);
+						delete overlaySurface;
+						overlaySurface = nullptr;
+					}
+				}
+			}
+			else
+			{
+				overlaySurface = new C4Surface;
+				if (!overlaySurface->CreateColorByOwner(surface))
+				{
+					DebugLogF("Gfx error: cannot create overlay by ColorByOwner");
+					delete overlaySurface;
+					overlaySurface = nullptr;
+				}
+			}
+		}
+
+		if (!additional)
+		{
+			Graphics.Bitmap = surface;
+			Graphics.BitmapClr = overlaySurface;
+		}
+		else
+		{
+			auto *next = Graphics.pNext;
+			Graphics.pNext = portrait ? new C4PortraitGraphics(this, base.c_str()) : new C4AdditionalDefGraphics(this, base.c_str());
+			Graphics.pNext->pNext = next;
+			Graphics.pNext->Bitmap = surface;
+			Graphics.pNext->BitmapClr = overlaySurface;
+		}
+	}
 }
 
 bool C4Def::LoadActMap(C4Group &hGroup)
@@ -801,18 +960,12 @@ bool C4Def::LoadActMap(C4Group &hGroup)
 	StdStrBuf Data;
 	if (hGroup.LoadEntryString(C4CFN_DefActMap, Data))
 	{
-		// Get action count (hacky), create buffer
-		int actnum;
-		if (!(actnum = SCharCount('[', Data.getData()))
-			|| !(ActMap = new C4ActionDef[actnum]))
-			return false;
 		// Compile
 		if (!CompileFromBuf_LogWarn<StdCompilerINIRead>(
-			mkNamingAdapt(mkArrayAdapt(ActMap, actnum), "Action"),
+			mkNamingAdapt(mkSTLContainerAdapt(ActMap), "Action"),
 			Data,
 			(hGroup.GetFullName() + DirSep C4CFN_DefActMap).getData()))
 			return false;
-		ActNum = actnum;
 		// Process map
 		CrossMapActMap();
 		return true;
@@ -824,39 +977,52 @@ bool C4Def::LoadActMap(C4Group &hGroup)
 
 void C4Def::CrossMapActMap()
 {
-	int32_t cnt, cnt2;
-	for (cnt = 0; cnt < ActNum; cnt++)
+	for (auto &action : ActMap)
 	{
 		// Map standard procedures
-		ActMap[cnt].Procedure = DFA_NONE;
-		for (cnt2 = 0; cnt2 < C4D_MaxDFA; cnt2++)
-			if (SEqual(ActMap[cnt].ProcedureName, ProcedureName[cnt2]))
-				ActMap[cnt].Procedure = cnt2;
-		// Map next action
-		if (ActMap[cnt].NextActionName[0])
+		action.Procedure = DFA_NONE;
+		for (int32_t i = 0; i < C4D_MaxDFA; ++i)
 		{
-			if (SEqualNoCase(ActMap[cnt].NextActionName, "Hold"))
-				ActMap[cnt].NextAction = ActHold;
+			if (action.ProcedureName == ProcedureName[i])
+			{
+				action.Procedure = i;
+				break;
+			}
+		}
+		// Map next action
+		if (action.NextActionName.size())
+		{
+			if (SEqualNoCase(action.NextActionName, "Hold"))
+			{
+				action.NextAction = ActHold;
+			}
 			else
-				for (cnt2 = 0; cnt2 < ActNum; cnt2++)
-					if (SEqual(ActMap[cnt].NextActionName, ActMap[cnt2].Name))
-						ActMap[cnt].NextAction = cnt2;
+			{
+				for (size_t i = 0; i < ActMap.size(); ++i)
+				{
+					if (action.NextActionName == ActMap[i].Name)
+					{
+						action.NextAction = static_cast<int32_t>(i);
+						break;
+					}
+				}
+			}
 		}
 		// Check act calls
-		if (SEqualNoCase(ActMap[cnt].SStartCall, "None")) ActMap[cnt].SStartCall[0] = 0;
-		if (SEqualNoCase(ActMap[cnt].SPhaseCall, "None")) ActMap[cnt].SPhaseCall[0] = 0;
-		if (SEqualNoCase(ActMap[cnt].SEndCall,   "None")) ActMap[cnt].SEndCall  [0] = 0;
-		if (SEqualNoCase(ActMap[cnt].SAbortCall, "None")) ActMap[cnt].SAbortCall[0] = 0;
+		if (SEqualNoCase(action.SStartCall, "None")) action.SStartCall.clear();
+		if (SEqualNoCase(action.SPhaseCall, "None")) action.SPhaseCall.clear();
+		if (SEqualNoCase(action.SEndCall,   "None")) action.SEndCall.clear();
+		if (SEqualNoCase(action.SAbortCall, "None")) action.SAbortCall.clear();
 	}
 }
 
 bool C4Def::ColorizeByMaterial(C4MaterialMap &rMats, uint8_t bGBM)
 {
 #ifdef C4ENGINE
-	if (ColorByMaterial[0])
+	if (ColorByMaterial.size())
 	{
-		int32_t mat = rMats.Get(ColorByMaterial);
-		if (mat == MNone) { LogF("C4Def::ColorizeByMaterial: mat %s not defined", ColorByMaterial); return false; }
+		int32_t mat = rMats.Get(ColorByMaterial.c_str());
+		if (mat == MNone) { LogF("C4Def::ColorizeByMaterial: mat %s not defined", ColorByMaterial.c_str()); return false; }
 		if (!Graphics.ColorizeByMaterial(mat, rMats, bGBM)) return false;
 	}
 #endif
@@ -890,6 +1056,44 @@ void C4Def::Draw(C4Facet &cgo, bool fSelected, uint32_t iColor, C4Object *pObj, 
 		for (C4GraphicsOverlay *pGfxOvrl = pObj->pGfxOverlay; pGfxOvrl; pGfxOvrl = pGfxOvrl->GetNext())
 			if (pGfxOvrl->IsPicture())
 				pGfxOvrl->DrawPicture(cgo, pObj);
+#endif
+}
+
+void C4Def::UpdateValues()
+{
+	// set size
+	if (pRankSymbols)
+	{
+		pRankSymbols->Set(&pRankSymbols->GetFace(), 0, 0, pRankSymbols->GetFace().Hgt, pRankSymbols->GetFace().Hgt);
+		int32_t Q; pRankSymbols->GetPhaseNum(iNumRankSymbols, Q);
+		if (!iNumRankSymbols) { delete pRankSymbols; pRankSymbols = nullptr; }
+		else
+		{
+			if (pRankNames)
+			{
+				// if extended rank names are defined, subtract those from the symbol count. The last symbols are used as overlay
+				iNumRankSymbols = std::max<int32_t>(1, iNumRankSymbols - pRankNames->GetExtendedRankNum());
+			}
+			fRankSymbolsOwned = true;
+		}
+	}
+#ifdef C4ENGINE
+	// Bitmap post-load settings
+	if (Graphics.GetBitmap())
+	{
+		// check SolidMask
+		if (SolidMask.x < 0 || SolidMask.y < 0 || SolidMask.x + SolidMask.Wdt > Graphics.Bitmap->Wdt || SolidMask.y + SolidMask.Hgt > Graphics.Bitmap->Hgt) SolidMask.Default();
+		// Set MainFace (unassigned bitmap: will be set by GetMainFace())
+		MainFace.Set(nullptr, 0, 0, Shape.Wdt, Shape.Hgt);
+
+		// validate TopFace
+		if (TopFace.x < 0 || TopFace.y < 0 || TopFace.x + TopFace.Wdt > Graphics.Bitmap->Wdt || TopFace.y + TopFace.Hgt > Graphics.Bitmap->Hgt)
+		{
+			TopFace.Default();
+			// warn in debug mode
+			DebugLogF("invalid TopFace in %s(%s)", Name.getData(), C4IdText(id));
+		}
+	}
 #endif
 }
 
@@ -1029,6 +1233,11 @@ int32_t C4DefList::Load(C4Group &hGroup, uint32_t dwLoadWhat,
 			scr->Reg2List(&Game.ScriptEngine, &Game.ScriptEngine);
 			scr->Load(nullptr, SysGroup, fn, Config.General.LanguageEx, nullptr, &SysGroupString);
 		}
+		SysGroup.ResetSearch();
+		while (SysGroup.FindNextEntry(C4CFN_Lua, reinterpret_cast<char *>(&fn), nullptr, nullptr, !!fn[0]))
+		{
+			Game.LuaEngine.Load(SysGroup, fn, Config.General.LanguageEx, &SysGroupString);
+		}
 		// if it's a physical group: watch out for changes
 		if (!SysGroup.IsPacked() && Game.pFileMonitor)
 			Game.pFileMonitor->AddDirectory(SysGroup.GetFullName().getData());
@@ -1140,188 +1349,134 @@ bool C4DefList::Add(C4Def *pDef, bool fOverload)
 			LogF(LoadResStr("IDS_PRC_DEFOVERLOAD"), pDef->GetName(), C4IdText(pLastDef->id));
 			if (Config.Graphics.VerboseObjectLoading >= 2)
 			{
-				LogF("      Old def at %s", pLastDef->Filename);
-				LogF("     Overload by %s", pDef->Filename);
+				LogF("      Old def at %s", pLastDef->Filename.c_str());
+				LogF("     Overload by %s", pDef->Filename.c_str());
 			}
 		}
 #endif
 
 	// Remove old def
 	Remove(pDef->id);
-
-	// Add new def
-	pDef->Next = FirstDef;
-	FirstDef = pDef;
+	table[pDef->id] = pDef;
 
 	return true;
 }
 
 bool C4DefList::Remove(C4ID id)
 {
-	C4Def *cdef, *prev;
-	for (cdef = FirstDef, prev = nullptr; cdef; prev = cdef, cdef = cdef->Next)
-		if (cdef->id == id)
-		{
-			if (prev) prev->Next = cdef->Next;
-			else FirstDef = cdef->Next;
-			delete cdef;
-			return true;
-		}
-	return false;
+	return !!table.erase(id);
 }
 
 void C4DefList::Remove(C4Def *def)
 {
-	C4Def *cdef, *prev;
-	for (cdef = FirstDef, prev = nullptr; cdef; prev = cdef, cdef = cdef->Next)
-		if (cdef == def)
+	for (auto it = table.begin(); it != table.end(); )
+	{
+		if (it->second == def)
 		{
-			if (prev) prev->Next = cdef->Next;
-			else FirstDef = cdef->Next;
-			delete cdef;
-			return;
+			table.erase(it++);
 		}
+		else
+		{
+			++it;
+		}
+	}
 }
 
 void C4DefList::Clear()
 {
-	C4Def *cdef, *next;
-	for (cdef = FirstDef; cdef; cdef = next)
-	{
-		next = cdef->Next;
-		delete cdef;
-	}
-	FirstDef = nullptr;
-	// clear quick access table
-	for (int32_t i = 0; i < 64; i++) { delete[] Table[i]; Table[i] = nullptr; }
-	fTable = false;
+	table.clear();
 }
 
 C4Def *C4DefList::ID2Def(C4ID id)
 {
-	if (id == C4ID_None) return nullptr;
-	if (!fTable)
-	{
-		// table not yet built: search list
-		C4Def *cdef;
-		for (cdef = FirstDef; cdef; cdef = cdef->Next)
-			if (cdef->id == id) return cdef;
-	}
-	C4Def **ppDef, ***pppDef = Table;
-	// get table entry to query
-	int32_t iTblIndex = (id >> 24) - 32;
-	if (Inside<int32_t>(iTblIndex, 0, 63)) pppDef += iTblIndex;
-	// no entry matching?
-	if (!(ppDef = *pppDef)) return nullptr;
-	// search list
-	for (C4Def *pDef = *ppDef; pDef = *ppDef; ppDef++)
-	{
-		if (pDef->id == id) return pDef;
-	}
-	// none found
-	return nullptr;
-}
-
-int32_t C4DefList::GetIndex(C4ID id)
-{
-	C4Def *cdef;
-	int32_t cindex;
-	for (cdef = FirstDef, cindex = 0; cdef; cdef = cdef->Next, cindex++)
-		if (cdef->id == id) return cindex;
-	return -1;
+	auto i = table.find(id);
+	return i != table.end() ? i->second : nullptr;
 }
 
 int32_t C4DefList::GetDefCount(uint32_t dwCategory)
 {
-	C4Def *cdef; int32_t ccount = 0;
-	for (cdef = FirstDef; cdef; cdef = cdef->Next)
-		if (cdef->Category & dwCategory)
-			ccount++;
-	return ccount;
+	return static_cast<int32_t>(std::count_if(table.begin(), table.end(), [&dwCategory](const std::pair<C4ID, C4Def *> &entry)
+	{
+		return entry.second->Category & dwCategory;
+	}));
 }
 
 C4Def *C4DefList::GetDef(int32_t iIndex, uint32_t dwCategory)
 {
-	C4Def *pDef; int32_t iCurrentIndex;
-	if (iIndex < 0) return nullptr;
-	for (pDef = FirstDef, iCurrentIndex = -1; pDef; pDef = pDef->Next)
-		if (pDef->Category & dwCategory)
+	int32_t currentIndex = -1;
+	for (const auto &entry : table)
+	{
+		if (entry.second->Category & dwCategory && ++currentIndex == iIndex)
 		{
-			iCurrentIndex++;
-			if (iCurrentIndex == iIndex) return pDef;
+			return entry.second;
 		}
+	}
 	return nullptr;
 }
 
 #ifdef C4ENGINE
-C4Def *C4DefList::GetByPath(const char *szPath)
+C4Def *C4DefList::GetByPath(const std::string &path)
 {
-	// search defs
-	const char *szDefPath;
-	for (C4Def *pDef = FirstDef; pDef; pDef = pDef->Next)
-		if (szDefPath = Config.AtExeRelativePath(pDef->Filename))
-			if (SEqual2NoCase(szPath, szDefPath))
-				// the definition itself?
-				if (!szPath[SLen(szDefPath)])
-					return pDef;
-	// or a component?
-				else if (szPath[SLen(szDefPath)] == '\\')
-					if (!strchr(szPath + SLen(szDefPath) + 1, '\\'))
-						return pDef;
-	// not found
-	return nullptr;
+	auto entry = std::find_if(table.begin(), table.end(), [&path](const std::pair<C4ID, C4Def *> &entry)
+	{
+		std::string defPath = Config.AtExeRelativePath(entry.second->Filename.c_str());
+		return defPath.size() && SEqual2NoCase(path, defPath) &&
+				((path.size() == defPath.size()) || (path[defPath.size()] == '\\' && path.find('\\', defPath.size() + 1) == std::string::npos));
+	});
+	return entry != table.end() ? entry->second : nullptr;
 }
 #endif
 
 int32_t C4DefList::CheckEngineVersion(int32_t ver1, int32_t ver2, int32_t ver3, int32_t ver4)
 {
 	int32_t rcount = 0;
-	C4Def *cdef, *prev, *next;
-	for (cdef = FirstDef, prev = nullptr; cdef; cdef = next)
+	for (auto it = table.begin(); it != table.end(); )
 	{
-		next = cdef->Next;
-		if (CompareVersion(cdef->rC4XVer[0], cdef->rC4XVer[1], cdef->rC4XVer[2], cdef->rC4XVer[3], ver1, ver2, ver3, ver4) > 0)
+		if (CompareVersion(
+				it->second->rC4XVer[0], it->second->rC4XVer[1], it->second->rC4XVer[2], it->second->rC4XVer[3],
+				ver1, ver2, ver3, ver4
+				) > 0)
 		{
-			if (prev) prev->Next = cdef->Next;
-			else FirstDef = cdef->Next;
-			delete cdef;
-			rcount++;
+			table.erase(it++);
+			++rcount;
 		}
-		else prev = cdef;
+		else
+		{
+			++it;
+		}
 	}
 	return rcount;
 }
 
 int32_t C4DefList::CheckRequireDef()
 {
-	int32_t rcount = 0, rcount2;
-	C4Def *cdef, *prev, *next;
+	int32_t rcount[2] = {0, 0};
 	do
 	{
-		rcount2 = rcount;
-		for (cdef = FirstDef, prev = nullptr; cdef; cdef = next)
+		rcount[1] = rcount[0];
+		for (auto it = table.begin(); it != table.end(); ++it)
 		{
-			next = cdef->Next;
-			for (int32_t i = 0; i < cdef->RequireDef.GetNumberOfIDs(); i++)
-				if (GetIndex(cdef->RequireDef.GetID(i)) < 0)
+			for (int32_t i = 0; i < it->second->RequireDef.GetNumberOfIDs(); ++i)
+			{
+				if (table.find(it->second->RequireDef.GetID(i)) == table.end())
 				{
-					(prev ? prev->Next : FirstDef) = cdef->Next;
-					delete cdef;
-					rcount++;
+					table.erase(it);
+					++rcount[0];
+					break;
 				}
+			}
 		}
-	} while (rcount != rcount2);
-	return rcount;
+	}
+	while (rcount[0] != rcount[1]);
+	return rcount[0];
 }
 
 int32_t C4DefList::ColorizeByMaterial(C4MaterialMap &rMats, uint8_t bGBM)
 {
-	C4Def *cdef;
-	int32_t rval = 0;
-	for (cdef = FirstDef; cdef; cdef = cdef->Next)
-		if (cdef->ColorizeByMaterial(rMats, bGBM))
-			rval++;
-	return rval;
+	return static_cast<int32_t>(std::count_if(table.begin(), table.end(), [&rMats, &bGBM](const std::pair<C4ID, C4Def *> entry)
+	{
+		return entry.second->ColorizeByMaterial(rMats, bGBM);
+	}));
 }
 
 void C4DefList::Draw(C4ID id, C4Facet &cgo, bool fSelected, int32_t iColor)
@@ -1332,10 +1487,8 @@ void C4DefList::Draw(C4ID id, C4Facet &cgo, bool fSelected, int32_t iColor)
 
 void C4DefList::Default()
 {
-	FirstDef = nullptr;
+	table.clear();
 	LoadFailure = false;
-	std::fill(Table, std::end(Table), nullptr);
-	fTable = false;
 }
 
 bool C4DefList::Reload(C4Def *pDef, uint32_t dwLoadWhat, const char *szLanguage, C4SoundSystem *pSoundSystem)
@@ -1353,11 +1506,9 @@ bool C4DefList::Reload(C4Def *pDef, uint32_t dwLoadWhat, const char *szLanguage,
 	pDef->Clear(); // Assume filename is being kept
 	// Reload def
 	C4Group hGroup;
-	if (!hGroup.Open(pDef->Filename)) return false;
+	if (!hGroup.Open(pDef->Filename.c_str())) return false;
 	if (!pDef->Load(hGroup, dwLoadWhat, szLanguage, pSoundSystem)) return false;
 	hGroup.Close();
-	// rebuild quick access table
-	BuildTable();
 #ifdef C4ENGINE
 	// update script engine - this will also do include callbacks
 	Game.ScriptEngine.ReLink(this);
@@ -1372,45 +1523,7 @@ bool C4DefList::Reload(C4Def *pDef, uint32_t dwLoadWhat, const char *szLanguage,
 	return true;
 }
 
-void C4DefList::BuildTable()
-{
-	// clear any current table
-	int32_t i;
-	for (i = 0; i < 64; i++) { delete[] Table[i]; Table[i] = nullptr; }
-	// build temp count list
-	int32_t Counts[64]{};
-	C4Def *pDef;
-	for (pDef = FirstDef; pDef; pDef = pDef->Next)
-		if (LooksLikeID(pDef->id))
-			if (pDef->id < 10000)
-				Counts[0]++;
-			else
-				Counts[(pDef->id >> 24) - 32]++;
-	// get mem for table; !!! leave space for stop entry !!!
-	for (i = 0; i < 64; i++) if (Counts[i])
-	{
-		C4Def **ppDef = (C4Def **)new long[Counts[i] + 1]{};
-		Table[i] = ppDef;
-	}
-	// build table
-	for (pDef = FirstDef; pDef; pDef = pDef->Next)
-		if (LooksLikeID(pDef->id))
-		{
-			C4Def **ppDef;
-			if (pDef->id < 10000)
-				ppDef = Table[0];
-			else
-				ppDef = Table[(pDef->id >> 24) - 32];
-			while (*ppDef) ppDef++;
-			*ppDef = pDef;
-		}
-	// done
-	fTable = true;
-	// use table for sorting now
-	SortByID();
-}
-
-bool C4Def::LoadPortraits(C4Group &hGroup)
+bool C4Def::LoadPortraits()
 {
 #ifdef C4ENGINE
 	// reset any previous portraits
@@ -1559,58 +1672,20 @@ bool C4DefList::GetFontImage(const char *szImageTag, CFacet &rOutImgFacet)
 	return true;
 }
 
-#ifdef _WIN32
-int __cdecl C4DefListSortFunc(const void *elem1, const void *elem2)
-#else
-int C4DefListSortFunc(const void *elem1, const void *elem2)
-#endif
-{
-	return (*(C4Def * const *)elem1)->id - (*(C4Def * const *)elem2)->id;
-}
-
-void C4DefList::SortByID()
-{
-	// ID sorting will prevent some possible sync losses due to definition loading in different order
-	// (it's still possible to cause desyncs by global script function or constant overloads, overloads
-	//  within the same object pack and multiple appendtos with function overloads that depend on their
-	//  order.)
-
-	// Must be called directly after quick access table has been built.
-	assert(fTable);
-	// sort all quick access slots
-	int i = sizeof(Table) / sizeof(C4Def **);
-	FirstDef = nullptr;
-	C4Def ***pppDef = Table, **ppDef, **ppDefCount, **ppCurrLastDef = &FirstDef;
-	while (i--)
-	{
-		// only used slots
-		if (ppDefCount = ppDef = *pppDef)
-		{
-			int cnt = 0; while (*ppDefCount++) ++cnt;
-			if (cnt)
-			{
-				qsort(ppDef, cnt, sizeof(C4Def *), &C4DefListSortFunc);
-				// build new linked list from sorted table
-				// note this method also terminates the list!
-				while (*ppCurrLastDef = *ppDef++) ppCurrLastDef = &((*ppCurrLastDef)->Next);
-			}
-		}
-		++pppDef;
-	}
-}
-
 #ifdef C4ENGINE
 void C4DefList::Synchronize()
 {
-	C4Def *pDef;
-	for (pDef = FirstDef; pDef; pDef = pDef->Next)
-		pDef->Synchronize();
+	for (const auto &entry : table)
+	{
+		entry.second->Synchronize();
+	}
 }
 #endif
 
 void C4DefList::ResetIncludeDependencies()
 {
-	C4Def *pDef;
-	for (pDef = FirstDef; pDef; pDef = pDef->Next)
-		pDef->ResetIncludeDependencies();
+	for (const auto &entry : table)
+	{
+		entry.second->ResetIncludeDependencies();
+	}
 }

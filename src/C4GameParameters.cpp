@@ -200,7 +200,7 @@ void C4GameResList::Clear()
 	iResCount = iResCapacity = 0;
 }
 
-bool C4GameResList::Load(const std::set<std::string> &DefinitionFilenames)
+bool C4GameResList::Load(const std::vector<std::string> &DefinitionFilenames)
 {
 	// clear any prev
 	Clear();
@@ -329,7 +329,7 @@ void C4GameParameters::Clear()
 	Teams.Clear();
 }
 
-bool C4GameParameters::Load(C4Group &hGroup, C4Scenario *pScenario, const char *szGameText, C4LangStringTable *pLang, std::set<std::string> DefinitionFilenames)
+bool C4GameParameters::Load(C4Group &hGroup, C4Scenario *pScenario, const char *szGameText, C4LangStringTable *pLang, std::vector<std::string> DefinitionFilenames)
 {
 	// Clear previous data
 	Clear();

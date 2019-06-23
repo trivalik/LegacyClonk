@@ -294,24 +294,24 @@ void C4FileSelDlg::UpdateSelection()
 	}
 }
 
-void C4FileSelDlg::SetSelection(const std::set<std::string> &newSelection, bool fFilenameOnly)
+void C4FileSelDlg::SetSelection(const std::vector<std::string> &newSelection, bool fFilenameOnly)
 {
 	// check all selected definitions
 	for (ListItem *pFileItem = static_cast<ListItem *>(pFileListBox->GetFirst()); pFileItem; pFileItem = static_cast<ListItem *>(pFileItem->GetNext()))
 	{
 		const char *szFileItemFilename = pFileItem->GetFilename();
 		if (fFilenameOnly) szFileItemFilename = GetFilename(szFileItemFilename);
-		pFileItem->SetChecked(newSelection.find(szFileItemFilename) != newSelection.end());
+		pFileItem->SetChecked(std::find(newSelection.begin(), newSelection.end(), szFileItemFilename) != newSelection.end());
 	}
 }
 
-void C4FileSelDlg::GetSelection(std::set<std::string> &fixedSelection, bool filenameOnly) const
+void C4FileSelDlg::GetSelection(std::vector<std::string> &fixedSelection, bool filenameOnly) const
 {
 	if (!IsMultiSelection())
 	{
 		fixedSelection.clear();
 		// get single selected file for single selection dlg
-		fixedSelection.insert(filenameOnly ? GetFilename(pSelection->GetFilename()) : pSelection->GetFilename());
+		fixedSelection.push_back(filenameOnly ? GetFilename(pSelection->GetFilename()) : pSelection->GetFilename());
 	}
 	else
 	{
@@ -324,7 +324,7 @@ void C4FileSelDlg::GetSelection(std::set<std::string> &fixedSelection, bool file
 			{
 				const char *szAppendFilename = pFileItem->GetFilename();
 				if (filenameOnly) szAppendFilename = GetFilename(szAppendFilename);
-				fixedSelection.insert(szAppendFilename);
+				fixedSelection.push_back(szAppendFilename);
 			}
 		}
 	}
@@ -380,7 +380,7 @@ C4PlayerSelDlg::C4PlayerSelDlg(C4FileSel_BaseCB *pSelCallback)
 
 // C4DefinitionSelDlg
 
-C4DefinitionSelDlg::C4DefinitionSelDlg(C4FileSel_BaseCB *pSelCallback, const std::set<std::string> &fixedSelection)
+C4DefinitionSelDlg::C4DefinitionSelDlg(C4FileSel_BaseCB *pSelCallback, const std::vector<std::string> &fixedSelection)
 	: C4FileSelDlg(Config.AtExePath(Config.General.DefinitionPath), FormatString(LoadResStr("IDS_MSG_SELECT"), LoadResStr("IDS_DLG_DEFINITIONS")).getData(), pSelCallback), fixedSelection(fixedSelection)
 {
 }
@@ -397,10 +397,10 @@ bool C4DefinitionSelDlg::IsItemGrayed(const char *szFilename) const
 {
 	// cannot change initial selection
 	if (fixedSelection.empty()) return false;
-	return fixedSelection.find(GetFilename(szFilename)) != fixedSelection.end();
+	return std::find(fixedSelection.begin(), fixedSelection.end(), GetFilename(szFilename)) != fixedSelection.end();
 }
 
-bool C4DefinitionSelDlg::SelectDefinitions(C4GUI::Screen *pOnScreen, std::set<std::string> &selection)
+bool C4DefinitionSelDlg::SelectDefinitions(C4GUI::Screen *pOnScreen, std::vector<std::string> &selection)
 {
 	// let the user select definitions by showing a modal selection dialog
 	C4DefinitionSelDlg *pDlg = new C4DefinitionSelDlg(nullptr, selection);
@@ -639,7 +639,7 @@ bool C4PortraitSelDlg::SelectPortrait(C4GUI::Screen *pOnScreen, std::string &sel
 	bool fResult = pOnScreen->ShowModalDlg(pDlg, false);
 	if (fResult)
 	{
-		std::set<std::string> s;
+		std::vector<std::string> s;
 		pDlg->GetSelection(s, false);
 		fResult = !s.empty();
 		if (fResult)

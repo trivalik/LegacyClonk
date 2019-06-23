@@ -78,7 +78,7 @@ public:
 	C4GameRes *iterRes(C4GameRes *pLast, C4Network2ResType eType = NRT_Null);
 
 	void Clear();
-	bool Load(const std::set<std::string> &DefinitionFilenames); // host: create res cores by definition filenames
+	bool Load(const std::vector<std::string> &DefinitionFilenames); // host: create res cores by definition filenames
 
 	C4GameRes *CreateByFile(C4Network2ResType eType, const char *szFile);
 	bool InitNetwork(C4Network2ResList *pNetResList);
@@ -151,7 +151,7 @@ public:
 	bool CheckLeagueRulesStart(bool fFixIt);
 
 	void Clear();
-	bool Load(C4Group &hGroup, C4Scenario *pDefault, const char *szGameText, C4LangStringTable *pLang, std::set<std::string> DefinitionFilenames);
+	bool Load(C4Group &hGroup, C4Scenario *pDefault, const char *szGameText, C4LangStringTable *pLang, std::vector<std::string> DefinitionFilenames);
 	bool InitNetwork(C4Network2ResList *pResList);
 	bool Save(C4Group &hGroup, C4Scenario *pDefault);
 

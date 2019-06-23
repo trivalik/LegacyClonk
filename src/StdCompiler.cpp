@@ -22,6 +22,7 @@
 #include <ctype.h>
 
 #include <cstring>
+#include <limits>
 
 // *** StdCompiler
 
@@ -1063,35 +1064,53 @@ void StdCompilerINIRead::notFound(const char *szWhat)
 	excNotFound("%s expected", szWhat);
 }
 
+void StdCompilerLuaRead::setInput(luabridge::LuaRef in)
+{
+	assert(flatEntries.empty());
+	flatEntries.push_back(in);
+}
+
 bool StdCompilerLuaRead::Name(const char *szName)
 {
-	bool first = section.getLength() == 0;
+	bool first = flatEntries.empty();
 	if (!first)
 	{
-		key.Copy(szName);
-		return true;
+		if (!flatEntries.back().isTable())
+		{
+			flatEntries.push_back(luabridge::LuaRef(lua.state()));
+			return false;
+		}
+		luabridge::LuaRef entry = flatEntries.back()[szName];
+		flatEntries.push_back(entry);
+		return !entry.isNil();
 	}
 
-	section.Copy(szName);
+	LogF("Name: %s", szName);
+
+	buf.TrimSpaces();
 
 	lua_State *L = lua.state();
-	if (luaL_dostring(L, buf.getData()))
+	if (luaL_loadbufferx(L, buf.getData(), buf.getSize() - 1, "StdCompilerLuaRead", "t") || lua_pcall(L, 0, 0, 0))
 	{
 		excCorrupt("%s", lua_tostring(L, -1));
 	}
 
-	if (!getGlobal(L, szName).isTable())
+	luabridge::LuaRef ref = luabridge::getGlobal(L, szName);
+
+	if (ref.isNil())
 	{
-		excCorrupt("Value is not a table (type: %d)",
-				   getGlobal(L, szName).type());
+		excCorrupt("Value is not a table (type: %s)",
+				   lua_typename(L, luabridge::getGlobal(L, szName).type()));
 	}
+	flatEntries.push_back(ref);
 	return true;
 }
 
 void StdCompilerLuaRead::NameEnd(bool fBreak)
 {
 	(void) fBreak;
-	key.Clear();
+	flatEntries.pop_back();
+	index = 0;
 }
 
 void StdCompilerLuaRead::Begin()
@@ -1103,47 +1122,39 @@ void StdCompilerLuaRead::Begin()
 	}
 }
 
-#define CAST(type, val, check) \
-	LUAREF \
-	LuaRef value = ref[key.getData()]; \
-	if (value.check()) \
-	{ \
-		val = value.cast<type>(); \
-	}
-
 void StdCompilerLuaRead::DWord(int32_t &rInt)
 {
-	CAST(int32_t, rInt, isNumber)
+	castValue<int32_t>(rInt, &luabridge::LuaRef::isNumber);
 }
 
 void StdCompilerLuaRead::DWord(uint32_t &rInt)
 {
-	CAST(uint32_t, rInt, isNumber)
+	castValue<uint32_t>(rInt, &luabridge::LuaRef::isNumber);
 }
 
 void StdCompilerLuaRead::Word(int16_t &rShort)
 {
-	CAST(int16_t, rShort, isNumber)
+	castValue<int16_t>(rShort, &luabridge::LuaRef::isNumber);
 }
 
 void StdCompilerLuaRead::Word(uint16_t &rShort)
 {
-	CAST(uint16_t, rShort, isNumber)
+	castValue<uint16_t>(rShort, &luabridge::LuaRef::isNumber);
 }
 
 void StdCompilerLuaRead::Byte(int8_t &rByte)
 {
-	CAST(int8_t, rByte, isNumber)
+	castValue<int8_t>(rByte, &luabridge::LuaRef::isNumber);
 }
 
 void StdCompilerLuaRead::Byte(uint8_t &rByte)
 {
-	CAST(uint8_t, rByte, isNumber)
+	castValue<uint8_t>(rByte, &luabridge::LuaRef::isNumber);
 }
 
 void StdCompilerLuaRead::Boolean(bool &rBool)
 {
-	CAST(bool, rBool, isBool)
+	castValue<bool>(rBool, &luabridge::LuaRef::isBool);
 }
 
 void StdCompilerLuaRead::Character(char &rChar)
@@ -1154,25 +1165,23 @@ void StdCompilerLuaRead::Character(char &rChar)
 
 void StdCompilerLuaRead::String(char *szString, size_t iMaxLength, RawCompileType eType)
 {
-	LUAREF
 	(void) eType;
-	LuaRef value = ref[key.getData()];
+	luabridge::LuaRef value = getValue();
 	if (value.isString())
 	{
 		std::string s = value.tostring();
-		std::strncpy(szString, s.c_str(), std::min<size_t>(s.length(), iMaxLength));
+		std::strncpy(szString, s.c_str(), std::min<size_t>(s.size() + 1, iMaxLength));
 	}
 }
 
 void StdCompilerLuaRead::String(char **pszString, RawCompileType eType)
 {
-	LUAREF
 	(void) eType;
-	LuaRef value = ref[key.getData()];
+	luabridge::LuaRef value = getValue();
 	if (value.isString())
 	{
 		std::string s = value.tostring();
-		auto *target = reinterpret_cast<char *>(std::malloc(s.length() / sizeof(char)));
+		auto *target = reinterpret_cast<char *>(std::malloc(s.size() + 1 / sizeof(char)));
 		std::strncpy(target, s.c_str(), s.length() + 1);
 		*pszString = target;
 	}
@@ -1180,9 +1189,8 @@ void StdCompilerLuaRead::String(char **pszString, RawCompileType eType)
 
 void StdCompilerLuaRead::String(std::string &str, RawCompileType eType)
 {
-	LUAREF
 	(void) eType;
-	LuaRef value = ref[key.getData()];
+	luabridge::LuaRef value = getValue();
 	if (value.isString())
 	{
 		str = value.tostring();
@@ -1199,5 +1207,61 @@ void StdCompilerLuaRead::Raw(void *pData, size_t iSize, RawCompileType eType)
 
 void StdCompilerLuaRead::End()
 {
-	section.Clear();
+	while (flatEntries.size())
+	{
+		flatEntries.pop_back();
+	}
+}
+
+bool StdCompilerLuaRead::Separator(Sep eSep)
+{
+	(void) eSep;
+	luabridge::LuaRef value = flatEntries.back();
+	if (value.isTable())
+	{
+		std::vector<std::string> v;
+		try
+		{
+			v = value.cast<std::vector<std::string>>();
+		}
+		catch (luabridge::LuaException const &)
+		{
+			return false;
+		}
+		if (index < v.size() - 1 && index < std::numeric_limits<size_t>::max())
+		{
+			++index;
+			return true;
+		}
+	}
+	return false;
+}
+
+std::map<std::string, luabridge::LuaRef> StdCompilerLuaRead::Entries()
+{
+	if (flatEntries.empty())
+	{
+		excEOF("No entries");
+	}
+
+	return flatEntries[flatEntries.size() - 2].cast<std::map<std::string, luabridge::LuaRef>>();
+}
+
+luabridge::LuaRef StdCompilerLuaRead::getValue()
+{
+	luabridge::LuaRef value = flatEntries.back();
+	if (value.isTable())
+	{
+		auto l = value.cast<std::vector<luabridge::LuaRef>>();
+		if (index >= l.size())
+		{
+			if (index == 0)
+			{
+				return luabridge::LuaRef(value.state());
+			}
+			excCorrupt("Array out of bounds");
+		}
+		value = l[index];
+	}
+	return value;
 }

@@ -2456,7 +2456,7 @@ void C4Object::Draw(C4FacetEx &cgo, int32_t iByPlayer, DrawMode eDrawMode)
 	{
 		if (Action.Act > ActIdle)
 		{
-			sprintf(OSTR, "%s (%d)", Def->ActMap[Action.Act].Name, Action.Phase);
+			sprintf(OSTR, "%s (%d)", Def->ActMap[Action.Act].Name.c_str(), Action.Phase);
 			int32_t cmwdt, cmhgt; Game.GraphicsResource.FontRegular.GetTextExtent(OSTR, cmwdt, cmhgt, true);
 			Application.DDraw->TextOut(OSTR, Game.GraphicsResource.FontRegular, 1.0, cgo.Surface, cgo.X + cox - Shape.x, cgo.Y + coy - cmhgt, InLiquid ? 0xfa0000FF : CStdDDraw::DEFAULT_MESSAGE_COLOR, ACenter);
 		}
@@ -2761,7 +2761,7 @@ void C4Object::CompileFunc(StdCompiler *pComp)
 		int32_t iTime = Action.Time;
 		int32_t iPhase = Action.Phase;
 		int32_t iPhaseDelay = Action.PhaseDelay;
-		if (SetActionByName(Action.Name, 0, 0, false))
+		if (SetActionByName(Action.Name.c_str(), 0, 0, false))
 		{
 			Action.Time = iTime;
 			Action.Phase = iPhase; // No checking for valid phase
@@ -3710,6 +3710,7 @@ bool C4Object::CheckSolidMaskRect()
 	// check NewGfx only, because invalid SolidMask-rects are OK in OldGfx
 	// the bounds-check is done in CStdDDraw::GetPixel()
 	CSurface *sfcGraphics = GetGraphics()->GetBitmap();
+	assert(sfcGraphics != nullptr);
 	SolidMask.Set(std::max<int32_t>(SolidMask.x, 0), std::max<int32_t>(SolidMask.y, 0), std::min<int32_t>(SolidMask.Wdt, sfcGraphics->Wdt - SolidMask.x), std::min<int32_t>(SolidMask.Hgt, sfcGraphics->Hgt - SolidMask.y), SolidMask.tx, SolidMask.ty);
 	if (SolidMask.Hgt <= 0) SolidMask.Wdt = 0;
 	return SolidMask.Wdt > 0;
@@ -3994,7 +3995,7 @@ bool C4Object::SetAction(int32_t iAct, C4Object *pTarget, C4Object *pTarget2, in
 	C4ActionDef *pAction;
 
 	// Def lost actmap: idle (safety)
-	if (!Def->ActMap) iLastAction = ActIdle;
+	if (Def->ActMap.empty()) iLastAction = ActIdle;
 
 	// No other action
 	if (iLastAction > ActIdle)
@@ -4003,14 +4004,14 @@ bool C4Object::SetAction(int32_t iAct, C4Object *pTarget, C4Object *pTarget2, in
 				return false;
 
 	// Invalid action
-	if (Def && !Inside<int32_t>(iAct, ActIdle, Def->ActNum - 1))
+	if (Def && !Inside<int32_t>(iAct, ActIdle, static_cast<int32_t>(Def->ActMap.size()) - 1))
 		return false;
 
 	// Stop previous act sound
 	if (iLastAction > ActIdle)
 		if (iAct != iLastAction)
-			if (Def->ActMap[iLastAction].Sound[0])
-				StopSoundEffect(Def->ActMap[iLastAction].Sound, this);
+			if (Def->ActMap[iLastAction].Sound.size())
+				StopSoundEffect(Def->ActMap[iLastAction].Sound.c_str(), this);
 
 	// Unfullcon objects no action
 	if (Con < FullCon)
@@ -4029,8 +4030,8 @@ bool C4Object::SetAction(int32_t iAct, C4Object *pTarget, C4Object *pTarget2, in
 
 	// Set new action
 	Action.Act = iAct;
-	std::fill(Action.Name, std::end(Action.Name), '\0');
-	if (Action.Act > ActIdle) SCopy(Def->ActMap[Action.Act].Name, Action.Name);
+	Action.Name = "";
+	if (Action.Act > ActIdle) Action.Name = Def->ActMap[Action.Act].Name;
 	Action.Phase = Action.PhaseDelay = 0;
 
 	// Set target if specified
@@ -4047,8 +4048,8 @@ bool C4Object::SetAction(int32_t iAct, C4Object *pTarget, C4Object *pTarget2, in
 	// Start act sound
 	if (Action.Act > ActIdle)
 		if (Action.Act != iLastAction)
-			if (Def->ActMap[Action.Act].Sound[0])
-				StartSoundEffect(Def->ActMap[Action.Act].Sound, +1, 100, this);
+			if (Def->ActMap[Action.Act].Sound.c_str())
+				StartSoundEffect(Def->ActMap[Action.Act].Sound.c_str(), +1, 100, this);
 
 	// Reset OCF
 	SetOCF();
@@ -4124,14 +4125,17 @@ bool C4Object::SetActionByName(const char *szActName,
 	C4Object *pTarget, C4Object *pTarget2,
 	int32_t iCalls, bool fForce)
 {
-	int32_t cnt;
 	// Check for ActIdle passed by name
 	if (SEqual(szActName, "ActIdle") || SEqual(szActName, "Idle"))
-		return SetAction(ActIdle, 0, 0, SAC_StartCall | SAC_AbortCall, fForce);
+		return SetAction(ActIdle, nullptr, nullptr, SAC_StartCall | SAC_AbortCall, fForce);
 	// Find act in ActMap of object
-	for (cnt = 0; cnt < Def->ActNum; cnt++)
-		if (SEqual(szActName, Def->ActMap[cnt].Name))
-			return SetAction(cnt, pTarget, pTarget2, iCalls, fForce);
+	for (size_t i = 0; i < Def->ActMap.size(); ++i)
+	{
+		if (Def->ActMap[i].Name == szActName)
+		{
+			return SetAction(static_cast<int32_t>(i), pTarget, pTarget2, iCalls, fForce);
+		}
+	}
 	return false;
 }
 
@@ -4144,9 +4148,9 @@ void C4Object::SetDir(int32_t iDir)
 	// Execute turn action
 	C4ActionDef *pAction = &(Def->ActMap[Action.Act]);
 	if (iDir != Action.Dir)
-		if (pAction->TurnAction[0])
+		if (pAction->TurnAction.size())
 		{
-			SetActionByName(pAction->TurnAction);
+			SetActionByName(pAction->TurnAction.c_str());
 		}
 	// Set dir
 	Action.Dir = iDir;
@@ -4661,9 +4665,9 @@ void C4Object::ExecAction()
 
 	// InLiquidAction check
 	if (InLiquid)
-		if (pAction->InLiquidAction[0])
+		if (pAction->InLiquidAction.size())
 		{
-			SetActionByName(pAction->InLiquidAction); return;
+			SetActionByName(pAction->InLiquidAction.c_str()); return;
 		}
 
 	// assign extra action attachment (CNAT_MultiAttach)
@@ -5414,7 +5418,7 @@ bool C4Object::SetOwner(int32_t iOwner)
 	// this automatically updates controller
 	Controller = Owner;
 	// if this is a flag flying on a base, the base must be updated
-	if (id == C4ID_Flag) if (SEqual(Action.Name, "FlyBase")) if (Action.Target && Action.Target->Status)
+	if (id == C4ID_Flag) if (Action.Name == "FlyBase") if (Action.Target && Action.Target->Status)
 		if (Action.Target->Base == iOldOwner)
 		{
 			Action.Target->Base = Owner;
@@ -5565,7 +5569,7 @@ bool C4Object::Collect(C4Object *pObj)
 	if (pObj->Def->id == C4ID_Flag)
 		if (!(Game.Rules & C4RULE_FlagRemoveable))
 			if (pObj->Action.Act > ActIdle)
-				if (SEqual(pObj->Def->ActMap[pObj->Action.Act].Name, "FlyBase"))
+				if (pObj->Def->ActMap[pObj->Action.Act].Name == "FlyBase")
 					return false;
 	// Object enter container
 	bool fRejectCollect;
@@ -6178,4 +6182,37 @@ bool C4Object::IsUserPlayerObject()
 	if (!pOwner || pOwner->GetType() != C4PT_User) return false;
 	// otherwise, it's a user playeer object
 	return true;
+}
+
+void C4Object::__newindex(std::string key, luabridge::LuaRef value)
+{
+	LuaLocals.emplace(key, value);
+}
+
+luabridge::LuaRef C4Object::__index(std::string key, lua_State *L)
+{
+	auto i = LuaLocals.find(key);
+	if (i != LuaLocals.end())
+	{
+		return i->second;
+	}
+
+	C4Value *value = LocalNamed.GetItem(key.c_str());
+	if (value != nullptr)
+	{
+		return luabridge::LuaRef(L, value);
+	}
+
+	if (!Def->LuaDef[key].isNil())
+	{
+		return Def->LuaDef[key];
+	}
+
+	int index = lua_gettop(L);
+	luabridge::push(L, this);
+	lua_getmetatable(L, -1);
+	lua_getfield(L, -1, "__index_old");
+	auto ref = luabridge::LuaRef::fromStack(L);
+	lua_settop(L, index);
+	return ref(this, key);
 }

@@ -23,6 +23,7 @@
 #include <C4Random.h>
 #include <C4Group.h>
 #include <C4Game.h>
+#endif
 
 #ifdef C4ENGINE
 #include <C4Wrappers.h>
@@ -89,14 +90,23 @@ bool C4Scenario::Load(C4Group &hGroup, bool fLoadSection)
 {
 	char *pSource;
 	// Load
-	if (!hGroup.LoadEntry(C4CFN_ScenarioCore, &pSource, nullptr, 1)) return false;
-	// Compile
-	if (!Compile(pSource, fLoadSection)) { delete[] pSource; return false; }
-	delete[] pSource;
-	// Convert
-	Game.ConvertGoals(Game.Realism);
-	// Success
-	return true;
+	if (hGroup.LoadEntry(C4CFN_ScenarioCore, &pSource, nullptr, 1))
+	{
+		// Compile
+		if (!Compile<StdCompilerINIRead>(pSource, fLoadSection)) { delete[] pSource; return false; }
+		delete[] pSource;
+		// Convert
+		Game.ConvertGoals(Game.Realism);
+		// Success
+		return true;
+	}
+	else if (hGroup.LoadEntry(C4CFN_ScenarioLua, &pSource, nullptr, 1))
+	{
+		if (!Compile<StdCompilerLuaRead>(pSource, fLoadSection)) { delete[] pSource; return false; }
+		delete[] pSource;
+		return true;
+	}
+	return false;
 }
 
 bool C4Scenario::Save(C4Group &hGroup, bool fSaveSection)
@@ -120,16 +130,34 @@ bool C4Scenario::Save(C4Group &hGroup, bool fSaveSection)
 
 void C4Scenario::CompileFunc(StdCompiler *pComp, bool fSection)
 {
-	pComp->Value(mkNamingAdapt(mkParAdapt(Head, fSection), "Head"));
-	if (!fSection) pComp->Value(mkNamingAdapt(Definitions, "Definitions"));
-	pComp->Value(mkNamingAdapt(mkParAdapt(Game, fSection), "Game"));
-	for (int32_t i = 0; i < C4S_MaxPlayer; i++)
-		pComp->Value(mkNamingAdapt(PlrStart[i], FormatString("Player%d", i + 1).getData()));
-	pComp->Value(mkNamingAdapt(Landscape,   "Landscape"));
-	pComp->Value(mkNamingAdapt(Animals,     "Animals"));
-	pComp->Value(mkNamingAdapt(Weather,     "Weather"));
-	pComp->Value(mkNamingAdapt(Disasters,   "Disasters"));
-	pComp->Value(mkNamingAdapt(Environment, "Environment"));
+	if (dynamic_cast<StdCompilerLuaRead *>(pComp) /*|| dynamic_cast<StdCompilerLuaWrite *>(pComp)*/)
+	{
+		pComp->Value(mkParAdapt(Head, fSection));
+		if (!fSection) pComp->Value(Definitions);
+		pComp->Value(mkParAdapt(Game, fSection));
+		/*for (int32_t i = 0; i < C4S_MaxPlayer; ++i)
+		{
+			pComp->Value(mkNamingAdapt(PlrStart[i], FormatString("Player%d", i + 1).getData()));
+		}*/
+		pComp->Value(Landscape);
+		pComp->Value(Animals);
+		pComp->Value(Weather);
+		pComp->Value(Disasters);
+		pComp->Value(Environment);
+	}
+	else
+	{
+		pComp->Value(mkNamingAdapt(mkParAdapt(Head, fSection), "Head"));
+		if (!fSection) pComp->Value(mkNamingAdapt(Definitions, "Definitions"));
+		pComp->Value(mkNamingAdapt(mkParAdapt(Game, fSection), "Game"));
+		for (int32_t i = 0; i < C4S_MaxPlayer; i++)
+			pComp->Value(mkNamingAdapt(PlrStart[i], FormatString("Player%d", i + 1).getData()));
+		pComp->Value(mkNamingAdapt(Landscape,   "Landscape"));
+		pComp->Value(mkNamingAdapt(Animals,     "Animals"));
+		pComp->Value(mkNamingAdapt(Weather,     "Weather"));
+		pComp->Value(mkNamingAdapt(Disasters,   "Disasters"));
+		pComp->Value(mkNamingAdapt(Environment, "Environment"));
+	}
 }
 
 int32_t C4Scenario::GetMinPlayer()
@@ -439,21 +467,39 @@ void C4SDisasters::CompileFunc(StdCompiler *pComp)
 	pComp->Value(mkNamingAdapt(Earthquake, "Earthquake", C4SVal()));
 }
 
-bool C4Scenario::Compile(const char *szSource, bool fLoadSection)
+template<class Compiler, typename>
+bool C4Scenario::Compile(const char *szSource, bool fLoadSection, const char *file)
 {
 	if (!fLoadSection) Default();
-	return CompileFromBuf_LogWarn<StdCompilerINIRead>(mkParAdapt(*this, fLoadSection), StdStrBuf::MakeRef(szSource), C4CFN_ScenarioCore);
+
+	if (std::is_same<Compiler, StdCompilerLuaRead>::value)
+	{
+		return CompileFromBuf_LogWarn<Compiler>(mkNamingAdapt(mkParAdapt(*this, fLoadSection), "Scenario"), StdStrBuf::MakeRef(szSource), file);
+	}
+	else
+	{
+		return CompileFromBuf_LogWarn<Compiler>(mkParAdapt(*this, fLoadSection), StdStrBuf::MakeRef(szSource), file);
+	}
 }
 
+template<class Decompiler, typename>
 bool C4Scenario::Decompile(char **ppOutput, int32_t *ipSize, bool fSaveSection)
 {
 	try
 	{
 		// Decompile
-		StdStrBuf Buf = DecompileToBuf<StdCompilerINIWrite>(mkParAdapt(*this, fSaveSection));
+		StdStrBuf Buf;
+		if (std::is_same<Decompiler, StdCompilerLuaWrite>::value)
+		{
+			Buf = DecompileToBuf<Decompiler>(mkNamingAdapt(mkParAdapt(*this, fSaveSection), "Scenario"));
+		}
+		else
+		{
+			Buf = DecompileToBuf<Decompiler>(mkParAdapt(*this, fSaveSection));
+		}
 		// Return
 		*ppOutput = Buf.GrabPointer();
-		*ipSize = Buf.getSize();
+		*ipSize = static_cast<int32_t>(Buf.getSize());
 	}
 	catch (StdCompiler::Exception *)
 	{
@@ -471,12 +517,12 @@ void C4Scenario::SetExactLandscape()
 	Landscape.ExactLandscape = 1;
 }
 
-std::set<std::string> C4SDefinitions::GetModules() const
+std::vector<std::string> C4SDefinitions::GetModules() const
 {
-	return LocalOnly ? std::set<std::string>() : Definitions;
+	return LocalOnly ? std::vector<std::string>() : Definitions;
 }
 
-void C4SDefinitions::SetModules(const std::set<std::string> &modules, const std::string &relativeToPath, const std::string &relativeToPath2)
+void C4SDefinitions::SetModules(const std::vector<std::string> &modules, const std::string &relativeToPath, const std::string &relativeToPath2)
 {
 	Definitions.clear();
 	std::transform(modules.begin(), modules.end(), std::inserter(Definitions, Definitions.begin()), [relativeToPath, relativeToPath2](std::string def)
@@ -500,19 +546,23 @@ void C4SDefinitions::CompileFunc(StdCompiler *pComp)
 	pComp->Value(mkNamingAdapt(LocalOnly,       "LocalOnly",       false));
 	pComp->Value(mkNamingAdapt(AllowUserChange, "AllowUserChange", false));
 
-	std::vector<std::string> defs(Definitions.begin(), Definitions.end());
 	if (pComp->isCompiler())
 	{
+		Definitions.clear();
+		decltype(Definitions) defs;
 		defs.resize(C4S_MaxDefinitions);
+
+		for (size_t i = 0; i < defs.size(); ++i)
+		{
+			pComp->Value(mkNamingAdapt(mkStringAdaptA(defs[i]), FormatString("Definition%zu", i + 1).getData(), ""));
+		}
+		std::copy_if(defs.begin(), defs.end(), std::back_inserter(Definitions), [](const std::string &s) { return s.size(); });
 	}
 
-	for (size_t i = 0; i < defs.size(); ++i)
+	if (Definitions.empty())
 	{
-		pComp->Value(mkNamingAdapt(mkStringAdaptA(defs[i]), FormatString("Definition%zu", i + 1).getData(), ""));
+		pComp->Value(mkNamingAdapt(mkSTLContainerAdapt(Definitions), "Definitions", decltype(Definitions)()));
 	}
-
-	Definitions.clear();
-	std::copy_if(defs.begin(), defs.end(), std::inserter(Definitions, Definitions.begin()), [](const std::string &s) { return s.size(); });
 
 	pComp->Value(mkNamingAdapt(SkipDefs, "SkipDefs", C4IDList()));
 }
@@ -605,9 +655,9 @@ C4ScenarioSection::~C4ScenarioSection()
 	if (szTempFilename) EraseItem(szTempFilename);
 	delete szTempFilename;
 	// del filename if assigned
-	delete szFilename;
+	delete[] szFilename;
 	// del name if owned
-	if (szName != C4ScenSect_Main) delete szName;
+	if (szName != C4ScenSect_Main) delete[] szName;
 }
 
 bool C4ScenarioSection::ScenarioLoad(char *szFilename)

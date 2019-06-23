@@ -201,7 +201,7 @@ bool C4PropertyDlg::Update()
 		{
 			Output.Append(LineFeed);
 			Output.Append(LoadResStr("IDS_CNS_ACTION"));
-			Output.Append(cobj->Def->ActMap[cobj->Action.Act].Name);
+			Output.Append(cobj->Def->ActMap[cobj->Action.Act].Name.c_str());
 		}
 		// Locals
 		int cnt; bool fFirstLocal = true;

@@ -104,9 +104,6 @@ bool C4Game::InitDefs()
 	// Check for unmet requirements
 	Defs.CheckRequireDef();
 
-	// build quick access table
-	Defs.BuildTable();
-
 	// get default particles
 	Particles.SetDefParticles();
 
@@ -171,7 +168,7 @@ bool C4Game::OpenScenario()
 		GroupSet.RegisterParentFolders(C4S.Head.Origin.getData());
 
 	// Scenario definition preset
-	std::set<std::string> defs = C4S.Definitions.GetModules();
+	std::vector<std::string> defs = C4S.Definitions.GetModules();
 	if (!C4S.Definitions.AllowUserChange)
 	{
 		DefinitionFilenames = defs;
@@ -200,9 +197,9 @@ bool C4Game::OpenScenario()
 	}
 
 	// Scan folder local definitions
-	std::set<std::string> localDefs = FoldersWithLocalsDefs(ScenarioFilename);
+	std::vector<std::string> localDefs = FoldersWithLocalsDefs(ScenarioFilename);
 
-	DefinitionFilenames.insert(localDefs.begin(), localDefs.end());
+	DefinitionFilenames.insert(DefinitionFilenames.end(), localDefs.begin(), localDefs.end());
 
 	// Check mission access
 	if (C4S.Head.MissionAccess[0])
@@ -582,6 +579,16 @@ void C4Game::Clear()
 #endif
 
 	ScriptEngine.Clear();
+	LuaEngine.Clear();
+	for (auto it = LuaGraphics.begin(); it != LuaGraphics.end(); )
+	{
+		if (it->second != nullptr)
+		{
+			delete it->second;
+			it->second = nullptr;
+			LuaGraphics.erase(it++);
+		}
+	}
 	MainSysLangStringTable.Clear();
 	ScenarioLangStringTable.Clear();
 	ScenarioSysLangStringTable.Clear();
@@ -1300,7 +1307,7 @@ C4Object *C4Game::FindObject(C4ID id,
 						// Exclude
 						if (cObj != pExclude)
 							// Action
-							if (!szAction || !szAction[0] || (bFindActIdle && cObj->Action.Act <= ActIdle) || ((cObj->Action.Act > ActIdle) && SEqual(szAction, cObj->Def->ActMap[cObj->Action.Act].Name)))
+							if (!szAction || !szAction[0] || (bFindActIdle && cObj->Action.Act <= ActIdle) || ((cObj->Action.Act > ActIdle) && cObj->Def->ActMap[cObj->Action.Act].Name == szAction))
 								// ActionTarget
 								if (!pActionTarget || ((cObj->Action.Act > ActIdle) && ((cObj->Action.Target == pActionTarget) || (cObj->Action.Target2 == pActionTarget))))
 									// Container
@@ -1451,7 +1458,7 @@ int32_t C4Game::ObjectCount(C4ID id,
 					// Exclude
 					if (cObj != pExclude)
 						// Action
-						if (!szAction || !szAction[0] || (bFindActIdle && cObj->Action.Act <= ActIdle) || ((cObj->Action.Act > ActIdle) && SEqual(szAction, cObj->Def->ActMap[cObj->Action.Act].Name)))
+						if (!szAction || !szAction[0] || (bFindActIdle && cObj->Action.Act <= ActIdle) || ((cObj->Action.Act > ActIdle) && cObj->Def->ActMap[cObj->Action.Act].Name == szAction))
 							// ActionTarget
 							if (!pActionTarget || ((cObj->Action.Act > ActIdle) && ((cObj->Action.Target == pActionTarget) || (cObj->Action.Target2 == pActionTarget))))
 								// Container
@@ -2176,7 +2183,7 @@ bool C4Game::ReloadDef(C4ID id)
 	C4Def *pDef = Defs.ID2Def(id);
 	if (!pDef) return false;
 	// Message
-	LogF("Reloading %s from %s", C4IdText(pDef->id), GetFilename(pDef->Filename));
+	LogF("Reloading %s from %s", C4IdText(pDef->id), GetFilename(pDef->Filename.c_str()));
 	// Reload def
 	if (Defs.Reload(pDef, C4D_Load_RX, Config.General.LanguageEx, &Application.SoundSystem))
 	{
@@ -2377,9 +2384,9 @@ bool C4Game::InitGame(C4Group &hGroup, C4ScenarioSection *section, bool fLoadSky
 
 	Objects.Clear(!section);
 
-	for (C4Def *def = Defs.FirstDef; def; def = def->Next)
+	for (const auto &entry : Defs.table)
 	{
-		def->Script.Call(PSF_InitializeDef, &C4AulParSet(section ? C4VString(section->szName) : C4VNull));
+		entry.second->Script.Call(PSF_InitializeDef, &C4AulParSet(section ? C4VString(section->szName) : C4VNull));
 	}
 
 	// Load objects
@@ -2468,7 +2475,11 @@ bool C4Game::InitGameFinal()
 
 	// Script constructor call
 	int32_t iObjCount = Objects.ObjectCount();
-	if (!C4S.Head.SaveGame) Script.Call(PSF_Initialize);
+	if (!C4S.Head.SaveGame)
+	{
+		Script.Call(PSF_Initialize);
+		LuaEngine.Call("Scenario", PSF_Initialize);
+	}
 	if (Objects.ObjectCount() != iObjCount) fScriptCreatedObjects = true;
 
 	// Player final init
@@ -2500,6 +2511,7 @@ bool C4Game::InitScriptEngine()
 {
 	// engine functions
 	InitFunctionMap(&ScriptEngine);
+	LuaEngine.Init();
 
 	// system functions: check if system group is open
 	if (!Application.OpenSystemGroup())
@@ -2521,6 +2533,11 @@ bool C4Game::InitScriptEngine()
 		scr->Reg2List(&ScriptEngine, &ScriptEngine);
 		scr->Load(nullptr, File, fn, Config.General.LanguageEx, nullptr, &MainSysLangStringTable);
 	}
+	File.ResetSearch();
+	while (File.FindNextEntry(C4CFN_Lua, reinterpret_cast<char *>(&fn), nullptr, nullptr, !!fn[0]))
+	{
+		LuaEngine.Load(File, fn, Config.General.LanguageEx, &MainSysLangStringTable);
+	}
 
 	// load standard clonk names
 	Names.Load(LoadResStr("IDS_CNS_NAMES"), File, C4CFN_Names);
@@ -2532,8 +2549,10 @@ bool C4Game::LinkScriptEngine()
 {
 	// Link script engine (resolve includes/appends, generate code)
 	ScriptEngine.Link(&Defs);
+	LuaEngine.Link(&Defs);
 
 	// Set name list for globals
+
 	ScriptEngine.GlobalNamed.SetNameList(&ScriptEngine.GlobalNamedNames);
 
 	return true;
@@ -2875,7 +2894,7 @@ void C4Game::ParseCommandLine(const char *szCmdLine)
 	std::istringstream stream(Config.General.Definitions);
 	for (std::string s; std::getline(stream, s, ';');)
 	{
-		DefinitionFilenames.insert(s);
+		DefinitionFilenames.push_back(s);
 	}
 	*PlayerFilenames = 0;
 	NetworkActive = false;
@@ -2904,7 +2923,7 @@ void C4Game::ParseCommandLine(const char *szCmdLine)
 		// Definition file
 		if (SEqualNoCase(GetExtension(szParameter), "c4d"))
 		{
-			DefinitionFilenames.insert(szParameter);
+			DefinitionFilenames.push_back(szParameter);
 			continue;
 		}
 		// Update file
@@ -3094,6 +3113,8 @@ bool C4Game::LoadScenarioScripts()
 	// Script
 	Script.Reg2List(&ScriptEngine, &ScriptEngine);
 	Script.Load(LoadResStr("IDS_CNS_SCRIPT"), ScenarioFile, C4CFN_Script, Config.General.LanguageEx, nullptr, &ScenarioLangStringTable);
+	LuaEngine.Load(ScenarioFile, C4CFN_ScenarioLua, Config.General.LanguageEx, &ScenarioLangStringTable);
+
 	// additional system scripts?
 	C4Group SysGroup;
 	char fn[_MAX_FNAME + 1] = { 0 };
@@ -3108,6 +3129,11 @@ bool C4Game::LoadScenarioScripts()
 			C4ScriptHost *scr = new C4ScriptHost();
 			scr->Reg2List(&ScriptEngine, &ScriptEngine);
 			scr->Load(nullptr, SysGroup, fn, Config.General.LanguageEx, nullptr, &ScenarioSysLangStringTable);
+		}
+		SysGroup.ResetSearch();
+		while (SysGroup.FindNextEntry(C4CFN_Lua, reinterpret_cast<char *>(&fn), nullptr, nullptr, !!fn[0]))
+		{
+			LuaEngine.Load(SysGroup, fn, Config.General.LanguageEx, &ScenarioSysLangStringTable);
 		}
 		// if it's a physical group: watch out for changes
 		if (!SysGroup.IsPacked() && Game.pFileMonitor)
@@ -3407,7 +3433,7 @@ bool C4Game::DefinitionFilenamesFromSaveGame()
 				if (p == 0 && (p = line.find('=', p) != std::string::npos))
 				{
 					found = true;
-					DefinitionFilenames.insert(line.substr(p));
+					DefinitionFilenames.push_back(line.substr(p));
 				}
 				else if (found)
 				{
@@ -3725,9 +3751,9 @@ bool C4Game::CheckObjectEnumeration()
 	return true;
 }
 
-std::set<std::string> C4Game::FoldersWithLocalsDefs(std::string path)
+std::vector<std::string> C4Game::FoldersWithLocalsDefs(std::string path)
 {
-	std::set<std::string> defs;
+	std::vector<std::string> defs;
 
 	// Get relative path
 	path = Config.AtExeRelativePath(path.c_str());
@@ -3735,7 +3761,7 @@ std::set<std::string> C4Game::FoldersWithLocalsDefs(std::string path)
 	// Scan path for folder names
 	std::string folderName;
 	C4Group group;
-	for (size_t pos = path.find(DirectorySeparator, pos); pos != std::string::npos; pos = path.find(DirectorySeparator, pos))
+	for (size_t pos = path.find(DirectorySeparator); pos != std::string::npos; pos = path.find(DirectorySeparator, pos + 1))
 	{
 		// Get folder name
 		folderName = path.substr(0, pos);
@@ -3750,7 +3776,7 @@ std::set<std::string> C4Game::FoldersWithLocalsDefs(std::string path)
 				int32_t contents;
 				if ((contents = GroupSet.CheckGroupContents(group, C4GSCnt_Definitions)))
 				{
-					defs.insert(folderName);
+					defs.push_back(folderName);
 				}
 				// Close folder
 				group.Close();

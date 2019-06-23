@@ -116,7 +116,9 @@ public:
 	C4ComponentHost GameText;
 	C4AulScriptEngine ScriptEngine;
 	C4GameScriptHost Script;
+	C4LuaScriptEngine LuaEngine;
 	C4LangStringTable MainSysLangStringTable, ScenarioLangStringTable, ScenarioSysLangStringTable;
+	std::unordered_map<std::string, C4Surface *> LuaGraphics;
 	C4MassMoverSet MassMover;
 	C4PXSSystem PXS;
 	C4ParticleSystem Particles;
@@ -146,7 +148,7 @@ public:
 	char ScenarioFilename[_MAX_PATH + 1];
 	StdStrBuf ScenarioTitle;
 	char PlayerFilenames[20 * _MAX_PATH + 1];
-	std::set<std::string> DefinitionFilenames;
+	std::vector<std::string> DefinitionFilenames;
 	char DirectJoinAddress[_MAX_PATH + 1];
 	class C4Network2Reference *pJoinReference;
 	int32_t FPS, cFPS;
@@ -297,7 +299,7 @@ protected:
 	void DeleteObjects(bool fDeleteInactive);
 	void ExecObjects();
 	void Ticks();
-	std::set<std::string> FoldersWithLocalsDefs(std::string path);
+	std::vector<std::string> FoldersWithLocalsDefs(std::string path);
 	bool CheckObjectEnumeration();
 	bool DefinitionFilenamesFromSaveGame();
 	bool LoadScenarioComponents();

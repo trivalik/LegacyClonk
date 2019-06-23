@@ -34,6 +34,7 @@ set(EXTRA_DEPS_DIR "deps" CACHE PATH "Additional directory to search for librari
 include_directories(${EXTRA_DEPS_DIR}/include)
 list(APPEND CMAKE_PREFIX_PATH ${EXTRA_DEPS_DIR})
 
+find_package(Lua REQUIRED)
 add_subdirectory(src/LuaBridge/Source)
 
 # Check which header files and functions are present

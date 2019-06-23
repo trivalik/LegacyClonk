@@ -204,15 +204,14 @@ void C4DefScriptHost::AfterLink()
 	if (Def)
 	{
 		C4AulAccess CallAccess = AA_PRIVATE;
-		for (int32_t cnt = 0; cnt < Def->ActNum; cnt++)
+		for (auto &action : Def->ActMap)
 		{
-			C4ActionDef *pad = &Def->ActMap[cnt];
-			sprintf(WhereStr, "Action %s: StartCall", pad->Name); pad->StartCall = GetSFuncWarn((const char *)&pad->SStartCall, CallAccess, WhereStr);
-			sprintf(WhereStr, "Action %s: PhaseCall", pad->Name); pad->PhaseCall = GetSFuncWarn((const char *)&pad->SPhaseCall, CallAccess, WhereStr);
-			sprintf(WhereStr, "Action %s: EndCall",   pad->Name); pad->EndCall   = GetSFuncWarn((const char *)&pad->SEndCall,   CallAccess, WhereStr);
-			sprintf(WhereStr, "Action %s: AbortCall", pad->Name); pad->AbortCall = GetSFuncWarn((const char *)&pad->SAbortCall, CallAccess, WhereStr);
+			sprintf(WhereStr, "Action %s: StartCall", action.Name.c_str()); action.StartCall = GetSFuncWarn(action.SStartCall.c_str(), CallAccess, WhereStr);
+			sprintf(WhereStr, "Action %s: PhaseCall", action.Name.c_str()); action.PhaseCall = GetSFuncWarn(action.SPhaseCall.c_str(), CallAccess, WhereStr);
+			sprintf(WhereStr, "Action %s: EndCall",   action.Name.c_str()); action.EndCall   = GetSFuncWarn(action.SEndCall.c_str(),   CallAccess, WhereStr);
+			sprintf(WhereStr, "Action %s: AbortCall", action.Name.c_str()); action.AbortCall = GetSFuncWarn(action.SAbortCall.c_str(), CallAccess, WhereStr);
 		}
-		Def->TimerCall = GetSFuncWarn((const char *)Def->STimerCall, CallAccess, "TimerCall");
+		Def->TimerCall = GetSFuncWarn(Def->STimerCall.c_str(), CallAccess, "TimerCall");
 	}
 	// Check if there are any Control/Contained/Activation script functions
 	GetControlMethodMask(PSF_Control,                    ControlMethod[0],           ControlMethod[1]);

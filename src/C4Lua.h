@@ -18,8 +18,8 @@
 
 #include "lua.hpp"
 #include "LuaBridge/LuaBridge.h"
-
-using namespace luabridge;
+#include "LuaBridge/Map.h"
+#include "LuaBridge/Vector.h"
 
 class C4Object;
 
@@ -29,29 +29,8 @@ public:
 	C4Lua() = default;
 	~C4Lua();
 	bool Init();
+	void Clear();
 	lua_State *state() { return L; }
 protected:
 	lua_State *L = nullptr;
-};
-
-class C4LuaScriptEngine : public C4Lua
-{
-public:
-	C4LuaScriptEngine() = default;
-public:
-	bool Init();
-	template<typename... Args> LuaRef Call(LuaRef context, const std::string &functionName, Args... args)
-	{
-		assert(context.isTable() || context.isUserdata());
-		if (!context[functionName].isNil())
-		{
-			return context[functionName](args...);
-		}
-	}
-
-	template<typename... Args> LuaRef Call(LuaRef function, Args... args)
-	{
-		assert(function.isFunction());
-		return function(args...);
-	}
 };

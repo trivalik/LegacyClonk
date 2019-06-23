@@ -73,6 +73,7 @@ class C4AulScriptFunc;
 class C4AulDefFunc;
 class C4AulScript;
 class C4AulScriptEngine;
+class C4LuaScriptEngine;
 class C4LSector;
 class C4LSectors;
 class C4Rect;

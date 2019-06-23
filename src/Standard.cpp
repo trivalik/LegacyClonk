@@ -31,6 +31,7 @@
 #include <time.h>
 
 #include <sys/timeb.h>
+#include <cassert>
 #include <cctype>
 #include <cstring>
 
@@ -269,6 +270,12 @@ bool SEqualNoCase(const char *szStr1, const char *szStr2, int32_t iLen)
 	}
 	if (*szStr1 || *szStr2) return false;
 	return true;
+}
+
+bool SEqual2NoCase(const std::string &str1, const std::string &str2, int32_t length)
+{
+	assert(str1.size() <= str2.size());
+	return SEqualNoCase(str1, str2.substr(0, std::min(static_cast<size_t>(length), str1.size())), length);
 }
 
 bool SEqual2NoCase(const char *szStr1, const char *szStr2, int iLen)

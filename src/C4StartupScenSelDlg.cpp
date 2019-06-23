@@ -672,9 +672,20 @@ bool C4ScenarioListLoader::Scenario::LoadCustomPre(C4Group &rGrp)
 {
 	// load scenario core first
 	StdStrBuf sFileContents;
-	if (!rGrp.LoadEntryString(C4CFN_ScenarioCore, sFileContents)) return false;
-	if (!CompileFromBuf_LogWarn<StdCompilerINIRead>(mkParAdapt(C4S, false), sFileContents, (rGrp.GetFullName() + DirSep C4CFN_ScenarioCore).getData()))
-		return false;
+	if (rGrp.LoadEntryString(C4CFN_ScenarioLua, sFileContents))
+	{
+		if (!CompileFromBuf_LogWarn<StdCompilerLuaRead>(mkNamingAdapt(mkParAdapt(C4S, false), "Scenario"), sFileContents, (rGrp.GetFullName() + DirSep C4CFN_ScenarioLua).getData()))
+		{
+			return false;
+		}
+	}
+	else if (rGrp.LoadEntryString(C4CFN_ScenarioCore, sFileContents))
+	{
+		if (!CompileFromBuf_LogWarn<StdCompilerINIRead>(mkParAdapt(C4S, false), sFileContents, (rGrp.GetFullName() + DirSep C4CFN_ScenarioCore).getData()))
+		{
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -1581,10 +1592,10 @@ bool C4StartupScenSelDlg::StartScenario(C4ScenarioListLoader::Scenario *pStartSc
 	if (pStartScen->GetC4S().Definitions.AllowUserChange)
 	{
 		// get definitions as user selects them
-		std::set<std::string> defs = pStartScen->GetC4S().Definitions.GetModules();
+		std::vector<std::string> defs = pStartScen->GetC4S().Definitions.GetModules();
 		if (defs.empty())
 		{
-			defs.insert("Objects.c4d");
+			defs.push_back("Objects.c4d");
 		}
 		if (!C4DefinitionSelDlg::SelectDefinitions(GetScreen(), defs))
 			// user aborted during definition selection
@@ -1595,7 +1606,7 @@ bool C4StartupScenSelDlg::StartScenario(C4ScenarioListLoader::Scenario *pStartSc
 	else
 	{
 		// for no user change, just set default objects. Custom settings will override later anyway
-		Game.DefinitionFilenames.insert("Objects.c4d");
+		Game.DefinitionFilenames.push_back("Objects.c4d");
 	}
 	// set other default startup parameters
 	SCopy(pStartScen->GetEntryFilename().getData(), Game.ScenarioFilename);

@@ -973,7 +973,7 @@ static C4String *FnGetAction(C4AulContext *cthr, C4Object *pObj)
 {
 	if (!pObj) pObj = cthr->Obj; if (!pObj) return nullptr;
 	if (pObj->Action.Act <= ActIdle) return String("Idle");
-	return String(pObj->Def->ActMap[pObj->Action.Act].Name);
+	return String(pObj->Def->ActMap[pObj->Action.Act].Name.c_str());
 }
 
 static C4String *FnGetName(C4AulContext *cthr, C4Object *pObj, C4ID idDef)
@@ -4338,21 +4338,16 @@ static C4Value FnGetActMapVal(C4AulContext *cthr, C4Value *strEntry_C4V, C4Value
 
 	if (!pDef) return C4Value();
 
-	C4ActionDef *pAct = pDef->ActMap;
+	if (pDef->ActMap.empty()) return C4Value();
 
-	if (!pAct) return C4Value();
-
-	long iAct;
-	for (iAct = 0; iAct < pDef->ActNum; iAct++, pAct++)
-		if (SEqual(pAct->Name, strAction))
-			break;
-
-	// not found?
-	if (iAct >= pDef->ActNum)
-		return C4Value();
-
-	// get value
-	return GetValByStdCompiler(strEntry, nullptr, iEntryNr, *pAct);
+	for (const auto &action : pDef->ActMap)
+	{
+		if (action.Name == strAction)
+		{
+			return GetValByStdCompiler(strEntry, nullptr, static_cast<int32_t>(iEntryNr), action);
+		}
+	}
+	return C4Value();
 }
 
 static C4Value FnGetScenarioVal(C4AulContext *cthr, C4Value *strEntry_C4V, C4Value *strSection_C4V, C4Value *iEntryNr_C4V)

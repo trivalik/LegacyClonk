@@ -59,7 +59,7 @@ public:
 	void FeedEvent(SDL_Event &e);
 
 private:
-	std::set<C4KeyCode> PressedAxis;
+	std::vector<C4KeyCode> PressedAxis;
 
 #endif
 

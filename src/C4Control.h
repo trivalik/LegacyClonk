@@ -128,11 +128,12 @@ public:
 
 	C4ControlScript()
 		: iTargetObj(-1) {}
-	C4ControlScript(const char *szScript, int32_t iTargetObj = SCOPE_Global)
-		: iTargetObj(iTargetObj), Script(szScript, true) {}
+	C4ControlScript(const char *szScript, int32_t iTargetObj = SCOPE_Global, C4PacketType type = CID_Script)
+		: iTargetObj(iTargetObj), type(type), Script(szScript, true) {}
 
 protected:
 	int32_t iTargetObj;
+	C4PacketType type = CID_Script; // C4Script or Lua
 	StdStrBuf Script;
 
 public:

@@ -26,52 +26,53 @@
 #include "C4ValueList.h"
 #include "C4Effects.h"
 #include "C4Particles.h"
+#include "C4LuaScriptEngine.h"
 
 #include <array>
 
 /* Object status */
 
-#define C4OS_DELETED  0
-#define C4OS_NORMAL   1
-#define C4OS_INACTIVE 2
+constexpr int32_t C4OS_DELETED = 0;
+constexpr int32_t C4OS_NORMAL    = 1;
+constexpr int32_t C4OS_INACTIVE  = 2;
 
 /* Action.Dir is the direction the object is actually facing. */
 
-#define DIR_None  0
-#define DIR_Left  0
-#define DIR_Right 1
+constexpr int32_t DIR_None   = 0;
+constexpr int32_t DIR_Left   = 0;
+constexpr int32_t DIR_Right  = 1;
 
 /* Action.ComDir tells an active object which way it ought to be going.
 	 If you set the ComDir to COMD_Stop, the object won't sit still immediately
 	 but will try to slow down according to it's current Action. ComDir values
 	 circle clockwise from COMD_Up 1 through COMD_UpLeft 8. */
 
-#define COMD_None      0
-#define COMD_Stop      0
-#define COMD_Up        1
-#define COMD_UpRight   2
-#define COMD_Right     3
-#define COMD_DownRight 4
-#define COMD_Down      5
-#define COMD_DownLeft  6
-#define COMD_Left      7
-#define COMD_UpLeft    8
+constexpr int32_t COMD_None       = 0;
+constexpr int32_t COMD_Stop       = 0;
+constexpr int32_t COMD_Up         = 1;
+constexpr int32_t COMD_UpRight    = 2;
+constexpr int32_t COMD_Right      = 3;
+constexpr int32_t COMD_DownRight  = 4;
+constexpr int32_t COMD_Down       = 5;
+constexpr int32_t COMD_DownLeft   = 6;
+constexpr int32_t COMD_Left       = 7;
+constexpr int32_t COMD_UpLeft     = 8;
 
 // Visibility values tell conditions for an object's visibility
 
-#define VIS_All         0
-#define VIS_None        1
-#define VIS_Owner       2
-#define VIS_Allies      4
-#define VIS_Enemies     8
-#define VIS_Local       16
-#define VIS_God         32
-#define VIS_LayerToggle 64
-#define VIS_OverlayOnly 128
+constexpr int32_t VIS_All          = 0;
+constexpr int32_t VIS_None         = 1;
+constexpr int32_t VIS_Owner        = 2;
+constexpr int32_t VIS_Allies       = 4;
+constexpr int32_t VIS_Enemies      = 8;
+constexpr int32_t VIS_Local        = 16;
+constexpr int32_t VIS_God          = 32;
+constexpr int32_t VIS_LayerToggle  = 64;
+constexpr int32_t VIS_OverlayOnly  = 128;
 
-const int32_t FullCon = 100000;
+constexpr int32_t FullCon = 100000;
 
-const int32_t MagicPhysicalFactor = 1000;
+constexpr int32_t MagicPhysicalFactor = 1000;
 
 #define ANY_CONTAINER (123)
 #define NO_CONTAINER  (124)
@@ -85,7 +86,7 @@ public:
 	~C4Action();
 
 public:
-	char Name[C4D_MaxIDLen + 1];
+	std::string Name;
 	int32_t Act; // NoSave //
 	int32_t Dir;
 	int32_t DrawDir; // NoSave // - needs to be calculated for old-style objects.txt anyway
@@ -140,6 +141,7 @@ public:
 	int32_t Audible, AudiblePan; // NoSave //
 	C4ValueList Local;
 	C4ValueMapData LocalNamed;
+	std::map<std::string, luabridge::LuaRef> LuaLocals;
 	int32_t PlrViewRange;
 	FIXED fix_x, fix_y, fix_r; // SyncClearance-Fix //
 	FIXED xdir, ydir, rdir;
@@ -446,4 +448,7 @@ public:
 	// This function is used for:
 	// -Objects that are not to be saved in "SaveScenario"-mode
 	bool IsUserPlayerObject(); // true for any object that belongs to any player (NO_OWNER) or a specified player
+
+	void __newindex(std::string key, luabridge::LuaRef value);
+	luabridge::LuaRef __index(std::string key, lua_State *L);
 };

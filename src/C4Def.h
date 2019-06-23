@@ -32,6 +32,8 @@
 #include "C4LangStringTable.h"
 #endif
 
+#include <unordered_map>
+
 const int32_t C4D_None                   = 0,
               C4D_All                    = ~C4D_None,
 
@@ -140,18 +142,18 @@ public:
 	C4ActionDef();
 
 public:
-	char Name[C4D_MaxIDLen + 1];
-	char ProcedureName[C4D_MaxIDLen + 1];
+	std::string Name;
+	std::string ProcedureName;
 	int32_t Procedure; // Mapped by C4Def::Load
 	int32_t Directions;
 	int32_t FlipDir;
 	int32_t Length;
 	int32_t Delay;
 	int32_t Attach;
-	char NextActionName[C4D_MaxIDLen + 1];
+	std::string NextActionName;
 	int32_t NextAction; // Mapped by C4Def::Load
-	char InLiquidAction[C4D_MaxIDLen + 1];
-	char TurnAction[C4D_MaxIDLen + 1];
+	std::string InLiquidAction;
+	std::string TurnAction;
 	int32_t FacetBase;
 	C4TargetRect Facet;
 	int32_t FacetTopFace;
@@ -159,14 +161,14 @@ public:
 	int32_t Disabled;
 	int32_t DigFree;
 	int32_t FacetTargetStretch;
-	char Sound[C4D_MaxIDLen + 1];
+	std::string Sound;
 	int32_t EnergyUsage;
 	int32_t Reverse;
 	int32_t Step;
-	char SStartCall[C4D_MaxIDLen + 1];
-	char SEndCall[C4D_MaxIDLen + 1];
-	char SAbortCall[C4D_MaxIDLen + 1];
-	char SPhaseCall[C4D_MaxIDLen + 1];
+	std::string SStartCall;
+	std::string SEndCall;
+	std::string SAbortCall;
+	std::string SPhaseCall;
 	class C4AulScriptFunc *StartCall;
 	C4AulScriptFunc *EndCall;
 	C4AulScriptFunc *AbortCall;
@@ -177,6 +179,9 @@ public:
 	void CompileFunc(StdCompiler *pComp);
 };
 
+template <class CompT, class StructT> extern
+bool CompileFromBuf_LogWarn(StructT &&TargetStruct, const typename CompT::InT &SrcBuf, const char *szName);
+
 class C4DefCore
 {
 public:
@@ -184,6 +189,7 @@ public:
 
 public:
 	C4ID id;
+	luabridge::LuaRef LuaDef;
 	int32_t rC4XVer[4];
 	StdStrBuf Name;
 	C4IDList RequireDef;
@@ -192,9 +198,6 @@ public:
 	C4Rect Entrance;
 	C4Rect Collection;
 	C4Rect PictureRect;
-#ifndef C4ENGINE
-	C4Rect PictureRectFE;
-#endif
 	C4TargetRect SolidMask;
 	C4TargetRect TopFace;
 	C4IDList Component;
@@ -208,7 +211,7 @@ public:
 	int32_t Mass;
 	int32_t Value;
 	int32_t Exclusive;
-	int32_t Category;
+	uint32_t Category;
 	int32_t Growth;
 	int32_t Rebuyable;
 	int32_t ContactIncinerate; // 0 off 1 high - 5 low
@@ -224,13 +227,13 @@ public:
 	int32_t BorderBound;
 	int32_t LiftTop;
 	int32_t CollectionLimit;
-	int32_t GrabPutGet;
+	uint32_t GrabPutGet;
 	int32_t ContainBlast;
 	int32_t UprightAttach;
 	int32_t ContactFunctionCalls;
 	int32_t MaxUserSelect;
-	int32_t Line;
-	int32_t LineConnect;
+	uint32_t Line;
+	uint32_t LineConnect;
 	int32_t LineIntersect;
 	int32_t NoBurnDecay;
 	int32_t IncompleteActivity;
@@ -250,8 +253,8 @@ public:
 	int32_t Timer;
 	int32_t NoComponentMass;
 	int32_t NoStabilize;
-	char STimerCall[C4D_MaxIDLen];
-	char ColorByMaterial[C4M_MaxName + 1];
+	std::string STimerCall;
+	std::string ColorByMaterial;
 	int32_t ClosedContainer; // if set, contained objects are not damaged by lava/acid etc. 1: Contained objects can't view out; 2: They can
 	int32_t SilentCommands; // if set, no command failure messages are printed
 	int32_t NoBurnDamage; // if set, the object won't take damage when burning
@@ -268,16 +271,22 @@ public:
 	int32_t RotatedEntrance; // 0 entrance not rotateable, 1 entrance always, 2-360 entrance within this rotation
 	int32_t NoTransferZones;
 	int32_t AutoContextMenu; // automatically open context menu for this object
-	int32_t AllowPictureStack; // allow stacking of multiple items in menus even if some attributes do not match. APS_*-values
+	uint32_t AllowPictureStack; // allow stacking of multiple items in menus even if some attributes do not match. APS_*-values
 
 public:
 	void Default();
 	bool Load(C4Group &hGroup);
 	void CompileFunc(StdCompiler *pComp);
+	template<class Compiler, typename = typename std::enable_if<isStdCompiler<Compiler>()>::type>
+	bool Compile(const char *szSource, const char *szName)
+	{
+		return CompileFromBuf_LogWarn<Compiler>(mkNamingAdapt(*this, std::is_same<Compiler, StdCompilerLuaRead>::value ? szName : "DefCore"), StdStrBuf(szSource), szName);
+	}
+	bool Compile(luabridge::LuaRef def);
 	const char *GetName() const { return Name.getData(); }
 
 protected:
-	bool Compile(const char *szSource, const char *szName);
+	void UpdateValues(C4Group &hGroup);
 };
 
 class C4Def : public C4DefCore
@@ -294,13 +303,13 @@ public:
 	HBITMAP Image;
 #endif
 
-	int32_t ActNum; C4ActionDef *ActMap;
-	char Maker[C4MaxName + 1];
-	char Filename[_MAX_FNAME + 1];
+	std::vector<C4ActionDef> ActMap;
+	std::string Maker;
+	std::string Filename;
 	int32_t Creation;
 	int32_t Count; // number of instanciations
 	C4AulScriptFunc *TimerCall;
-	C4ComponentHost Desc;
+	std::string Desc;
 	C4Def *Next;
 
 #ifdef C4ENGINE
@@ -337,6 +346,7 @@ public:
 		uint32_t dwLoadWhat, const char *szLanguage,
 		class C4SoundSystem *pSoundSystem = nullptr);
 	void Draw(C4Facet &cgo, bool fSelected = false, uint32_t iColor = 0, C4Object *pObj = nullptr, int32_t iPhaseX = 0, int32_t iPhaseY = 0);
+	void UpdateValues();
 
 #ifdef C4ENGINE
 	inline C4Facet &GetMainFace(C4DefGraphics *pGraphics, uint32_t dwClr = 0) { MainFace.Surface = pGraphics->GetBitmap(dwClr); return MainFace; }
@@ -345,16 +355,18 @@ public:
 	void ClearFairCrewPhysicals(); // remove cached fair crew physicals, will be created fresh on demand
 	void Synchronize();
 #endif
-	const char *GetDesc() { return Desc.GetData(); }
+	const char *GetDesc() { return Desc.c_str(); }
+	bool Compile(luabridge::LuaRef def, C4ID newID);
 
 protected:
-	bool LoadPortraits(C4Group &hGroup);
+	bool LoadPortraits();
 	bool ColorizeByMaterial(class C4MaterialMap &rMats, uint8_t bGBM);
 	bool LoadActMap(C4Group &hGroup);
 	void CrossMapActMap();
 
 private:
 	C4ValueArray *GetCustomComponents(C4Value *pvArrayHolder, C4Object *pBuilder, C4Object *pObjInstance = nullptr);
+	void LoadGraphics(const std::string &base, const std::string &overlay = "", bool additional = false, bool portrait = false);
 
 public:
 	// return def components - may be overloaded by script callback
@@ -377,9 +389,7 @@ public:
 
 public:
 	bool LoadFailure;
-	C4Def **Table[64]; // From space to _; some minor waste of mem
-	bool fTable;
-	C4Def *FirstDef;
+	std::unordered_map<C4ID, C4Def *> table;
 
 public:
 	void Default();
@@ -395,7 +405,7 @@ public:
 		bool fOverload = false, int32_t iMinProgress = 0, int32_t iMaxProgress = 0);
 	C4Def *ID2Def(C4ID id);
 	C4Def *GetDef(int32_t Index, uint32_t dwCategory = C4D_All);
-	C4Def *GetByPath(const char *szPath);
+	C4Def *GetByPath(const std::string &path);
 	int32_t GetDefCount(uint32_t dwCategory = C4D_All);
 	int32_t GetIndex(C4ID id);
 	int32_t ColorizeByMaterial(C4MaterialMap &rMats, uint8_t bGBM);
@@ -406,7 +416,6 @@ public:
 	bool Remove(C4ID id);
 	bool Reload(C4Def *pDef, uint32_t dwLoadWhat, const char *szLanguage, C4SoundSystem *pSoundSystem = nullptr);
 	bool Add(C4Def *ndef, bool fOverload);
-	void BuildTable(); // build quick access table
 	void ResetIncludeDependencies(); // resets all pointers into foreign definitions caused by include chains
 #ifdef C4ENGINE
 	void Synchronize();
@@ -414,9 +423,6 @@ public:
 
 	// callback from font renderer: get ID image
 	virtual bool GetFontImage(const char *szImageTag, CFacet &rOutImgFacet);
-
-private:
-	void SortByID(); // sorts list by quick access table
 };
 
 // Default Action Procedures
