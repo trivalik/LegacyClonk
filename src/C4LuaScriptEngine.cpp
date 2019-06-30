@@ -17,6 +17,7 @@
 #include "C4LuaScriptEngine.h"
 #ifndef BIG_C4INCLUDE
 #include "C4Components.h"
+#include "C4Def.h"
 #include "C4Game.h"
 #include "C4Log.h"
 #include "C4Object.h"
@@ -25,6 +26,10 @@
 
 #include <cstring>
 
+C4Object *Number2Object(int number)
+{
+	return Game.Objects.ObjectPointer(number);
+}
 
 namespace LuaScriptFn
 {
@@ -146,7 +151,11 @@ int createObject(lua_State *L)
 	lua_setfield(L, meta, "__index");
 	lua_settop(L, mark);
 	lua_setfield(L, meta, "__index_old");
+
+	lua_settop(L, meta);
+	lua_setmetatable(L, meta);
 	lua_settop(L, top);
+	luabridge::LuaRef(L, obj)["Initialize"];
 	return 1;
 }
 
@@ -159,12 +168,58 @@ bool C4LuaScriptEngine::Init()
 		return false;
 	}
 
+#define PREFIX
+#define CONCAT(a, b) a ## b
+#define CONCAT2(a, b) CONCAT(a, b)
+#define C(name) .addProperty(#name, const_cast<int32_t *>(CONCAT2(&PREFIX, CONCAT2(_, name))), false)
+
 	luabridge::getGlobalNamespace(L)
 		.addFunction("print", &LuaScriptFn::print)
 		.addFunction("dofile", &LuaScriptFn::dofile)
 		.addFunction("loadfile", &LuaScriptFn::dofile)
 		.beginNamespace("Game")
+
+#undef PREFIX
+#define PREFIX C4D
 			.beginNamespace("Category")
+				C(None)
+				C(All)
+
+				C(StaticBack)
+				C(Structure)
+				C(Vehicle)
+				C(Living)
+				C(Object)
+
+				C(SortLimit)
+
+				C(Goal)
+				C(Environment)
+
+				C(SelectBuilding)
+				C(SelectVehicle)
+				C(SelectMaterial)
+				C(SelectKnowledge)
+				C(SelectHomebase)
+				C(SelectAnimal)
+				C(SelectNest)
+				C(SelectInEarth)
+				C(SelectVegetation)
+
+				C(TradeLiving)
+				C(Magic)
+				C(CrewMember)
+
+				C(Rule)
+
+				C(Background)
+				C(Parallax)
+				C(MouseSelect)
+				C(Foreground)
+				C(MouseIgnore)
+				C(IgnoreFoW)
+
+				C(BackgroundOrForeground)
 			.endNamespace()
 			.addCFunction("CreateObject", &LuaScriptFn::createObject)
 		.endNamespace()
@@ -175,35 +230,43 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("Deleted",  const_cast<int32_t *>(&C4OS_DELETED),  false)
 		.endNamespace()
 
+
+#undef PREFIX
+#define PREFIX DIR
 		.beginNamespace("Direction")
-			.addProperty("None",  const_cast<int32_t *>(&DIR_None),  false)
-			.addProperty("Left",  const_cast<int32_t *>(&DIR_Left),  false)
-			.addProperty("Right", const_cast<int32_t *>(&DIR_Right), false)
+			C(None)
+			C(Left)
+			C(Right)
 		.endNamespace()
 
+
+#undef PREFIX
+#define PREFIX COMD
 		.beginNamespace("ComDir")
-			.addProperty("None",      const_cast<int32_t *>(&COMD_None),      false)
-			.addProperty("Stop",      const_cast<int32_t *>(&COMD_Stop),      false)
-			.addProperty("Up",        const_cast<int32_t *>(&COMD_Up),        false)
-			.addProperty("UpRight",   const_cast<int32_t *>(&COMD_UpRight),   false)
-			.addProperty("Right",     const_cast<int32_t *>(&COMD_Right),     false)
-			.addProperty("DownRight", const_cast<int32_t *>(&COMD_DownRight), false)
-			.addProperty("Down",      const_cast<int32_t *>(&COMD_Down),      false)
-			.addProperty("DownLeft",  const_cast<int32_t *>(&COMD_DownLeft),  false)
-			.addProperty("Left",      const_cast<int32_t *>(&COMD_Left),      false)
-			.addProperty("UpLeft",    const_cast<int32_t *>(&COMD_UpLeft),    false)
+			C(None)
+			C(Stop)
+			C(Up)
+			C(UpRight)
+			C(Right)
+			C(DownRight)
+			C(Down)
+			C(DownLeft)
+			C(Left)
+			C(UpLeft)
 		.endNamespace()
 
+#undef PREFIX
+#define PREFIX VIS
 		.beginNamespace("Visibility")
-			.addProperty("All",         const_cast<int32_t *>(&VIS_All),         false)
-			.addProperty("None",        const_cast<int32_t *>(&VIS_None),        false)
-			.addProperty("Owner",       const_cast<int32_t *>(&VIS_Owner),       false)
-			.addProperty("Allies",      const_cast<int32_t *>(&VIS_Allies),      false)
-			.addProperty("Enemies",     const_cast<int32_t *>(&VIS_Enemies),     false)
-			.addProperty("Local",       const_cast<int32_t *>(&VIS_Local),       false)
-			.addProperty("God",         const_cast<int32_t *>(&VIS_God),         false)
-			.addProperty("LayerToggle", const_cast<int32_t *>(&VIS_LayerToggle), false)
-			.addProperty("OverlayOnly", const_cast<int32_t *>(&VIS_OverlayOnly), false)
+			C(All)
+			C(None)
+			C(Owner)
+			C(Allies)
+			C(Enemies)
+			C(Local)
+			C(God)
+			C(LayerToggle)
+			C(OverlayOnly)
 		.endNamespace()
 
 		//classes
@@ -221,10 +284,18 @@ bool C4LuaScriptEngine::Init()
 			.addFunction("__newindex", &C4Object::__newindex)
 			.addFunction("__index_old", &C4Object::__index)
 		.endClass();
-
+#undef PREFIX
+#undef CONCAT
+#undef CONCAT2
+#undef C
 	return true;
 }
 
+void C4LuaScriptEngine::Clear()
+{
+	C4Lua::Clear();
+	lines = warnings = errors = 0;
+}
 
 luabridge::LuaRef C4LuaScriptEngine::Evaluate(const std::string &script)
 {
@@ -232,14 +303,22 @@ luabridge::LuaRef C4LuaScriptEngine::Evaluate(const std::string &script)
 	switch (luaL_loadbufferx(L, script.c_str(), script.size(), "Evaluate", "t"))
 	{
 	case LUA_ERRSYNTAX:
-		throw luabridge::LuaException(L, LUA_ERRSYNTAX);
+		LogErrorF("%s", lua_tostring(L, -1));
+		break;
 	case LUA_ERRMEM:
 		LogFatal("Out of memory");
 		return luabridge::LuaRef(L);
 	default:
 		break;
 	}
-	luabridge::LuaException::pcall(L, 0, 1, 0);
+	try
+	{
+		luabridge::LuaException::pcall(L, 0, 1, 0);
+	}
+	catch (luabridge::LuaException const &e)
+	{
+		LogErrorF("%s", e.what());
+	}
 	return luabridge::LuaRef::fromStack(L);
 }
 
@@ -268,10 +347,13 @@ bool C4LuaScriptEngine::Load(C4Group &group, const char *filename, const char *l
 	{
 		localTable->ReplaceStrings(buf);
 	}
+
+	lines += static_cast<size_t>(SGetLine(buf.getData(), buf.getPtr(buf.getLength())));
+
 	switch (luaL_loadbufferx(L, buf.getData(), buf.getSize() - 1, filename, "t"))
 	{
 	case LUA_ERRSYNTAX:
-		LogF("ERROR: Syntax error: %s", lua_tostring(L, -1));
+		LogErrorF("Syntax error: %s", lua_tostring(L, -1));
 		++errors;
 		return false;
 	case LUA_ERRMEM:
@@ -285,7 +367,7 @@ bool C4LuaScriptEngine::Load(C4Group &group, const char *filename, const char *l
 	switch (lua_pcall(L, 0, 0, 0))
 	{
 	case LUA_ERRRUN:
-		LogF("ERROR: %s", lua_tostring(L, -1));
+		LogErrorF("%s", lua_tostring(L, -1));
 		++errors;
 		return false;
 	case LUA_ERRMEM:
@@ -301,5 +383,23 @@ void C4LuaScriptEngine::Link(C4DefList *defs)
 {
 	(void) defs;
 	assert(L);
-	LogF("C4LuaScriptEngine linked - %zu warnings, %zu errors", warnings, errors);
+	LogF("C4LuaScriptEngine linked - %zu line%s, %zu warning%s, %zu error%s",
+		 lines,    lines    != 1 ? "s" : "",
+		 warnings, warnings != 1 ? "s" : "",
+		 errors,   errors   != 1 ? "s" : "");
+}
+
+void C4LuaScriptEngine::LogErrorF(const char *error, ...)
+{
+	if (!Game.DebugMode) return;
+
+	va_list args;
+	va_start(args, error);
+	StdStrBuf buf;
+	buf.Copy("ERROR: ");
+	buf.AppendFormatV(error, args);
+	va_end(args);
+
+	DebugLogF("%s", buf.getData());
+	Game.Messages.New(C4GM_Global, buf, nullptr, ANY_OWNER);
 }

@@ -1072,6 +1072,7 @@ void StdCompilerLuaRead::setInput(luabridge::LuaRef in)
 
 bool StdCompilerLuaRead::Name(const char *szName)
 {
+	LogF("Name: %s", szName);
 	bool first = flatEntries.empty();
 	if (!first)
 	{
@@ -1084,8 +1085,6 @@ bool StdCompilerLuaRead::Name(const char *szName)
 		flatEntries.push_back(entry);
 		return !entry.isNil();
 	}
-
-	LogF("Name: %s", szName);
 
 	buf.TrimSpaces();
 
@@ -1109,6 +1108,7 @@ bool StdCompilerLuaRead::Name(const char *szName)
 void StdCompilerLuaRead::NameEnd(bool fBreak)
 {
 	(void) fBreak;
+	Log("NameEnd");
 	flatEntries.pop_back();
 	index = 0;
 }
@@ -1207,6 +1207,7 @@ void StdCompilerLuaRead::Raw(void *pData, size_t iSize, RawCompileType eType)
 
 void StdCompilerLuaRead::End()
 {
+	Log("End");
 	while (flatEntries.size())
 	{
 		flatEntries.pop_back();
@@ -1215,14 +1216,15 @@ void StdCompilerLuaRead::End()
 
 bool StdCompilerLuaRead::Separator(Sep eSep)
 {
+	Log("  Separator");
 	(void) eSep;
 	luabridge::LuaRef value = flatEntries.back();
 	if (value.isTable())
 	{
-		std::vector<std::string> v;
+		std::vector<luabridge::LuaRef> v;
 		try
 		{
-			v = value.cast<std::vector<std::string>>();
+			v = value.cast<decltype(v)>();
 		}
 		catch (luabridge::LuaException const &)
 		{
@@ -1250,6 +1252,7 @@ std::map<std::string, luabridge::LuaRef> StdCompilerLuaRead::Entries()
 luabridge::LuaRef StdCompilerLuaRead::getValue()
 {
 	luabridge::LuaRef value = flatEntries.back();
+	LogF("  Value (type %s)", lua_typename(value.state(), value.type()));
 	if (value.isTable())
 	{
 		auto l = value.cast<std::vector<luabridge::LuaRef>>();

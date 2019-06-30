@@ -677,14 +677,68 @@ void C4Shape::CompileFunc(StdCompiler *pComp, bool fRuntime)
 {
 	// Note: Compiled directly into "Object" and "DefCore"-categories, so beware of name clashes
 	// (see C4Object::CompileFunc and C4DefCore::CompileFunc)
-	pComp->Value(mkNamingAdapt(Wdt,                    "Width",          0));
-	pComp->Value(mkNamingAdapt(Hgt,                    "Height",         0));
-	pComp->Value(mkNamingAdapt(mkArrayAdapt(&x, 2, 0), "Offset"));
-	pComp->Value(mkNamingAdapt(VtxNum,                 "Vertices",       0));
-	pComp->Value(mkNamingAdapt(toC4CArr(VtxX),         "VertexX"));
-	pComp->Value(mkNamingAdapt(toC4CArr(VtxY),         "VertexY"));
-	pComp->Value(mkNamingAdapt(toC4CArr(VtxCNAT),      "VertexCNAT"));
-	pComp->Value(mkNamingAdapt(toC4CArr(VtxFriction),  "VertexFriction"));
+	auto *luaComp = dynamic_cast<StdCompilerLuaRead *>(pComp);
+	if (luaComp != nullptr)
+	{
+		if (luaComp->Name("Shape"))
+		{
+			pComp->Value(mkNamingAdapt(x,   "X",      0));
+			pComp->Value(mkNamingAdapt(y,   "Y",      0));
+			pComp->Value(mkNamingAdapt(Wdt, "Width",  0));
+			pComp->Value(mkNamingAdapt(Hgt, "Height", 0));
+		}
+		luaComp->NameEnd();
+
+		std::vector<std::map<std::string, luabridge::LuaRef>> vertices;
+		if (luaComp->Name("Vertices"))
+		{
+			do
+			{
+				decltype(vertices)::value_type m;
+				luaComp->Value(m);
+				vertices.push_back(m);
+			}
+			while (luaComp->Separator());
+		}
+		luaComp->NameEnd();
+
+		if (vertices.size() > C4D_MaxVertex)
+		{
+			DebugLogF("Definition has invalid vertex count: %zu / %d", vertices.size(), C4D_MaxVertex);
+			while (vertices.size() > C4D_MaxVertex)
+			{
+				vertices.pop_back();
+			}
+		}
+
+		VtxNum = static_cast<int32_t>(vertices.size());
+
+#define V(t)\
+	try \
+	{ \
+		Vtx##t[i] = vertices[i].at(#t).isNumber() ? vertices[i].at(#t).cast<int32_t>() : 0; \
+	}\
+	catch (const std::out_of_range &) {}
+
+		for (size_t i = 0; i < vertices.size(); ++i)
+		{
+			V(X)
+			V(Y)
+			V(CNAT)
+			V(Friction)
+		}
+	}
+	else
+	{
+		pComp->Value(mkNamingAdapt(mkArrayAdapt(&x, 2, 0), "Offset"));
+		pComp->Value(mkNamingAdapt(Wdt,                    "Width",          0));
+		pComp->Value(mkNamingAdapt(Hgt,                    "Height",         0));
+		pComp->Value(mkNamingAdapt(VtxNum,                 "Vertices",       0));
+		pComp->Value(mkNamingAdapt(toC4CArr(VtxX),         "VertexX"));
+		pComp->Value(mkNamingAdapt(toC4CArr(VtxY),         "VertexY"));
+		pComp->Value(mkNamingAdapt(toC4CArr(VtxCNAT),      "VertexCNAT"));
+		pComp->Value(mkNamingAdapt(toC4CArr(VtxFriction),  "VertexFriction"));
+	}
 	pComp->Value(mkNamingAdapt(ContactDensity,         "ContactDensity", C4M_Solid));
 	pComp->Value(mkNamingAdapt(FireTop,                "FireTop",        0));
 	if (fRuntime)

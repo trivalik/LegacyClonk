@@ -24,6 +24,19 @@
 
 #include <functional>
 
+#if __cplusplus < 201703L
+namespace std
+{
+template<class...> struct conjunction : std::true_type { };
+template<class B1> struct conjunction<B1> : B1 { };
+template<class B1, class... Bn>
+struct conjunction<B1, Bn...>
+	: std::conditional_t<bool(B1::value), conjunction<Bn...>, B1> {};
+
+template<class... B> constexpr bool conjunction_v = conjunction<B...>::value;
+}
+#endif
+
 namespace std
 {
 template<> class hash<luabridge::LuaRef>
@@ -66,6 +79,8 @@ public:
 
 }
 
+C4Object *Number2Object(int number);
+
 namespace luabridge
 {
 template<> struct Stack<C4Value>
@@ -75,13 +90,16 @@ template<> struct Stack<C4Value>
 		switch (value.GetType())
 		{
 		case C4V_Any:
-		case C4V_Int:
-			lua_pushnumber(L, value.getInt());
+			lua_pushnil(L);
 			break;
+
+		case C4V_Int:
+		case C4V_C4ID:
+			lua_pushnumber(L, value.getIntOrID());
+			break;
+
 		case C4V_Bool:
 			lua_pushboolean(L, value.getBool());
-			break;
-		case C4V_C4ID:
 			break;
 
 		case C4V_String:
@@ -101,9 +119,13 @@ template<> struct Stack<C4Value>
 			break;
 
 		case C4V_pC4Value:
+			push(L, value.GetRef());
 			break;
+
 		case C4V_C4ObjectEnum:
+			luabridge::push(L, Number2Object(value.getInt()));
 			break;
+
 		case C4V_C4Object:
 			luabridge::push(L, value.getObj());
 		}
@@ -154,6 +176,7 @@ public:
 	C4LuaScriptEngine() = default;
 public:
 	bool Init();
+	void Clear();
 	template<typename... Args> luabridge::LuaRef Call(luabridge::LuaRef context, std::string functionName, Args... args)
 	{
 		assert(L);
@@ -176,24 +199,26 @@ public:
 
 		if (!function.isFunction())
 		{
-			if (noThrow)
-			{
-				return luabridge::LuaRef(L);
-			}
-			else
+			if (!noThrow)
 			{
 				context.push();
 				function.push();
-				luabridge::push(L,
-								FormatString("Function %s.%s not found",
-										(context.isNil() ? "Global" : luaL_tolstring(L, -2, nullptr)), luaL_tolstring(L, -1, nullptr))
-								.getData());
-				throw luabridge::LuaException(L, LUA_ERRRUN);
+				LogErrorF("Function %s.%s not found",
+						  (context.isNil() ? "Global" : luaL_tolstring(L, -2, nullptr)), luaL_tolstring(L, -1, nullptr));
 			}
+			return luabridge::LuaRef(L);
 		}
 		else
 		{
-			return function(args...);
+			try
+			{
+				return Call(function, args...);
+			}
+			catch (luabridge::LuaException const &e)
+			{
+				LogErrorF("%s", e.what());
+				return luabridge::LuaRef(L);
+			}
 		}
 	}
 
@@ -209,13 +234,9 @@ public:
 		{
 			if (functionName[0] != '~')
 			{
-				luabridge::push(L, FormatString("Table %s not found", context.c_str()).getData());
-				throw luabridge::LuaException(L, LUA_ERRRUN);
+				LogErrorF("Table %s not found", context.c_str());
 			}
-			else
-			{
-				return luabridge::LuaRef(L);
-			}
+			return luabridge::LuaRef(L);
 		}
 	}
 
@@ -223,14 +244,26 @@ public:
 	{
 		assert(L);
 		assert(function.isFunction());
-		return function(args...);
+		try
+		{
+			return function(args...);
+		}
+		catch (luabridge::LuaException const &e)
+		{
+			LogErrorF("%s", e.what());
+			return luabridge::LuaRef(L);
+		}
 	}
 	luabridge::LuaRef Evaluate(const std::string &script);
 	bool Load(C4Group &group, const char *filename, const char *language, class C4LangStringTable *localTable, bool loadTable = false);
 	void Link(C4DefList *defs);
 
 private:
+	void LogErrorF(const char *error, ...);
+
+private:
 	static constexpr const size_t BUFSIZE = 4096;
+	size_t lines = 0;
 	size_t warnings = 0;
 	size_t errors = 0;
 };

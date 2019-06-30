@@ -734,11 +734,11 @@ public:
 	virtual void Raw(void *pData, size_t iSize, RawCompileType eType = RCT_Escaped) override;
 	template<class T> void Value(std::vector<T> &vector)
 	{
-		castValue<decltype(vector)>(vector);
+		castValue<typename std::remove_reference<decltype(vector)>::type>(vector);
 	}
 	template<class K, class V> void Value(std::map<K, V> &map)
 	{
-		castValue<decltype(map)>(map);
+		castValue<typename std::remove_reference<decltype(map)>::type>(map);
 	}
 
 	virtual void Begin() override;
@@ -762,7 +762,7 @@ private:
 	C4Lua lua;
 	InT buf;
 	std::vector<luabridge::LuaRef> flatEntries; // section, subsections, current value
-	size_t index = 1;
+	size_t index = 0;
 };
 
 template<class T> constexpr bool isStdCompiler()

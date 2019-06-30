@@ -159,7 +159,7 @@ bool C4Object::Init(C4Def *pDef, C4Object *pCreator,
 	LastEnergyLossCausePlayer = NO_OWNER;
 	Info = pInfo;
 	Def = pDef;
-	if (Info) Name = pInfo->Name; else Name.Ref(pDef->Name);
+	if (Info) Name = pInfo->Name; else Name.Copy(pDef->Name.c_str());
 	Category = Def->Category;
 	Def->Count++;
 	if (pCreator) pLayer = pCreator->pLayer;
@@ -1177,7 +1177,7 @@ bool C4Object::ChangeDef(C4ID idNew)
 	delete pSolidMaskData; pSolidMaskData = nullptr;
 	Def->Count--;
 	// change the name to the name of the new def, if the name of the old def was in use before
-	if (Name.getData() == Def->Name.getData()) Name.Ref(pDef->Name);
+	if (Name.getData() == Def->Name.c_str()) Name = pDef->Name.c_str();
 	// Def change
 	Def = pDef;
 	id = pDef->id;
@@ -2013,7 +2013,7 @@ const char *C4Object::GetName()
 void C4Object::SetName(const char *NewName)
 {
 	if (!NewName)
-		if (Info) Name = Info->Name; else Name.Ref(Def->Name);
+		if (Info) Name = Info->Name; else Name = Def->Name.c_str();
 	else
 		Name.Copy(NewName);
 }
@@ -2127,6 +2127,21 @@ void C4Object::ClearPointers(C4Object *pObj)
 C4Value C4Object::Call(const char *szFunctionCall, C4AulParSet *pPars, bool fPassError)
 {
 	if (!Status || !Def || !szFunctionCall[0]) return C4VNull;
+	if (!Def->LuaDef.isNil())
+	{
+		if (pPars != nullptr)
+		{
+			return Game.LuaEngine.Call(luabridge::LuaRef(Def->LuaDef.state(), this), std::string{szFunctionCall},
+									pPars->Par[0], pPars->Par[1], pPars->Par[2],
+									pPars->Par[3], pPars->Par[4], pPars->Par[5],
+									pPars->Par[6]/*, pPars->Par[7], pPars->Par[8],
+									pPars->Par[9]*/); // FIXME
+		}
+		else
+		{
+			return Game.LuaEngine.Call(luabridge::LuaRef(Def->LuaDef.state(), this), std::string{szFunctionCall});
+		}
+	}
 	return Def->Script.ObjectCall(this, this, szFunctionCall, pPars, fPassError);
 }
 
@@ -2645,7 +2660,7 @@ void C4Object::CompileFunc(StdCompiler *pComp)
 	// Write the name only if the object has an individual name, use def name as default for reading.
 	// (Info may overwrite later, see C4Player::MakeCrewMember)
 	if (pComp->isCompiler())
-		pComp->Value(mkNamingAdapt(Name, "Name", Def->Name));
+		pComp->Value(mkNamingAdapt(Name, "Name", Def->Name.c_str()));
 	else if (!Name.isRef())
 		// Write the name only if the object has an individual name
 		// 2do: And what about binary compilers?
@@ -3122,7 +3137,7 @@ void C4Object::ClearInfo(C4ObjectInfo *pInfo)
 {
 	if (Info == pInfo)
 	{
-		if (Info) if (Name.getData() == Info->Name) Name.Ref(Def->Name);
+		if (Info) if (Name.getData() == Info->Name) Name = Def->Name.c_str();
 		Info = nullptr;
 	}
 }

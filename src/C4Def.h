@@ -191,7 +191,7 @@ public:
 	C4ID id;
 	luabridge::LuaRef LuaDef;
 	int32_t rC4XVer[4];
-	StdStrBuf Name;
+	std::string Name;
 	C4IDList RequireDef;
 	C4PhysicalInfo Physical;
 	C4Shape Shape;
@@ -283,7 +283,7 @@ public:
 		return CompileFromBuf_LogWarn<Compiler>(mkNamingAdapt(*this, std::is_same<Compiler, StdCompilerLuaRead>::value ? szName : "DefCore"), StdStrBuf(szSource), szName);
 	}
 	bool Compile(luabridge::LuaRef def);
-	const char *GetName() const { return Name.getData(); }
+	const char *GetName() const { return Name.c_str(); }
 
 protected:
 	void UpdateValues(C4Group &hGroup);

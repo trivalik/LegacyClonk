@@ -153,7 +153,7 @@ void C4DefCore::Default()
 	rC4XVer[0] = rC4XVer[1] = rC4XVer[2] = rC4XVer[3] = 0;
 	RequireDef.Clear();
 	LuaDef = luabridge::LuaRef(Game.LuaEngine.state());
-	Name.Ref("Undefined");
+	Name = "Undefined";
 	Physical.Default();
 	Shape.Default();
 	Entrance.Default();
@@ -268,7 +268,7 @@ void C4DefCore::CompileFunc(StdCompiler *pComp)
 {
 	pComp->Value(mkNamingAdapt(mkC4IDAdapt(id),               "id",         C4ID_None));
 	pComp->Value(mkNamingAdapt(toC4CArr(rC4XVer),             "Version"));
-	pComp->Value(mkNamingAdapt(toC4CStrBuf(Name),             "Name",       "Undefined"));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(Name),          "Name",       "Undefined"));
 	pComp->Value(mkNamingAdapt(mkParAdapt(RequireDef, false), "RequireDef", C4IDList()));
 
 	const StdBitfieldEntry<uint32_t> Categories[] =
@@ -307,8 +307,21 @@ void C4DefCore::CompileFunc(StdCompiler *pComp)
 		{ nullptr, 0 }
 	};
 
+	if (dynamic_cast<StdCompilerLuaRead *>(pComp))
+	{
+		bool b = pComp->Name("Category");
+		pComp->NameEnd();
+		asm("nop");
+		asm("nop");
+	}
+
 	pComp->Value(mkNamingAdapt(mkBitfieldAdapt<uint32_t>(Category, Categories),
 		"Category", 0));
+	if (dynamic_cast<StdCompilerLuaRead *>(pComp))
+	{
+		asm("nop");
+		asm("nop");
+	}
 
 	pComp->Value(mkNamingAdapt(MaxUserSelect,                 "MaxUserSelect",     0));
 	pComp->Value(mkNamingAdapt(Timer,                         "Timer",             35));
@@ -445,8 +458,15 @@ void C4DefCore::CompileFunc(StdCompiler *pComp)
 	pComp->Value(mkNamingAdapt(mkBitfieldAdapt<uint32_t>(AllowPictureStack, AllowPictureStackModes),
 		"AllowPictureStack", 0));
 
-	pComp->FollowName("Physical");
-	pComp->Value(Physical);
+	if (dynamic_cast<StdCompilerLuaRead *>(pComp))
+	{
+		pComp->Value(mkNamingAdapt(Physical, "Physical"));
+	}
+	else
+	{
+		pComp->FollowName("Physical");
+		pComp->Value(Physical);
+	}
 }
 
 void C4DefCore::UpdateValues(C4Group &hGroup)
@@ -613,10 +633,9 @@ bool C4Def::Load(C4Group &hGroup,
 		if (fSuccess) if (!LooksLikeID(id))
 		{
 	#ifdef C4ENGINE
-			// wie geth ID?????ÃŸÃŸÃŸÃŸ
-			if (!Name[0]) Name = GetFilename(hGroup.GetName());
-			sprintf(OSTR, LoadResStr("IDS_ERR_INVALIDID"), Name.getData());
-			Log(OSTR);
+			// wie geth ID?????ßßßß
+			if (Name.empty()) Name = GetFilename(hGroup.GetName());
+			LogF(LoadResStr("IDS_ERR_INVALIDID"), Name.c_str());
 	#endif
 			fSuccess = false;
 		}
@@ -731,7 +750,11 @@ bool C4Def::Load(C4Group &hGroup,
 		// Read name
 		C4ComponentHost DefNames;
 		if (DefNames.LoadEx("Names", hGroup, C4CFN_DefNames, szLanguage))
-			DefNames.GetLanguageString(szLanguage, Name);
+		{
+			StdStrBuf buf;
+			DefNames.GetLanguageString(szLanguage, buf);
+			Name = buf.getData();
+		}
 		DefNames.Close();
 
 #ifdef C4ENGINE
@@ -826,10 +849,14 @@ bool C4Def::Compile(luabridge::LuaRef def, C4ID newID)
 	std::map<std::string, luabridge::LuaRef> test = def.cast<decltype(test)>();
 	if (def["ActMap"].isTable())
 	{
-		StdCompilerLuaRead comp;
-		comp.setInput(def);
 		auto actions = def["ActMap"].cast<std::vector<std::map<std::string, luabridge::LuaRef>>>();
 		ActMap.resize(actions.size());
+
+		StdCompilerLuaRead comp;
+		comp.setInput(def);
+
+		comp.Begin();
+		assert(comp.Name("ActMap"));
 		for (auto &action : ActMap)
 		{
 			try
@@ -842,24 +869,25 @@ bool C4Def::Compile(luabridge::LuaRef def, C4ID newID)
 			}
 			catch (StdCompiler::Exception *e)
 			{
-				DebugLogF("ERROR: Definition with name %s has invalid ActMap entry: %s: %s", Name.getData(), e->Pos.getData(), e->Msg.getData());
+				DebugLogF("ERROR: Definition with name %s has invalid ActMap entry: %s: %s", Name.c_str(), e->Pos.getData(), e->Msg.getData());
 				action.Default();
 				delete e;
 				break;
 			}
 		}
+		comp.End();
 		CrossMapActMap();
 	}
 
 	luabridge::LuaRef graphics = def["Graphics"];
 	if (!graphics.isTable())
 	{
-		DebugLogF("ERROR: Definition with name %s has invalid graphics specified", Name.getData());
+		DebugLogF("ERROR: Definition with name %s has invalid graphics specified", Name.c_str());
 		return false;
 	}
 	if (graphics["Default"].isNil() || !graphics["Default"].isTable() || !graphics["Default"]["Base"].isString())
 	{
-		DebugLogF("ERROR: Definition with name %s is missing default graphics", Name.getData());
+		DebugLogF("ERROR: Definition with name %s is missing default graphics", Name.c_str());
 	}
 	else
 	{
@@ -876,7 +904,7 @@ bool C4Def::Compile(luabridge::LuaRef def, C4ID newID)
 			{
 				if (!pair.second["Base"].isString())
 				{
-					DebugLogF("Definition with name %s has invalid graphics set %s", Name.getData(), pair.first.c_str());
+					DebugLogF("Definition with name %s has invalid graphics set %s", Name.c_str(), pair.first.c_str());
 					continue;
 				}
 				LoadGraphics(pair.second["Base"].tostring(), pair.second["Overlay"].isString() ? pair.second["Overlay"].tostring() : "");
@@ -899,7 +927,7 @@ void C4Def::LoadGraphics(const std::string &base, const std::string &overlay, bo
 		auto i = Game.LuaGraphics.find(name);
 		if (i == Game.LuaGraphics.end())
 		{
-			DebugLogF("ERROR: Definition with name %s specifies missing graphics: %s", Name.getData(), name.c_str());
+			DebugLogF("ERROR: Definition with name %s specifies missing graphics: %s", Name.c_str(), name.c_str());
 			return nullptr;
 		}
 		return i->second;
@@ -1091,7 +1119,7 @@ void C4Def::UpdateValues()
 		{
 			TopFace.Default();
 			// warn in debug mode
-			DebugLogF("invalid TopFace in %s(%s)", Name.getData(), C4IdText(id));
+			DebugLogF("invalid TopFace in %s(%s)", Name.c_str(), C4IdText(id));
 		}
 	}
 #endif

@@ -1001,7 +1001,7 @@ static bool FnSetName(C4AulContext *cthr, C4String *pNewName, C4Object *pObj, C4
 
 	if (idDef)
 		if (pDef = C4Id2Def(idDef))
-			pDef->Name.Copy(FnStringPar(pNewName));
+			pDef->Name = FnStringPar(pNewName);
 		else
 			return false;
 	else
