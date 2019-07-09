@@ -59,7 +59,7 @@ public:
 
 public:
 	char Filename[_MAX_PATH + 1];
-	StdStrBuf Name;
+	std::string Name;
 	int32_t Status;
 	int32_t Eliminated;
 	int32_t Surrendered;
@@ -137,9 +137,10 @@ public:
 	int32_t ControlCount; // controls issued since value was last recorded
 	int32_t ActionCount;  // non-doubled controls since value was last recorded
 	ControlType LastControlType; int32_t LastControlID; // last control to capture perma-pressers in stats
+	LuaHelpers::DeletableObjectPtr<C4Player> *wrapper = nullptr;
 
 public:
-	const char *GetName() const { return Name.getData(); }
+	const char *GetName() const { return Name.c_str(); }
 	C4PlayerType GetType() const;
 
 public:

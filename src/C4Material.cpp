@@ -206,9 +206,9 @@ void C4MaterialCore::CompileFunc(StdCompiler *pComp)
 	pComp->Value(mkNamingAdapt(Extinguisher,                                                        "Extinguisher",        0));
 	pComp->Value(mkNamingAdapt(Soil,                                                                "Soil",                0));
 	pComp->Value(mkNamingAdapt(Placement,                                                           "Placement",           0));
-	pComp->Value(mkNamingAdapt(mkStringAdapt(TextureOverlay, StdCompiler::RCT_IdtfAllowEmpty),     "TextureOverlay",      ""));
+	pComp->Value(mkNamingAdapt(mkStringAdapt(TextureOverlay, StdCompiler::RCT_IdtfAllowEmpty),      "TextureOverlay",      ""));
 	pComp->Value(mkNamingAdapt(OverlayType,                                                         "OverlayType",         0));
-	pComp->Value(mkNamingAdapt(mkStringAdapt(PXSGfx, StdCompiler::RCT_IdtfAllowEmpty),             "PXSGfx",              ""));
+	pComp->Value(mkNamingAdapt(mkStringAdapt(PXSGfx, StdCompiler::RCT_IdtfAllowEmpty),              "PXSGfx",              ""));
 	pComp->Value(mkNamingAdapt(PXSGfxRt,                                                            "PXSGfxRt",            TargetRect0));
 	pComp->Value(mkNamingAdapt(PXSGfxSize,                                                          "PXSGfxSize",          PXSGfxRt.Wdt));
 	pComp->Value(mkNamingAdapt(TempConvStrength,                                                    "TempConvStrength",    0));

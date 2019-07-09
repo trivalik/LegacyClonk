@@ -128,6 +128,7 @@ src/C4LogBuf.cpp
 src/C4LogBuf.h
 src/C4LuaScriptEngine.cpp
 src/C4LuaScriptEngine.h
+src/C4LuaDeletableObjectPtr.h
 src/C4MainMenu.cpp
 src/C4MainMenu.h
 src/C4Map.cpp

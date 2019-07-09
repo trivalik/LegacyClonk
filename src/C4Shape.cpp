@@ -50,10 +50,20 @@ void C4Rect::Default()
 
 void C4Rect::CompileFunc(StdCompiler *pComp)
 {
-	pComp->Value(mkDefaultAdapt(x,   0)); pComp->Separator();
-	pComp->Value(mkDefaultAdapt(y,   0)); pComp->Separator();
-	pComp->Value(mkDefaultAdapt(Wdt, 0)); pComp->Separator();
-	pComp->Value(mkDefaultAdapt(Hgt, 0));
+	if (dynamic_cast<StdCompilerLuaRead *>(pComp))
+	{
+		pComp->Value(mkNamingAdapt(x,   "X",      0));
+		pComp->Value(mkNamingAdapt(y,   "Y",      0));
+		pComp->Value(mkNamingAdapt(Wdt, "Width",  0));
+		pComp->Value(mkNamingAdapt(Hgt, "Height", 0));
+	}
+	else
+	{
+		pComp->Value(mkDefaultAdapt(x,   0)); pComp->Separator();
+		pComp->Value(mkDefaultAdapt(y,   0)); pComp->Separator();
+		pComp->Value(mkDefaultAdapt(Wdt, 0)); pComp->Separator();
+		pComp->Value(mkDefaultAdapt(Hgt, 0));
+	}
 }
 
 void C4TargetRect::Default()
@@ -92,9 +102,18 @@ bool C4TargetRect::ClipBy(C4TargetRect &rClip)
 
 void C4TargetRect::CompileFunc(StdCompiler *pComp)
 {
-	C4Rect::CompileFunc(pComp); pComp->Separator();
-	pComp->Value(mkDefaultAdapt(tx, 0)); pComp->Separator();
-	pComp->Value(mkDefaultAdapt(ty, 0));
+	C4Rect::CompileFunc(pComp);
+	if (dynamic_cast<StdCompilerLuaRead *>(pComp))
+	{
+		pComp->Value(mkNamingAdapt(tx, "TargetX", 0));
+		pComp->Value(mkNamingAdapt(ty, "TargetY", 0));
+	}
+	else
+	{
+		pComp->Separator();
+		pComp->Value(mkDefaultAdapt(tx, 0)); pComp->Separator();
+		pComp->Value(mkDefaultAdapt(ty, 0));
+	}
 }
 
 void C4Rect::Set(int32_t iX, int32_t iY, int32_t iWdt, int32_t iHgt)
@@ -682,10 +701,7 @@ void C4Shape::CompileFunc(StdCompiler *pComp, bool fRuntime)
 	{
 		if (luaComp->Name("Shape"))
 		{
-			pComp->Value(mkNamingAdapt(x,   "X",      0));
-			pComp->Value(mkNamingAdapt(y,   "Y",      0));
-			pComp->Value(mkNamingAdapt(Wdt, "Width",  0));
-			pComp->Value(mkNamingAdapt(Hgt, "Height", 0));
+			C4Rect::CompileFunc(pComp);
 		}
 		luaComp->NameEnd();
 

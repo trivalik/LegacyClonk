@@ -1169,6 +1169,10 @@ void StdCompilerLuaRead::String(char *szString, size_t iMaxLength, RawCompileTyp
 	luabridge::LuaRef value = getValue();
 	if (value.isString())
 	{
+		if (eType == StdCompiler::RCT_ID && value.tostring().size() != 4)
+		{
+			excNotFound("ID expected");
+		}
 		std::string s = value.tostring();
 		std::strncpy(szString, s.c_str(), std::min<size_t>(s.size() + 1, iMaxLength));
 	}
@@ -1180,6 +1184,10 @@ void StdCompilerLuaRead::String(char **pszString, RawCompileType eType)
 	luabridge::LuaRef value = getValue();
 	if (value.isString())
 	{
+		if (eType == StdCompiler::RCT_ID && value.tostring().size() != 4)
+		{
+			excNotFound("ID expected");
+		}
 		std::string s = value.tostring();
 		auto *target = reinterpret_cast<char *>(std::malloc(s.size() + 1 / sizeof(char)));
 		std::strncpy(target, s.c_str(), s.length() + 1);
@@ -1193,6 +1201,10 @@ void StdCompilerLuaRead::String(std::string &str, RawCompileType eType)
 	luabridge::LuaRef value = getValue();
 	if (value.isString())
 	{
+		if (eType == StdCompiler::RCT_ID && value.tostring().size() != 4)
+		{
+			excNotFound("ID expected");
+		}
 		str = value.tostring();
 	}
 }

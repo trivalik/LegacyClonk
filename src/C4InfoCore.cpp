@@ -71,6 +71,15 @@ C4PlayerInfoCore::C4PlayerInfoCore()
 	Default();
 }
 
+C4PlayerInfoCore::~C4PlayerInfoCore()
+{
+	if (wrapper != nullptr)
+	{
+		wrapper->reset();
+		wrapper->decReferenceCount();
+	}
+}
+
 void C4PlayerInfoCore::Default(C4RankSystem *pRanks)
 {
 	std::memset(this, 0, sizeof(C4PlayerInfoCore));
@@ -87,6 +96,8 @@ void C4PlayerInfoCore::Default(C4RankSystem *pRanks)
 	PrefControlStyle = 0;
 	PrefAutoContextMenu = 0;
 	ExtraData.Reset();
+	wrapper = new LuaHelpers::DeletableObjectPtr<C4PlayerInfoCore>(nullptr, this);
+	wrapper->incReferenceCount();
 }
 
 uint32_t C4PlayerInfoCore::GetPrefColorValue(int32_t iPrefColor)

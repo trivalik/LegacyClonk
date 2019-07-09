@@ -24,6 +24,7 @@
 #include <C4Def.h>
 #include <C4Log.h>
 #include <C4Components.h>
+#include "C4Object.h"
 
 C4AulError::C4AulError() {}
 
@@ -40,8 +41,10 @@ C4AulFunc::C4AulFunc(C4AulScript *pOwner, const char *pName, bool bAtEnd) :
 	MapNext(nullptr),
 	LinkedTo(nullptr),
 	OverloadedBy(nullptr),
-	NextSNFunc(nullptr)
+	NextSNFunc(nullptr),
+	wrapper(new LuaHelpers::DeletableObjectPtr<C4AulFunc>(nullptr, this))
 {
+	wrapper->incReferenceCount();
 	// reg2list (at end or at the beginning)
 	Owner = pOwner;
 	if (bAtEnd)
@@ -105,6 +108,11 @@ C4AulFunc::~C4AulFunc()
 		if (Owner->Func0 == this) Owner->Func0 = Next;
 		if (Owner->FuncL == this) Owner->FuncL = Prev;
 		Owner->Engine->FuncLookUp.Remove(this);
+	}
+	if (wrapper != nullptr)
+	{
+		wrapper->reset();
+		wrapper->decReferenceCount();
 	}
 }
 

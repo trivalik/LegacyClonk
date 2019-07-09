@@ -17,25 +17,13 @@
 #pragma once
 
 #include "C4Lua.h"
+#include "C4LuaDeletableObjectPtr.h"
 #include "C4Include.h"
 #include "C4StringTable.h"
 #include "C4Value.h"
 #include "C4ValueList.h"
 
 #include <functional>
-
-#if __cplusplus < 201703L
-namespace std
-{
-template<class...> struct conjunction : std::true_type { };
-template<class B1> struct conjunction<B1> : B1 { };
-template<class B1, class... Bn>
-struct conjunction<B1, Bn...>
-	: std::conditional_t<bool(B1::value), conjunction<Bn...>, B1> {};
-
-template<class... B> constexpr bool conjunction_v = conjunction<B...>::value;
-}
-#endif
 
 namespace std
 {
@@ -79,7 +67,60 @@ public:
 
 }
 
+#define LuaNil(x) luabridge::LuaRef(x)
+
+struct C4AulContext;
+
+namespace LuaHelpers
+{
+template<typename... Args> luabridge::LuaRef error(lua_State *L, const char *error, Args... args)
+{
+	luaL_error(L, error, args...);
+	return LuaNil(L);
+}
+
+template<class T> T *meta(lua_State *L, T *obj)
+{
+	assert(L);
+	luabridge::push(L, obj);
+	int top = lua_gettop(L);
+
+	lua_getmetatable(L, -1);
+	int meta = lua_gettop(L);
+
+	lua_getfield(L, meta, "__index");
+	int mark = lua_gettop(L);
+
+	lua_getfield(L, meta, "__index_old");
+	if (!lua_isnil(L, -1))
+	{
+		lua_setfield(L, meta, "__index");
+		lua_settop(L, mark);
+		lua_setfield(L, meta, "__index_old");
+
+		lua_settop(L, meta);
+		lua_setmetatable(L, top);
+	}
+	lua_settop(L, top - 1);
+	return obj;
+}
+
+template<class T, typename Ptr = DeletableObjectPtr<T>, typename Ret = luabridge::RefCountedObjectPtr<Ptr>>
+inline Ret ref(lua_State *L, T *obj)
+{
+	obj->wrapper->setState(L);
+	return Ret(meta(L, obj->wrapper));
+}
+
 C4Object *Number2Object(int number);
+C4ID GetIDFromDef(luabridge::LuaRef def);
+int32_t GetPlayerNumber(DeletableObjectPtr<C4Player> *player);
+}
+
+namespace LuaScriptFn
+{
+luabridge::LuaRef RegisterDefinition(luabridge::LuaRef table);
+}
 
 namespace luabridge
 {
@@ -123,7 +164,7 @@ template<> struct Stack<C4Value>
 			break;
 
 		case C4V_C4ObjectEnum:
-			luabridge::push(L, Number2Object(value.getInt()));
+			luabridge::push(L, LuaHelpers::Number2Object(value.getInt()));
 			break;
 
 		case C4V_C4Object:
@@ -168,6 +209,22 @@ template<> struct Stack<C4Value>
 		return buf;
 	}
 };*/
+#ifdef USE_FIXED
+template<> struct Stack<FIXED>
+{
+	static void push(lua_State *L, const FIXED &fixed)
+	{
+		static_assert(std::is_floating_point<lua_Number>::value, "lua_Number is not a floating-point type");
+		lua_pushnumber(L, static_cast<lua_Number>(fixtof(fixed)));
+	}
+
+	static FIXED get(lua_State *L, int index)
+	{
+		static_assert(std::is_floating_point<lua_Number>::value, "lua_Number is not a floating-point type");
+		return ftofix(static_cast<float>(lua_tonumber(L, index)));
+	}
+};
+#endif
 }
 
 class C4LuaScriptEngine : public C4Lua
@@ -206,7 +263,7 @@ public:
 				LogErrorF("Function %s.%s not found",
 						  (context.isNil() ? "Global" : luaL_tolstring(L, -2, nullptr)), luaL_tolstring(L, -1, nullptr));
 			}
-			return luabridge::LuaRef(L);
+			return LuaNil(L);
 		}
 		else
 		{
@@ -217,7 +274,7 @@ public:
 			catch (luabridge::LuaException const &e)
 			{
 				LogErrorF("%s", e.what());
-				return luabridge::LuaRef(L);
+				return LuaNil(L);
 			}
 		}
 	}
@@ -236,7 +293,7 @@ public:
 			{
 				LogErrorF("Table %s not found", context.c_str());
 			}
-			return luabridge::LuaRef(L);
+			return LuaNil(L);
 		}
 	}
 
@@ -251,7 +308,7 @@ public:
 		catch (luabridge::LuaException const &e)
 		{
 			LogErrorF("%s", e.what());
-			return luabridge::LuaRef(L);
+			return LuaNil(L);
 		}
 	}
 	luabridge::LuaRef Evaluate(const std::string &script);

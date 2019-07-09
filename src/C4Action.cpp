@@ -34,9 +34,11 @@ void C4Action::Default()
 	DrawDir = Dir;
 	ComDir = COMD_None;
 	Time = 0;
+	Length = 0;
 	Data = 0;
 	Target = Target2 = nullptr;
 	Phase = PhaseDelay = 0;
+	Procedure = DFA_NONE;
 	Facet.Default();
 	FacetX = FacetY = 0;
 	t_attach = CNAT_None;

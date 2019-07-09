@@ -54,7 +54,7 @@ void C4Action::SetBridgeData(int32_t iBridgeTime, bool fMoveClonk, bool fWall, i
 	Data = (uint32_t(iBridgeTime) << 16) + (uint32_t(fMoveClonk) << 8) + (uint32_t(fWall) << 9) + iBridgeMaterial;
 }
 
-void C4Action::GetBridgeData(int32_t &riBridgeTime, bool &rfMoveClonk, bool &rfWall, int32_t &riBridgeMaterial)
+void C4Action::GetBridgeData(int32_t &riBridgeTime, bool &rfMoveClonk, bool &rfWall, int32_t &riBridgeMaterial) const
 {
 	// mask from this->Data
 	uint32_t uiData = Data;
@@ -142,6 +142,11 @@ void C4Object::Default()
 	FirstRef = nullptr;
 	pGfxOverlay = nullptr;
 	iLastAttachMovementFrame = -1;
+	if (wrapper != nullptr)
+	{
+		delete wrapper;
+		wrapper = nullptr;
+	}
 }
 
 bool C4Object::Init(C4Def *pDef, C4Object *pCreator,
@@ -151,6 +156,9 @@ bool C4Object::Init(C4Def *pDef, C4Object *pCreator,
 {
 	// currently initializing
 	Initializing = true;
+
+	wrapper = new LuaHelpers::DeletableObjectPtr<C4Object>(!pDef->LuaDef.isNil() ? pDef->LuaDef.state() : nullptr, this);
+	wrapper->incReferenceCount(); // don't delete the wrapper while the object still exists
 
 	// Def & basics
 	id = pDef->id;
@@ -307,6 +315,10 @@ void C4Object::AssignRemoval(bool fExitContents)
 	Info = nullptr;
 	// Object system operation
 	while (FirstRef) FirstRef->Set(0);
+	if (wrapper != nullptr)
+	{
+		wrapper->reset();
+	}
 	Game.ClearPointers(this);
 	ClearCommands();
 	if (pSolidMaskData) pSolidMaskData->Remove(true, false);
@@ -2005,7 +2017,7 @@ FIXED C4Object::GetSpeed()
 	return cobjspd;
 }
 
-const char *C4Object::GetName()
+const char *C4Object::GetName() const
 {
 	return Name.getData();
 }
@@ -2129,17 +2141,18 @@ C4Value C4Object::Call(const char *szFunctionCall, C4AulParSet *pPars, bool fPas
 	if (!Status || !Def || !szFunctionCall[0]) return C4VNull;
 	if (!Def->LuaDef.isNil())
 	{
+		luabridge::LuaRef _this(Def->LuaDef.state(), LuaHelpers::ref(Def->LuaDef.state(), this));
 		if (pPars != nullptr)
 		{
-			return Game.LuaEngine.Call(luabridge::LuaRef(Def->LuaDef.state(), this), std::string{szFunctionCall},
+			return Game.LuaEngine.Call(_this, std::string{szFunctionCall}, _this,
 									pPars->Par[0], pPars->Par[1], pPars->Par[2],
-									pPars->Par[3], pPars->Par[4], pPars->Par[5],
-									pPars->Par[6]/*, pPars->Par[7], pPars->Par[8],
+									pPars->Par[3], pPars->Par[4], pPars->Par[5]
+									/*pPars->Par[6], pPars->Par[7], pPars->Par[8],
 									pPars->Par[9]*/); // FIXME
 		}
 		else
 		{
-			return Game.LuaEngine.Call(luabridge::LuaRef(Def->LuaDef.state(), this), std::string{szFunctionCall});
+			return Game.LuaEngine.Call(_this, std::string{szFunctionCall}, _this);
 		}
 	}
 	return Def->Script.ObjectCall(this, this, szFunctionCall, pPars, fPassError);
@@ -3159,6 +3172,8 @@ void C4Object::Clear()
 	delete pDrawTransform;   pDrawTransform   = nullptr;
 	delete pGfxOverlay;      pGfxOverlay      = nullptr;
 	while (FirstRef) FirstRef->Set(0);
+	// DO NOT DELETE wrapper HERE (gets deleted by reference counting)
+	wrapper->decReferenceCount();
 }
 
 bool C4Object::ContainedControl(uint8_t byCom)
@@ -4048,6 +4063,8 @@ bool C4Object::SetAction(int32_t iAct, C4Object *pTarget, C4Object *pTarget2, in
 	Action.Name = "";
 	if (Action.Act > ActIdle) Action.Name = Def->ActMap[Action.Act].Name;
 	Action.Phase = Action.PhaseDelay = 0;
+	Action.Procedure = Def->ActMap[Action.Act].Procedure;
+	Action.Length = Def->ActMap[Action.Act].Length;
 
 	// Set target if specified
 	if (pTarget) Action.Target = pTarget;
@@ -6197,37 +6214,4 @@ bool C4Object::IsUserPlayerObject()
 	if (!pOwner || pOwner->GetType() != C4PT_User) return false;
 	// otherwise, it's a user playeer object
 	return true;
-}
-
-void C4Object::__newindex(std::string key, luabridge::LuaRef value)
-{
-	LuaLocals.emplace(key, value);
-}
-
-luabridge::LuaRef C4Object::__index(std::string key, lua_State *L)
-{
-	auto i = LuaLocals.find(key);
-	if (i != LuaLocals.end())
-	{
-		return i->second;
-	}
-
-	C4Value *value = LocalNamed.GetItem(key.c_str());
-	if (value != nullptr)
-	{
-		return luabridge::LuaRef(L, value);
-	}
-
-	if (!Def->LuaDef[key].isNil())
-	{
-		return Def->LuaDef[key];
-	}
-
-	int index = lua_gettop(L);
-	luabridge::push(L, this);
-	lua_getmetatable(L, -1);
-	lua_getfield(L, -1, "__index_old");
-	auto ref = luabridge::LuaRef::fromStack(L);
-	lua_settop(L, index);
-	return ref(this, key);
 }

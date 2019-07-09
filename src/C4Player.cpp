@@ -37,6 +37,8 @@
 C4Player::C4Player() : C4PlayerInfoCore()
 {
 	Default();
+	wrapper = new LuaHelpers::DeletableObjectPtr<C4Player>(nullptr, this);
+	wrapper->incReferenceCount();
 }
 
 C4Player::~C4Player()
@@ -280,7 +282,7 @@ bool C4Player::Init(int32_t iNumber, int32_t iAtClient, const char *szAtClientNa
 	}
 
 	// Take player name from player info; forcing overloads by the league or because of doubled player names
-	Name.Copy(pInfo->GetName());
+	Name = pInfo->GetName();
 
 	// view pos init: Start at center pos
 	ViewX = GBackWdt / 2; ViewY = GBackHgt / 2;
@@ -1055,6 +1057,11 @@ void C4Player::Clear()
 	delete pGamepad;
 	pGamepad = nullptr;
 	Status = 0;
+	if (wrapper != nullptr)
+	{
+		wrapper->reset();
+		wrapper->decReferenceCount();
+	}
 }
 
 void C4Player::Default()

@@ -19,6 +19,7 @@
 #pragma once
 
 #include <C4Id.h>
+#include "C4LuaDeletableObjectPtr.h"
 #include <C4ValueMap.h>
 #include <Fixed.h>
 
@@ -196,6 +197,7 @@ class C4PlayerInfoCore
 {
 public:
 	C4PlayerInfoCore();
+	~C4PlayerInfoCore();
 
 public:
 	// Player Info
@@ -216,6 +218,7 @@ public:
 	int32_t PrefPosition;
 	int32_t PrefControlStyle;
 	int32_t PrefAutoContextMenu; // enable automatically opened context menus in structures
+	LuaHelpers::DeletableObjectPtr<C4PlayerInfoCore> *wrapper = nullptr;
 
 public:
 	void Default(C4RankSystem *pRanks = nullptr);

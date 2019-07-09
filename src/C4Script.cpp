@@ -270,7 +270,7 @@ static C4Value FnGetGravity(C4AulContext *cthr, C4Value *pPars)
 	return C4VInt(fixtoi(Game.Landscape.Gravity * 500));
 }
 
-static C4Value FnDeathAnnounce(C4AulContext *cthr, C4Value *pPars)
+C4Value FnDeathAnnounce(C4AulContext *cthr, C4Value *pPars)
 {
 	const long MaxDeathMsg = 7;
 	if (!cthr->Obj) return C4VFalse;
@@ -370,7 +370,7 @@ static C4Value FnExit(C4AulContext *cthr, C4Value *pPars)
 		itofix(trdir) / 10));
 }
 
-static C4Value FnCollect(C4AulContext *cthr, C4Value *pPars)
+C4Value FnCollect(C4AulContext *cthr, C4Value *pPars)
 {
 	PAR(object, pItem); PAR(object, pCollector);
 	bool success = false;
@@ -394,7 +394,7 @@ static C4Value FnCollect(C4AulContext *cthr, C4Value *pPars)
 	return C4VBool(success);
 }
 
-static C4Value FnSplit2Components(C4AulContext *cthr, C4Value *pPars)
+C4Value FnSplit2Components(C4AulContext *cthr, C4Value *pPars)
 {
 	PAR(object, pObj);
 
@@ -443,7 +443,7 @@ static bool FnRemoveObject(C4AulContext *cthr, C4Object *pObj, bool fEjectConten
 	return true;
 }
 
-static bool FnSetPosition(C4AulContext *cthr, long iX, long iY, C4Object *pObj, bool fCheckBounds)
+bool FnSetPosition(C4AulContext *cthr, long iX, long iY, C4Object *pObj, bool fCheckBounds)
 {
 	if (!pObj) pObj = cthr->Obj; if (!pObj) return false;
 
@@ -460,7 +460,7 @@ static bool FnSetPosition(C4AulContext *cthr, long iX, long iY, C4Object *pObj, 
 	return true;
 }
 
-static bool FnDoCon(C4AulContext *cthr, long iChange, C4Object *pObj) // in percent
+bool FnDoCon(C4AulContext *cthr, long iChange, C4Object *pObj) // in percent
 {
 	if (!pObj) pObj = cthr->Obj; if (!pObj) return false;
 	pObj->DoCon(FullCon * iChange / 100);
@@ -473,7 +473,7 @@ static long FnGetCon(C4AulContext *cthr, C4Object *pObj) // in percent
 	return 100 * pObj->GetCon() / FullCon;
 }
 
-static bool FnDoEnergy(C4AulContext *cthr, long iChange, C4Object *pObj, bool fExact, long iEngType, long iCausedByPlusOne)
+bool FnDoEnergy(C4AulContext *cthr, long iChange, C4Object *pObj, bool fExact, long iEngType, long iCausedByPlusOne)
 {
 	if (!pObj) pObj = cthr->Obj; if (!pObj) return false;
 	if (!iEngType) iEngType = C4FxCall_EngScript;
@@ -489,7 +489,7 @@ static bool FnDoBreath(C4AulContext *cthr, long iChange, C4Object *pObj)
 	return true;
 }
 
-static bool FnDoDamage(C4AulContext *cthr, long iChange, C4Object *pObj, long iDmgType, long iCausedByPlusOne)
+bool FnDoDamage(C4AulContext *cthr, long iChange, C4Object *pObj, long iDmgType, long iCausedByPlusOne)
 {
 	if (!pObj) pObj = cthr->Obj; if (!pObj) return false;
 	int32_t iCausedBy = iCausedByPlusOne - 1; if (!iCausedByPlusOne && cthr->Obj) iCausedBy = cthr->Obj->Controller;
@@ -498,7 +498,7 @@ static bool FnDoDamage(C4AulContext *cthr, long iChange, C4Object *pObj, long iD
 	return true;
 }
 
-static bool FnDoMagicEnergy(C4AulContext *cthr, long iChange, C4Object *pObj, bool fAllowPartial)
+bool FnDoMagicEnergy(C4AulContext *cthr, long iChange, C4Object *pObj, bool fAllowPartial)
 {
 	if (!pObj) pObj = cthr->Obj; if (!pObj) return false;
 	// Physical modification factor
@@ -538,7 +538,7 @@ const int32_t PHYS_Current        = 0,
               PHYS_Temporary      = 2,
               PHYS_StackTemporary = 3;
 
-static bool FnSetPhysical(C4AulContext *cthr, C4String *szPhysical, long iValue, long iMode, C4Object *pObj)
+bool FnSetPhysical(C4AulContext *cthr, C4String *szPhysical, long iValue, long iMode, C4Object *pObj)
 {
 	if (!pObj) pObj = cthr->Obj; if (!pObj) return false;
 	// Get physical offset
@@ -584,7 +584,7 @@ static bool FnSetPhysical(C4AulContext *cthr, C4String *szPhysical, long iValue,
 	return false;
 }
 
-static bool FnTrainPhysical(C4AulContext *cthr, C4String *szPhysical, long iTrainBy, long iMaxTrain, C4Object *pObj)
+bool FnTrainPhysical(C4AulContext *cthr, C4String *szPhysical, long iTrainBy, long iMaxTrain, C4Object *pObj)
 {
 	if (!pObj) pObj = cthr->Obj; if (!pObj) return false;
 	// Get physical offset
@@ -594,7 +594,7 @@ static bool FnTrainPhysical(C4AulContext *cthr, C4String *szPhysical, long iTrai
 	return !!pObj->TrainPhysical(off, iTrainBy, iMaxTrain);
 }
 
-static bool FnResetPhysical(C4AulContext *cthr, C4Object *pObj, C4String *sPhysical)
+bool FnResetPhysical(C4AulContext *cthr, C4Object *pObj, C4String *sPhysical)
 {
 	if (!pObj) pObj = cthr->Obj; if (!pObj) return false;
 	const char *szPhysical = FnStringPar(sPhysical);
@@ -619,7 +619,7 @@ static bool FnResetPhysical(C4AulContext *cthr, C4Object *pObj, C4String *sPhysi
 	return true;
 }
 
-static long FnGetPhysical(C4AulContext *cthr, C4String *szPhysical, long iMode, C4Object *pObj, C4ID idDef)
+long FnGetPhysical(C4AulContext *cthr, C4String *szPhysical, long iMode, C4Object *pObj, C4ID idDef)
 {
 	// Get physical offset
 	C4PhysicalInfo::Offset off;
@@ -821,7 +821,7 @@ static bool FnExecuteCommand(C4AulContext *cthr, C4Object *pObj)
 	return !!pObj->ExecuteCommand();
 }
 
-static C4Value FnSetCommand(C4AulContext *cthr, C4Value *pPars)
+C4Value FnSetCommand(C4AulContext *cthr, C4Value *pPars)
 {
 	PAR(object, pObj); PAR(string, szCommand); PAR(object, pTarget); PAR(any, Tx); PAR(int, iTy);
 	PAR(object, pTarget2); PAR(any, Data); PAR(int, iRetries);
@@ -848,7 +848,7 @@ static C4Value FnSetCommand(C4AulContext *cthr, C4Value *pPars)
 	return C4VTrue;
 }
 
-static C4Value FnAddCommand(C4AulContext *cthr, C4Value *pPars)
+C4Value FnAddCommand(C4AulContext *cthr, C4Value *pPars)
 {
 	PAR(object, pObj); PAR(string, szCommand); PAR(object, pTarget); PAR(any, Tx); PAR(int, iTy);
 	PAR(object, pTarget2); PAR(int, iUpdateInterval); PAR(any, Data); PAR(int, iRetries); PAR(int, iBaseMode);
@@ -873,7 +873,7 @@ static C4Value FnAddCommand(C4AulContext *cthr, C4Value *pPars)
 	return C4VBool(pObj->AddCommand(iCommand, pTarget, Tx, iTy, iUpdateInterval, pTarget2, true, iData, false, iRetries, szText, iBaseMode));
 }
 
-static C4Value FnAppendCommand(C4AulContext *cthr, C4Value *pPars)
+C4Value FnAppendCommand(C4AulContext *cthr, C4Value *pPars)
 {
 	PAR(object, pObj); PAR(string, szCommand); PAR(object, pTarget); PAR(any, Tx); PAR(int, iTy);
 	PAR(object, pTarget2); PAR(int, iUpdateInterval); PAR(any, Data); PAR(int, iRetries); PAR(int, iBaseMode);
@@ -928,7 +928,7 @@ static C4Value FnGetCommand(C4AulContext *cthr, C4Value *pPars)
 	return C4VNull;
 }
 
-static bool FnFinishCommand(C4AulContext *cthr, C4Object *pObj, bool fSuccess, long iCommandNum)
+bool FnFinishCommand(C4AulContext *cthr, C4Object *pObj, bool fSuccess, long iCommandNum)
 {
 	if (!pObj) pObj = cthr->Obj; if (!pObj) return false;
 	C4Command *Command = pObj->Command;
@@ -991,7 +991,7 @@ static C4String *FnGetName(C4AulContext *cthr, C4Object *pObj, C4ID idDef)
 	return String(pObj->GetName());
 }
 
-static bool FnSetName(C4AulContext *cthr, C4String *pNewName, C4Object *pObj, C4ID idDef, bool fSetInInfo, bool fMakeValidIfExists)
+bool FnSetName(C4AulContext *cthr, C4String *pNewName, C4Object *pObj, C4ID idDef, bool fSetInInfo, bool fMakeValidIfExists)
 {
 	// safety
 	if (fSetInInfo && idDef) return false;

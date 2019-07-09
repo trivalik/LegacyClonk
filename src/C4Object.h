@@ -92,8 +92,10 @@ public:
 	int32_t DrawDir; // NoSave // - needs to be calculated for old-style objects.txt anyway
 	int32_t ComDir;
 	int32_t Time;
+	int32_t Length; // NoSave //
 	int32_t Data;
 	int32_t Phase, PhaseDelay;
+	int32_t Procedure; // NoSave //
 	int32_t t_attach; // SyncClearance-NoSave //
 	C4Object *Target, *Target2;
 	C4Facet Facet; // NoSave //
@@ -105,7 +107,7 @@ public:
 
 	// BRIDGE procedure: data mask
 	void SetBridgeData(int32_t iBridgeTime, bool fMoveClonk, bool fWall, int32_t iBridgeMaterial);
-	void GetBridgeData(int32_t &riBridgeTime, bool &rfMoveClonk, bool &rfWall, int32_t &riBridgeMaterial);
+	void GetBridgeData(int32_t &riBridgeTime, bool &rfMoveClonk, bool &rfWall, int32_t &riBridgeMaterial) const;
 };
 
 class C4Object
@@ -121,7 +123,7 @@ public:
 	int32_t Owner;
 	int32_t Controller;
 	int32_t LastEnergyLossCausePlayer; // last player that caused an energy loss to this Clonk (used to trace kills when player tumbles off a cliff, etc.)
-	int32_t Category;
+	uint32_t Category;
 	int32_t x, y;
 	int32_t old_x, old_y; C4LArea Area; // position as currently seen by Game.Objecets.Sectors. UpdatePos to sync.
 	int32_t r;
@@ -202,6 +204,7 @@ public:
 	C4Value *FirstRef; // No-Save
 
 	class C4GraphicsOverlay *pGfxOverlay; // singly linked list of overlay graphics
+	LuaHelpers::DeletableObjectPtr<C4Object> *wrapper = nullptr;
 
 protected:
 	bool OnFire;
@@ -309,7 +312,7 @@ public:
 	bool SetAction(int32_t iAct, C4Object *pTarget = nullptr, C4Object *pTarget2 = nullptr, int32_t iCalls = SAC_StartCall | SAC_AbortCall, bool fForce = false);
 	bool SetActionByName(const char *szActName, C4Object *pTarget = nullptr, C4Object *pTarget2 = nullptr, int32_t iCalls = SAC_StartCall | SAC_AbortCall, bool fForce = false);
 	void SetDir(int32_t tdir);
-	void SetCategory(int32_t Category) { this->Category = Category; Resort(); SetOCF(); }
+	void SetCategory(uint32_t Category) { this->Category = Category; Resort(); SetOCF(); }
 	int32_t GetProcedure();
 	bool Enter(C4Object *pTarget, bool fCalls = true, bool fCopyMotion = true, bool *pfRejectCollect = nullptr);
 	bool Exit(int32_t iX = 0, int32_t iY = 0, int32_t iR = 0, FIXED iXDir = Fix0, FIXED iYDir = Fix0, FIXED iRDir = Fix0, bool fCalls = true);
@@ -325,7 +328,7 @@ public:
 	void UpdatLastEnergyLossCause(int32_t iNewCausePlr);
 	void DoBreath(int32_t iChange);
 	void DoCon(int32_t iChange, bool fInitial = false, bool fNoComponentChange = false);
-	int32_t GetCon() { return Con; }
+	int32_t GetCon() const { return Con; }
 	void DoExperience(int32_t change);
 	bool Promote(int32_t torank, bool fForceRankName);
 	void Explode(int32_t iLevel, C4ID idEffect = 0, const char *szEffect = nullptr);
@@ -347,8 +350,8 @@ public:
 	FIXED GetSpeed();
 	C4PhysicalInfo *GetPhysical(bool fPermanent = false);
 	bool TrainPhysical(C4PhysicalInfo::Offset mpiOffset, int32_t iTrainBy, int32_t iMaxTrain);
-	const char *GetName();
-	void SetName(const char *NewName = 0);
+	const char *GetName() const;
+	void SetName(const char *NewName = nullptr);
 	int32_t GetValue(C4Object *pInBase, int32_t iForPlayer);
 	void DirectCom(uint8_t byCom, int32_t iData);
 	void AutoStopDirectCom(uint8_t byCom, int32_t iData);
@@ -356,11 +359,12 @@ public:
 	bool BuyEnergy();
 	void AutoSellContents();
 	bool SetOwner(int32_t iOwner);
+	int32_t GetOwner() const { return Owner; }
 	bool SetPlrViewRange(int32_t iToRange);
 	void SetOnFire(bool OnFire) { this->OnFire = OnFire; SetOCF(); }
-	bool GetOnFire() { return OnFire; }
+	bool GetOnFire() const { return OnFire; }
 	void SetAlive(bool Alive) { this->Alive = Alive; SetOCF(); }
-	bool GetAlive() { return Alive; }
+	bool GetAlive() const { return Alive; }
 	void PlrFoWActualize();
 	void SetAudibilityAt(C4FacetEx &cgo, int32_t iX, int32_t iY);
 	bool IsVisible(int32_t iForPlr, bool fAsOverlay); // return whether an object is visible for the given player
@@ -448,7 +452,4 @@ public:
 	// This function is used for:
 	// -Objects that are not to be saved in "SaveScenario"-mode
 	bool IsUserPlayerObject(); // true for any object that belongs to any player (NO_OWNER) or a specified player
-
-	void __newindex(std::string key, luabridge::LuaRef value);
-	luabridge::LuaRef __index(std::string key, lua_State *L);
 };

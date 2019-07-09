@@ -23,6 +23,7 @@
 #include <C4Object.h>
 #include <C4Config.h>
 #include <C4Game.h>
+#include "C4LuaScriptEngine.h"
 #include <C4Wrappers.h>
 
 C4AulExecError::C4AulExecError(C4Object *pObj, const char *szError) : cObj(pObj)

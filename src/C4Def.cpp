@@ -307,21 +307,8 @@ void C4DefCore::CompileFunc(StdCompiler *pComp)
 		{ nullptr, 0 }
 	};
 
-	if (dynamic_cast<StdCompilerLuaRead *>(pComp))
-	{
-		bool b = pComp->Name("Category");
-		pComp->NameEnd();
-		asm("nop");
-		asm("nop");
-	}
-
 	pComp->Value(mkNamingAdapt(mkBitfieldAdapt<uint32_t>(Category, Categories),
 		"Category", 0));
-	if (dynamic_cast<StdCompilerLuaRead *>(pComp))
-	{
-		asm("nop");
-		asm("nop");
-	}
 
 	pComp->Value(mkNamingAdapt(MaxUserSelect,                 "MaxUserSelect",     0));
 	pComp->Value(mkNamingAdapt(Timer,                         "Timer",             35));

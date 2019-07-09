@@ -26,6 +26,7 @@
 #include <C4ValueList.h>
 #include <C4ValueMap.h>
 #include <C4Id.h>
+#include "C4LuaScriptEngine.h"
 #include <C4Script.h>
 #include <C4StringTable.h>
 
@@ -273,6 +274,7 @@ protected:
 public:
 	C4AulFunc *OverloadedBy; // function by which this one is overloaded
 	C4AulFunc *NextSNFunc; // next script func using the same name (list build in AfterLink)
+	class LuaHelpers::DeletableObjectPtr<C4AulFunc> *wrapper = nullptr;
 
 	virtual C4AulScriptFunc *SFunc() { return nullptr; } // type check func...
 

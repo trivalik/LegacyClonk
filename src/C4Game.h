@@ -244,6 +244,11 @@ public:
 		int32_t con = 1, bool terrain = false);
 	C4Object *CreateInfoObject(C4ObjectInfo *cinf, int32_t owner,
 		int32_t tx = 50, int32_t ty = 50);
+	C4Object *NewObject(C4Def *ndef, C4Object *pCreator,
+		int32_t owner, C4ObjectInfo *info,
+		int32_t tx, int32_t ty, int32_t tr,
+		FIXED xdir, FIXED ydir, FIXED rdir,
+		int32_t con, int32_t iController);
 	void BlastObjects(int32_t tx, int32_t ty, int32_t level, C4Object *inobj, int32_t iCausedBy, C4Object *pByObj);
 	void ShakeObjects(int32_t tx, int32_t ry, int32_t range, int32_t iCausedBy);
 	C4Object *OverlapObject(int32_t tx, int32_t ty, int32_t wdt, int32_t hgt,
@@ -335,11 +340,6 @@ protected:
 	bool CompileRuntimeData(C4ComponentHost &rGameData);
 
 	// Object function internals
-	C4Object *NewObject(C4Def *ndef, C4Object *pCreator,
-		int32_t owner, C4ObjectInfo *info,
-		int32_t tx, int32_t ty, int32_t tr,
-		FIXED xdir, FIXED ydir, FIXED rdir,
-		int32_t con, int32_t iController);
 	void ClearObjectPtrs(C4Object *tptr);
 	void ObjectRemovalCheck();
 
