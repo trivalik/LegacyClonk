@@ -404,7 +404,7 @@ void C4MCOverlay::Evaluate()
 	// get mat color
 	if (Inside<int32_t>(Material, 0, MapCreator->MatMap->Num - 1))
 	{
-		MatClr = MapCreator->TexMap->GetIndexMatTex(MapCreator->MatMap->Map[Material].Name, *Texture ? Texture : nullptr);
+		MatClr = MapCreator->TexMap->GetIndexMatTex(MapCreator->MatMap->Map[Material].Name.c_str(), *Texture ? Texture : nullptr);
 		if (Sub) MatClr += 128;
 	}
 	else

@@ -4598,7 +4598,7 @@ static C4String *FnMaterialName(C4AulContext *cthr, long iMat)
 	// mat valid?
 	if (!MatValid(iMat)) return nullptr;
 	// return mat name
-	return String(Game.Material.Map[iMat].Name);
+	return String(Game.Material.Map[iMat].Name.c_str());
 }
 
 static bool FnSetMenuSize(C4AulContext *cthr, long iCols, long iRows, C4Object *pObj)

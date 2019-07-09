@@ -82,7 +82,7 @@ public:
 	std::vector<C4MaterialReaction> CustomReactionList;
 
 public:
-	char Name[C4M_MaxName + 1];
+	std::string Name;
 	uint32_t Color[C4M_ColsPerMat * 3];
 	uint32_t Alpha[C4M_ColsPerMat * 2];
 	int32_t MapChunkType;
@@ -107,21 +107,21 @@ public:
 	int32_t Corrode;
 	int32_t Soil;
 	int32_t Placement; // placement order for landscape shading
-	StdStrBuf sTextureOverlay; // overlayed texture for this material
+	std::string TextureOverlay; // overlayed texture for this material
 	int32_t OverlayType; // defines the way in which the overlay texture is applied
-	StdStrBuf sPXSGfx; // newgfx: picture used for loose pxs
+	std::string PXSGfx; // newgfx: picture used for loose pxs
 	C4TargetRect PXSGfxRt; // newgfx: facet rect of pixture used for loose pixels
 	int32_t PXSGfxSize;
-	StdStrBuf sBlastShiftTo;
-	StdStrBuf sInMatConvert;
-	StdStrBuf sInMatConvertTo;
-	int32_t       InMatConvertDepth; // material converts only if it finds the same material above
-	int32_t       BelowTempConvert;
-	int32_t       BelowTempConvertDir;
-	StdStrBuf sBelowTempConvertTo;
-	int32_t       AboveTempConvert;
-	int32_t       AboveTempConvertDir;
-	StdStrBuf sAboveTempConvertTo;
+	std::string sBlastShiftTo;
+	std::string sInMatConvert;
+	std::string sInMatConvertTo;
+	int32_t     InMatConvertDepth; // material converts only if it finds the same material above
+	int32_t     BelowTempConvert;
+	int32_t     BelowTempConvertDir;
+	std::string sBelowTempConvertTo;
+	int32_t     AboveTempConvert;
+	int32_t     AboveTempConvertDir;
+	std::string sAboveTempConvertTo;
 	int32_t ColorAnimation;
 	int32_t TempConvStrength;
 	int32_t MinHeightCount; // minimum material thickness in order for it to be counted

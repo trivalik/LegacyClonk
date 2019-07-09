@@ -92,14 +92,14 @@ C4MaterialCore::C4MaterialCore()
 void C4MaterialCore::Clear()
 {
 	CustomReactionList.clear();
-	sTextureOverlay.Clear();
-	sPXSGfx.Clear();
-	sBlastShiftTo.Clear();
-	sInMatConvert.Clear();
-	sInMatConvertTo.Clear();
-	sBelowTempConvertTo.Clear();
-	sAboveTempConvertTo.Clear();
-	*Name = '\0';
+	TextureOverlay.clear();
+	PXSGfx.clear();
+	sBlastShiftTo.clear();
+	sInMatConvert.clear();
+	sInMatConvertTo.clear();
+	sBelowTempConvertTo.clear();
+	sAboveTempConvertTo.clear();
+	Name.clear();
 	int32_t i;
 	for (i = 0; i < C4M_ColsPerMat * 3; ++i) Color[i] = 0;
 	for (i = 0; i < C4M_ColsPerMat * 2; ++i) Alpha[i] = 0;
@@ -179,51 +179,51 @@ void C4MaterialCore::CompileFunc(StdCompiler *pComp)
 {
 	if (pComp->isCompiler()) Clear();
 	pComp->Name("Material");
-	pComp->Value(mkNamingAdapt(toC4CStr(Name),                                                   "Name",                ""));
-	pComp->Value(mkNamingAdapt(toC4CArrU(Color),                                                 "Color"));
-	pComp->Value(mkNamingAdapt(toC4CArrU(Color),                                                 "ColorX",              Color));
-	pComp->Value(mkNamingAdapt(toC4CArrU(Alpha),                                                 "Alpha"));
-	pComp->Value(mkNamingAdapt(ColorAnimation,                                                   "ColorAnimation",      0));
-	pComp->Value(mkNamingAdapt(MapChunkType,                                                     "Shape",               0));
-	pComp->Value(mkNamingAdapt(Density,                                                          "Density",             0));
-	pComp->Value(mkNamingAdapt(Friction,                                                         "Friction",            0));
-	pComp->Value(mkNamingAdapt(DigFree,                                                          "DigFree",             0));
-	pComp->Value(mkNamingAdapt(BlastFree,                                                        "BlastFree",           0));
-	pComp->Value(mkNamingAdapt(mkC4IDAdapt(Blast2Object),                                        "Blast2Object",        0));
-	pComp->Value(mkNamingAdapt(mkC4IDAdapt(Dig2Object),                                          "Dig2Object",          0));
-	pComp->Value(mkNamingAdapt(Dig2ObjectRatio,                                                  "Dig2ObjectRatio",     0));
-	pComp->Value(mkNamingAdapt(Dig2ObjectOnRequestOnly,                                          "Dig2ObjectRequest",   0));
-	pComp->Value(mkNamingAdapt(Blast2ObjectRatio,                                                "Blast2ObjectRatio",   0));
-	pComp->Value(mkNamingAdapt(Blast2PXSRatio,                                                   "Blast2PXSRatio",      0));
-	pComp->Value(mkNamingAdapt(Instable,                                                         "Instable",            0));
-	pComp->Value(mkNamingAdapt(MaxAirSpeed,                                                      "MaxAirSpeed",         0));
-	pComp->Value(mkNamingAdapt(MaxSlide,                                                         "MaxSlide",            0));
-	pComp->Value(mkNamingAdapt(WindDrift,                                                        "WindDrift",           0));
-	pComp->Value(mkNamingAdapt(Inflammable,                                                      "Inflammable",         0));
-	pComp->Value(mkNamingAdapt(Incindiary,                                                       "Incindiary",          0));
-	pComp->Value(mkNamingAdapt(Corrode,                                                          "Corrode",             0));
-	pComp->Value(mkNamingAdapt(Corrosive,                                                        "Corrosive",           0));
-	pComp->Value(mkNamingAdapt(Extinguisher,                                                     "Extinguisher",        0));
-	pComp->Value(mkNamingAdapt(Soil,                                                             "Soil",                0));
-	pComp->Value(mkNamingAdapt(Placement,                                                        "Placement",           0));
-	pComp->Value(mkNamingAdapt(mkParAdapt(sTextureOverlay, StdCompiler::RCT_IdtfAllowEmpty),     "TextureOverlay",      ""));
-	pComp->Value(mkNamingAdapt(OverlayType,                                                      "OverlayType",         0));
-	pComp->Value(mkNamingAdapt(mkParAdapt(sPXSGfx, StdCompiler::RCT_IdtfAllowEmpty),             "PXSGfx",              ""));
-	pComp->Value(mkNamingAdapt(PXSGfxRt,                                                         "PXSGfxRt",            TargetRect0));
-	pComp->Value(mkNamingAdapt(PXSGfxSize,                                                       "PXSGfxSize",          PXSGfxRt.Wdt));
-	pComp->Value(mkNamingAdapt(TempConvStrength,                                                 "TempConvStrength",    0));
-	pComp->Value(mkNamingAdapt(mkParAdapt(sBlastShiftTo, StdCompiler::RCT_IdtfAllowEmpty),       "BlastShiftTo",        ""));
-	pComp->Value(mkNamingAdapt(mkParAdapt(sInMatConvert, StdCompiler::RCT_IdtfAllowEmpty),       "InMatConvert",        ""));
-	pComp->Value(mkNamingAdapt(mkParAdapt(sInMatConvertTo, StdCompiler::RCT_IdtfAllowEmpty),     "InMatConvertTo",      ""));
-	pComp->Value(mkNamingAdapt(InMatConvertDepth,                                                "InMatConvertDepth",   0));
-	pComp->Value(mkNamingAdapt(AboveTempConvert,                                                 "AboveTempConvert",    0));
-	pComp->Value(mkNamingAdapt(AboveTempConvertDir,                                              "AboveTempConvertDir", 0));
-	pComp->Value(mkNamingAdapt(mkParAdapt(sAboveTempConvertTo, StdCompiler::RCT_IdtfAllowEmpty), "AboveTempConvertTo",  ""));
-	pComp->Value(mkNamingAdapt(BelowTempConvert,                                                 "BelowTempConvert",    0));
-	pComp->Value(mkNamingAdapt(BelowTempConvertDir,                                              "BelowTempConvertDir", 0));
-	pComp->Value(mkNamingAdapt(mkParAdapt(sBelowTempConvertTo, StdCompiler::RCT_IdtfAllowEmpty), "BelowTempConvertTo",  ""));
-	pComp->Value(mkNamingAdapt(MinHeightCount,                                                   "MinHeightCount",      0));
-	pComp->Value(mkNamingAdapt(SplashRate,                                                       "SplashRate",          10));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(Name),                                                "Name",                ""));
+	pComp->Value(mkNamingAdapt(toC4CArrU(Color),                                                    "Color"));
+	pComp->Value(mkNamingAdapt(toC4CArrU(Color),                                                    "ColorX",              Color));
+	pComp->Value(mkNamingAdapt(toC4CArrU(Alpha),                                                    "Alpha"));
+	pComp->Value(mkNamingAdapt(ColorAnimation,                                                      "ColorAnimation",      0));
+	pComp->Value(mkNamingAdapt(MapChunkType,                                                        "Shape",               0));
+	pComp->Value(mkNamingAdapt(Density,                                                             "Density",             0));
+	pComp->Value(mkNamingAdapt(Friction,                                                            "Friction",            0));
+	pComp->Value(mkNamingAdapt(DigFree,                                                             "DigFree",             0));
+	pComp->Value(mkNamingAdapt(BlastFree,                                                           "BlastFree",           0));
+	pComp->Value(mkNamingAdapt(mkC4IDAdapt(Blast2Object),                                           "Blast2Object",        0));
+	pComp->Value(mkNamingAdapt(mkC4IDAdapt(Dig2Object),                                             "Dig2Object",          0));
+	pComp->Value(mkNamingAdapt(Dig2ObjectRatio,                                                     "Dig2ObjectRatio",     0));
+	pComp->Value(mkNamingAdapt(Dig2ObjectOnRequestOnly,                                             "Dig2ObjectRequest",   0));
+	pComp->Value(mkNamingAdapt(Blast2ObjectRatio,                                                   "Blast2ObjectRatio",   0));
+	pComp->Value(mkNamingAdapt(Blast2PXSRatio,                                                      "Blast2PXSRatio",      0));
+	pComp->Value(mkNamingAdapt(Instable,                                                            "Instable",            0));
+	pComp->Value(mkNamingAdapt(MaxAirSpeed,                                                         "MaxAirSpeed",         0));
+	pComp->Value(mkNamingAdapt(MaxSlide,                                                            "MaxSlide",            0));
+	pComp->Value(mkNamingAdapt(WindDrift,                                                           "WindDrift",           0));
+	pComp->Value(mkNamingAdapt(Inflammable,                                                         "Inflammable",         0));
+	pComp->Value(mkNamingAdapt(Incindiary,                                                          "Incindiary",          0));
+	pComp->Value(mkNamingAdapt(Corrode,                                                             "Corrode",             0));
+	pComp->Value(mkNamingAdapt(Corrosive,                                                           "Corrosive",           0));
+	pComp->Value(mkNamingAdapt(Extinguisher,                                                        "Extinguisher",        0));
+	pComp->Value(mkNamingAdapt(Soil,                                                                "Soil",                0));
+	pComp->Value(mkNamingAdapt(Placement,                                                           "Placement",           0));
+	pComp->Value(mkNamingAdapt(mkStringAdapt(TextureOverlay, StdCompiler::RCT_IdtfAllowEmpty),     "TextureOverlay",      ""));
+	pComp->Value(mkNamingAdapt(OverlayType,                                                         "OverlayType",         0));
+	pComp->Value(mkNamingAdapt(mkStringAdapt(PXSGfx, StdCompiler::RCT_IdtfAllowEmpty),             "PXSGfx",              ""));
+	pComp->Value(mkNamingAdapt(PXSGfxRt,                                                            "PXSGfxRt",            TargetRect0));
+	pComp->Value(mkNamingAdapt(PXSGfxSize,                                                          "PXSGfxSize",          PXSGfxRt.Wdt));
+	pComp->Value(mkNamingAdapt(TempConvStrength,                                                    "TempConvStrength",    0));
+	pComp->Value(mkNamingAdapt(mkStringAdapt(sBlastShiftTo, StdCompiler::RCT_IdtfAllowEmpty),       "BlastShiftTo",        ""));
+	pComp->Value(mkNamingAdapt(mkStringAdapt(sInMatConvert, StdCompiler::RCT_IdtfAllowEmpty),       "InMatConvert",        ""));
+	pComp->Value(mkNamingAdapt(mkStringAdapt(sInMatConvertTo, StdCompiler::RCT_IdtfAllowEmpty),     "InMatConvertTo",      ""));
+	pComp->Value(mkNamingAdapt(InMatConvertDepth,                                                   "InMatConvertDepth",   0));
+	pComp->Value(mkNamingAdapt(AboveTempConvert,                                                    "AboveTempConvert",    0));
+	pComp->Value(mkNamingAdapt(AboveTempConvertDir,                                                 "AboveTempConvertDir", 0));
+	pComp->Value(mkNamingAdapt(mkStringAdapt(sAboveTempConvertTo, StdCompiler::RCT_IdtfAllowEmpty), "AboveTempConvertTo",  ""));
+	pComp->Value(mkNamingAdapt(BelowTempConvert,                                                    "BelowTempConvert",    0));
+	pComp->Value(mkNamingAdapt(BelowTempConvertDir,                                                 "BelowTempConvertDir", 0));
+	pComp->Value(mkNamingAdapt(mkStringAdapt(sBelowTempConvertTo, StdCompiler::RCT_IdtfAllowEmpty), "BelowTempConvertTo",  ""));
+	pComp->Value(mkNamingAdapt(MinHeightCount,                                                      "MinHeightCount",      0));
+	pComp->Value(mkNamingAdapt(SplashRate,                                                          "SplashRate",          10));
 	pComp->NameEnd();
 	// material reactions
 	pComp->Value(mkNamingAdapt(
@@ -245,7 +245,7 @@ C4Material::C4Material()
 void C4Material::UpdateScriptPointers()
 {
 	for (uint32_t i = 0; i < CustomReactionList.size(); ++i)
-		CustomReactionList[i].ResolveScriptFuncs(Name);
+		CustomReactionList[i].ResolveScriptFuncs(Name.c_str());
 }
 #endif
 
@@ -299,7 +299,7 @@ int32_t C4MaterialMap::Load(C4Group &hGroup, C4Group *OverloadFile)
 			delete[] pNewMap; return 0;
 		}
 		// A new material?
-		if (Get(pNewMap[cnt].Name) == MNone)
+		if (Get(pNewMap[cnt].Name.c_str()) == MNone)
 			cnt++;
 	}
 
@@ -342,7 +342,7 @@ void C4MaterialMap::CrossMapMaterials() // Called after load
 			C4MaterialReaction *pReaction = nullptr;
 			C4Material *pMatLS = (iMatLS + 1) ? Map + iMatLS : nullptr;
 			// natural stuff: material conversion here?
-			if (pMatPXS && pMatPXS->sInMatConvert.getLength() && SEqualNoCase(pMatPXS->sInMatConvert.getData(), pMatLS ? pMatLS->Name : C4TLS_MatSky))
+			if (pMatPXS && pMatPXS->sInMatConvert.size() && SEqualNoCase(pMatPXS->sInMatConvert, pMatLS ? pMatLS->Name : C4TLS_MatSky))
 				pReaction = &DefReactConvert;
 			// the rest is happening for same/higher densities only
 			else if ((MatDensity(iMatPXS) <= MatDensity(iMatLS)) && pMatPXS && pMatLS)
@@ -371,14 +371,14 @@ void C4MaterialMap::CrossMapMaterials() // Called after load
 		C4Material *pMat = Map + cnt;
 		const char *szTextureOverlay = nullptr;
 		// newgfx: init pattern
-		if (Map[cnt].sTextureOverlay.getLength())
-			if (Game.TextureMap.GetTexture(Map[cnt].sTextureOverlay.getLength()))
+		if (Map[cnt].TextureOverlay.size())
+			if (Game.TextureMap.GetTexture(Map[cnt].TextureOverlay.size()))
 			{
-				szTextureOverlay = Map[cnt].sTextureOverlay.getData();
+				szTextureOverlay = Map[cnt].TextureOverlay.c_str();
 				// backwards compatibility: if a pattern was specified although the no-pattern flag was set, overwrite that flag
 				if (Map[cnt].OverlayType & C4MatOv_None)
 				{
-					DebugLogF("Error in overlay of material %s: Flag C4MatOv_None ignored because a custom overlay (%s) was specified!", Map[cnt].Name, szTextureOverlay);
+					DebugLogF("Error in overlay of material %s: Flag C4MatOv_None ignored because a custom overlay (%s) was specified!", Map[cnt].Name.c_str(), szTextureOverlay);
 					Map[cnt].OverlayType &= ~C4MatOv_None;
 				}
 			}
@@ -386,8 +386,8 @@ void C4MaterialMap::CrossMapMaterials() // Called after load
 		if (!szTextureOverlay)
 			szTextureOverlay = "Smooth";
 		// search/create entry in texmap
-		Map[cnt].DefaultMatTex = Game.TextureMap.GetIndex(Map[cnt].Name, szTextureOverlay, true,
-			FormatString("DefaultMatTex of mat %s", Map[cnt].Name).getData());
+		Map[cnt].DefaultMatTex = Game.TextureMap.GetIndex(Map[cnt].Name.c_str(), szTextureOverlay, true,
+			FormatString("DefaultMatTex of mat %s", Map[cnt].Name.c_str()).getData());
 		const C4TexMapEntry *pTex = Game.TextureMap.GetEntry(Map[cnt].DefaultMatTex);
 		if (pTex)
 		{
@@ -399,8 +399,8 @@ void C4MaterialMap::CrossMapMaterials() // Called after load
 		// init PXS facet
 		CSurface *sfcTexture;
 		C4Texture *Texture;
-		if (Map[cnt].sPXSGfx.getLength())
-			if (Texture = Game.TextureMap.GetTexture(Map[cnt].sPXSGfx.getData()))
+		if (Map[cnt].PXSGfx.size())
+			if (Texture = Game.TextureMap.GetTexture(Map[cnt].PXSGfx.c_str()))
 				if (sfcTexture = Texture->Surface32)
 					Map[cnt].PXSFace.Set(sfcTexture, Map[cnt].PXSGfxRt.x, Map[cnt].PXSGfxRt.y, Map[cnt].PXSGfxRt.Wdt, Map[cnt].PXSGfxRt.Hgt);
 		// evaluate reactions for that material
@@ -484,14 +484,14 @@ void C4MaterialMap::CrossMapMaterials() // Called after load
 	// second loop (DefaultMatTex is needed by GetIndexMatTex)
 	for (cnt = 0; cnt < Num; cnt++)
 	{
-		if (Map[cnt].sBlastShiftTo.getLength())
-			Map[cnt].BlastShiftTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sBlastShiftTo.getData(), nullptr, true, FormatString("BlastShiftTo of mat %s", Map[cnt].Name).getData());
-		if (Map[cnt].sInMatConvertTo.getLength())
-			Map[cnt].InMatConvertTo = Get(Map[cnt].sInMatConvertTo.getData());
-		if (Map[cnt].sBelowTempConvertTo.getLength())
-			Map[cnt].BelowTempConvertTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sBelowTempConvertTo.getData(), nullptr, true, FormatString("BelowTempConvertTo of mat %s", Map[cnt].Name).getData());
-		if (Map[cnt].sAboveTempConvertTo.getLength())
-			Map[cnt].AboveTempConvertTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sAboveTempConvertTo.getData(), nullptr, true, FormatString("AboveTempConvertTo of mat %s", Map[cnt].Name).getData());
+		if (Map[cnt].sBlastShiftTo.size())
+			Map[cnt].sBlastShiftTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sBlastShiftTo.c_str(), nullptr, true, FormatString("BlastShiftTo of mat %s", Map[cnt].Name.c_str()).getData());
+		if (Map[cnt].sInMatConvertTo.size())
+			Map[cnt].sInMatConvertTo = Get(Map[cnt].sInMatConvertTo.c_str());
+		if (Map[cnt].sBelowTempConvertTo.size())
+			Map[cnt].sBelowTempConvertTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sBelowTempConvertTo.c_str(), nullptr, true, FormatString("BelowTempConvertTo of mat %s", Map[cnt].Name.c_str()).getData());
+		if (Map[cnt].sAboveTempConvertTo.size())
+			Map[cnt].sAboveTempConvertTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sAboveTempConvertTo.c_str(), nullptr, true, FormatString("AboveTempConvertTo of mat %s", Map[cnt].Name.c_str()).getData());
 	}
 }
 
@@ -512,7 +512,7 @@ bool C4MaterialMap::SaveEnumeration(C4Group &hGroup)
 	SAppend("[Enumeration]", mapbuf); SAppend(LineFeed, mapbuf);
 	for (int32_t cnt = 0; cnt < Num; cnt++)
 	{
-		SAppend(Map[cnt].Name, mapbuf);
+		SAppend(Map[cnt].Name.c_str(), mapbuf);
 		SAppend(LineFeed, mapbuf);
 	}
 	SAppend(EndOfFile, mapbuf);
@@ -555,7 +555,7 @@ bool C4MaterialMap::SortEnumeration(int32_t iMat, const char *szMatName)
 	// Find requested mat
 	int32_t cmat;
 	for (cmat = iMat; cmat < Num; cmat++)
-		if (SEqual(szMatName, Map[cmat].Name))
+		if (Map[cmat].Name == szMatName)
 			break;
 	// Not found
 	if (cmat >= Num) return false;

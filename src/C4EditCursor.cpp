@@ -175,7 +175,7 @@ bool C4EditCursor::UpdateStatusBar()
 		break;
 
 	case C4CNS_ModeDraw:
-		sprintf(OSTR, "%i/%i (%s)", X, Y, MatValid(GBackMat(X, Y)) ? Game.Material.Map[GBackMat(X, Y)].Name : LoadResStr("IDS_CNS_NOTHING"));
+		sprintf(OSTR, "%i/%i (%s)", X, Y, MatValid(GBackMat(X, Y)) ? Game.Material.Map[GBackMat(X, Y)].Name.c_str() : LoadResStr("IDS_CNS_NOTHING"));
 		break;
 	}
 	return Console.UpdateCursorBar(OSTR);
@@ -694,7 +694,7 @@ void C4EditCursor::ApplyToolPicker()
 		// Material only from landscape
 		if (MatValid(iMaterial = GBackMat(X, Y)))
 		{
-			Console.ToolsDlg.SelectMaterial(Game.Material.Map[iMaterial].Name);
+			Console.ToolsDlg.SelectMaterial(Game.Material.Map[iMaterial].Name.c_str());
 			Console.ToolsDlg.SetIFT(GBackIFT(X, Y));
 		}
 		else
