@@ -51,11 +51,11 @@ public:
 		if (!szFunction) return C4VNull;
 		return FunctionCall(nullptr, szFunction, nullptr, pPars, false, fPassError);
 	}
+	C4Value FunctionCall(C4Object *pCaller, const char *szFunction, C4Object *pObj, C4AulParSet *pPars = nullptr, bool fPrivateCall = false, bool fPassError = false);
 
 protected:
 	class C4LangStringTable *pStringTable;
 	void MakeScript();
-	C4Value FunctionCall(C4Object *pCaller, const char *szFunction, C4Object *pObj, C4AulParSet *pPars = nullptr, bool fPrivateCall = false, bool fPassError = false);
 	bool ReloadScript(const char *szPath);
 };
 

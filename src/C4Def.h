@@ -354,6 +354,7 @@ public:
 	C4PhysicalInfo *GetFairCrewPhysicals(); // get fair crew physicals at current fair crew strength
 	void ClearFairCrewPhysicals(); // remove cached fair crew physicals, will be created fresh on demand
 	void Synchronize();
+	C4Value Call(const char *szFunction, C4AulParSet *pPars = nullptr, bool fPassError = false);
 #endif
 	const char *GetDesc() { return Desc.c_str(); }
 	bool Compile(luabridge::LuaRef def, C4ID newID);

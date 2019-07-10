@@ -45,7 +45,7 @@ C4Object *Number2Object(int number)
 
 int32_t GetPlayerNumber(DeletableObjectPtr<C4Player> *player)
 {
-	return player != nullptr ? (*player)->Number : NO_OWNER;
+	return player  ? (*player)->Number : NO_OWNER;
 }
 
 C4ID GetIDFromDef(luabridge::LuaRef def)
@@ -202,7 +202,7 @@ luabridge::LuaRef RegisterDefinition(luabridge::LuaRef table)
 		id = std::hash<luabridge::LuaRef>()(table);
 	}
 	C4Def *def = Game.Defs.ID2Def(id);
-	if (def != nullptr)
+	if (def)
 	{
 		if (def->LuaDef != table)
 		{
@@ -263,13 +263,13 @@ luabridge::LuaRef CreateObject(luabridge::LuaRef arguments, lua_State *L)
 
 	C4Object *obj = Game.NewObject(
 				Game.Defs.ID2Def(table["ID"].cast<C4ID>()),
-				creator != nullptr ? *creator : nullptr,
-				owner != nullptr ? (*owner)->Number : NO_OWNER,
+				creator  ? *creator : nullptr,
+				owner  ? (*owner)->Number : NO_OWNER,
 				nullptr,
 				x, y, r,
 				xdir, ydir, rdir,
 				FullCon * con / 100,
-				controller != nullptr ? (*controller)->Number : NO_OWNER
+				controller  ? (*controller)->Number : NO_OWNER
 				);
 
 	return luabridge::LuaRef(L, LuaHelpers::ref(L, obj));
@@ -277,7 +277,7 @@ luabridge::LuaRef CreateObject(luabridge::LuaRef arguments, lua_State *L)
 
 void Explode(C4ObjectPtr *obj, int32_t level, lua_State *L) // opt: luabridge::LuaRef effect, std::string particle
 {
-	if (obj == nullptr) return;
+	if (!obj) return;
 	C4ID id = 0L;
 	auto effect = luabridge::LuaRef::fromStack(L, 3);
 	if (effect.isTable())
@@ -294,11 +294,11 @@ void Explode(C4ObjectPtr *obj, int32_t level, lua_State *L) // opt: luabridge::L
 
 bool Incinerate(C4ObjectPtr *obj, lua_State *L) // opt: C4Player *player
 {
-	if (obj == nullptr) return false;
+	if (!obj) return false;
 	return (*obj)->Incinerate(lua_gettop(L) >= 2 ?
 							   LuaHelpers::GetPlayerNumber(
 								   luabridge::LuaRef::fromStack(L, 2).cast<C4PlayerPtr *>()
-								   )
+									  )
 							 : NO_OWNER);
 }
 
@@ -309,7 +309,7 @@ bool IncinerateLandscape(int32_t x, int32_t y)
 
 bool Extinguish(C4ObjectPtr *obj)
 {
-	if (obj == nullptr) return false;
+	if (!obj) return false;
 	return (*obj)->Extinguish(0);
 }
 
@@ -330,19 +330,19 @@ void DeathAnnounce(C4ObjectPtr *obj)
 
 void GrabContents(C4ObjectPtr *obj, C4ObjectPtr *target)
 {
-	if (obj == nullptr || target == nullptr) return;
+	if (!obj || !target) return;
 	(*obj)->GrabContents(*target);
 }
 
 bool Punch(C4ObjectPtr *obj, C4ObjectPtr *target, int32_t strength)
 {
-	if (obj == nullptr || target == nullptr) return false;
+	if (!obj || !target) return false;
 	return ObjectComPunch(obj->checkObject(), target->checkObject(), strength);
 }
 
 bool Kill(C4ObjectPtr *obj, lua_State *L) // opt: bool forced, C4Player *player
 {
-	if (obj == nullptr) return false;
+	if (!obj) return false;
 	bool forced = lua_gettop(L) >= 2 ? lua_toboolean(L, 2) : false;
 	if (lua_gettop(L) >= 3)
 	{
@@ -358,7 +358,7 @@ bool Kill(C4ObjectPtr *obj, lua_State *L) // opt: bool forced, C4Player *player
 
 void Fling(C4ObjectPtr *obj, float xdir, float ydir, lua_State *L) // opt: bool addSpeed, C4Player *player
 {
-	if (obj == nullptr) return;
+	if (!obj) return;
 	bool addSpeed = lua_gettop(L) > 3 ? lua_toboolean(L, 4) : false;
 
 	int32_t player = NO_OWNER;
@@ -375,19 +375,19 @@ void Fling(C4ObjectPtr *obj, float xdir, float ydir, lua_State *L) // opt: bool 
 
 bool Jump(C4ObjectPtr *obj)
 {
-	if (obj == nullptr) return false;
+	if (!obj) return false;
 	return ObjectComJump(obj->checkObject());
 }
 
 bool Enter(C4ObjectPtr *obj, C4ObjectPtr target)
 {
-	if (obj == nullptr || target == nullptr) return false;
+	if (!obj || !target) return false;
 	return (*obj)->Enter(target);
 }
 
 bool Exit(C4ObjectPtr *obj, lua_State *L) // opt: int32_t x, int32_t y, int32_t r, float xdir, float ydir, float rdir
 {
-	if (obj == nullptr) return false;
+	if (!obj) return false;
 
 	int32_t x = static_cast<int32_t>(luaL_optinteger(L, 2, 0));
 	int32_t y = static_cast<int32_t>(luaL_optinteger(L, 3, 0));
@@ -406,25 +406,25 @@ bool Exit(C4ObjectPtr *obj, lua_State *L) // opt: int32_t x, int32_t y, int32_t 
 
 bool Collect(C4ObjectPtr *obj, C4ObjectPtr item)
 {
-	if (obj == nullptr) return false;
+	if (!obj) return false;
 	return LuaHelpers::CallC4Script(obj, &FnCollect, C4VObj(item)).getBool();
 }
 
 void Split2Components(C4ObjectPtr *obj)
 {
-	if (obj == nullptr) return;
+	if (!obj) return;
 	LuaHelpers::CallC4Script(obj, &FnSplit2Components);
 }
 
 void RemoveObject(C4ObjectPtr *obj, lua_State *L) // opt: bool ejectContents
 {
-	if (obj == nullptr) return;
+	if (!obj) return;
 	(*obj)->AssignRemoval(lua_gettop(L) >= 2 ? lua_toboolean(L, 2) : false);
 }
 
 void SetPosition(C4ObjectPtr *obj, int32_t x, int32_t y, lua_State *L) // opt: bool checkBounds
 {
-	if (obj == nullptr) return;
+	if (!obj) return;
 	LuaHelpers::CallC4Script(obj, &FnSetPosition,
 							 static_cast<long>(x),
 							 static_cast<long>(y),
@@ -445,7 +445,7 @@ void SetCon(C4ObjectPtr *obj, int32_t newCon)
 
 void DoCon(C4ObjectPtr *obj, int32_t change)
 {
-	if (obj == nullptr) return;
+	if (!obj) return;
 	LuaHelpers::CallC4Script(obj, &FnDoCon,
 							 static_cast<long>(change),
 							 static_cast<C4Object *>(nullptr)
@@ -459,7 +459,7 @@ int32_t GetEnergy(const C4ObjectPtr *obj)
 
 void DoEnergy(C4ObjectPtr *obj, int32_t change, lua_State *L) // opt: bool exact, int32_t type, C4Player *player
 {
-	if (obj == nullptr) return;
+	if (!obj) return;
 	int32_t player = NO_OWNER;
 	if (lua_gettop(L) >= 5)
 	{
@@ -487,7 +487,7 @@ void SetBreath(C4ObjectPtr *obj, int32_t newBreath)
 
 void DoBreath(C4ObjectPtr *obj, int32_t change)
 {
-	if (obj == nullptr) return;
+	if (!obj) return;
 	(*obj)->DoBreath(change);
 }
 
@@ -498,7 +498,7 @@ int32_t GetDamage(const C4ObjectPtr *obj)
 
 void DoDamage(C4ObjectPtr *obj, int32_t change, lua_State *L) // opt: int32_t type, C4Player *player
 {
-	if (obj == nullptr) return;
+	if (!obj) return;
 	int32_t player = NO_OWNER;
 	if (lua_gettop(L) >= 4)
 	{
@@ -515,7 +515,7 @@ void DoDamage(C4ObjectPtr *obj, int32_t change, lua_State *L) // opt: int32_t ty
 
 bool DoMagicEnergy(C4ObjectPtr *obj, int32_t change, lua_State *L) // opt: bool allowPartial
 {
-	if (obj == nullptr) return false;
+	if (!obj) return false;
 	return LuaHelpers::CallC4Script(obj, &FnDoMagicEnergy,
 									static_cast<long>(change),
 									static_cast<C4Object *>(nullptr),
@@ -628,7 +628,7 @@ void SetR(C4ObjectPtr *obj, int32_t r)
 
 bool SetAction(C4ObjectPtr *obj, luabridge::LuaRef action, lua_State *L) // opt: C4ObjectPtr *target, C4ObjectPtr *target2, bool direct
 {
-	if (obj == nullptr) return false;
+	if (!obj) return false;
 
 	std::string act;
 	if (action.isString())
@@ -659,7 +659,7 @@ int SetBridgeActionData(lua_State *L) // C4Action *action, luabridge::LuaRef dat
 {
 	if (lua_gettop(L) < 2) return 0;
 	C4Action *action = luabridge::LuaRef::fromStack(L, 1);
-	if (action == nullptr || action->Act <= ActIdle || action->Procedure != DFA_BRIDGE) return 0;
+	if (!action || action->Act <= ActIdle || action->Procedure != DFA_BRIDGE) return 0;
 
 	auto data = luabridge::LuaRef::fromStack(L, 2);
 	int32_t length = data["Length"].isNumber() ? data["Length"] : 0;
@@ -676,7 +676,7 @@ int GetBridgeActionData(lua_State *L) // const C4Action *action
 	if (lua_gettop(L) < 1) return 0;
 
 	C4Action *action = luabridge::LuaRef::fromStack(L, 1);
-	if (action == nullptr || action->Procedure != DFA_BRIDGE)
+	if (!action || action->Procedure != DFA_BRIDGE)
 	{
 		return 0;
 	}
@@ -711,7 +711,7 @@ int SetActionData(lua_State *L) // C4Action *action, int32_t data
 	if (lua_gettop(L) < 2) return 0;
 
 	C4Action *action = luabridge::LuaRef::fromStack(L, 1);
-	if (action == nullptr) return 0;
+	if (!action) return 0;
 
 	auto data = static_cast<int32_t>(luaL_checkinteger(L, 2));
 	if (action->Act > ActIdle)
@@ -770,7 +770,7 @@ void SetPhase(C4Action *action, int32_t newPhase)
 
 bool ExecuteCommand(C4ObjectPtr *obj)
 {
-	return obj != nullptr ? (*obj)->ExecuteCommand() : false;
+	return obj  ? (*obj)->ExecuteCommand() : false;
 }
 
 bool SetCommand(C4ObjectPtr *obj, std::string command, lua_State *L) // opt: C4ObjectPtr *target, int32_t x, int32_t y, C4ObjectPtr *target2, luabridge::LuaRef data, int32_t retries
@@ -789,10 +789,10 @@ bool SetCommand(C4ObjectPtr *obj, std::string command, lua_State *L) // opt: C4O
 	return LuaHelpers::CallC4Script(obj, &FnSetCommand,
 									C4VObj(nullptr),
 									C4VString(command.c_str()),
-									C4VObj(target != nullptr ? *target : nullptr),
+									C4VObj(target  ? *target : nullptr),
 									C4VInt(x),
 									C4VInt(y),
-									C4VObj(target2 != nullptr ? *target2 : nullptr),
+									C4VObj(target2  ? *target2 : nullptr),
 									data,
 									C4VInt(retries)
 									).getBool();
@@ -816,10 +816,10 @@ bool AddCommand(C4ObjectPtr *obj, std::string command, lua_State *L) // opt: C4O
 	return LuaHelpers::CallC4Script(obj, &FnAddCommand,
 									C4VObj(nullptr),
 									C4VString(command.c_str()),
-									C4VObj(*target != nullptr ? *target : nullptr),
+									C4VObj(*target  ? *target : nullptr),
 									C4VInt(x),
 									C4VInt(y),
-									C4VObj(*target2 != nullptr ? *target2 : nullptr),
+									C4VObj(*target2  ? *target2 : nullptr),
 									C4VInt(interval),
 									data,
 									C4VInt(retries),
@@ -845,10 +845,10 @@ bool AppendCommand(C4ObjectPtr *obj, std::string command, lua_State *L) // opt: 
 	return LuaHelpers::CallC4Script(obj, &FnAppendCommand,
 									C4VObj(nullptr),
 									C4VString(command.c_str()),
-									C4VObj(*target != nullptr ? *target : nullptr),
+									C4VObj(*target  ? *target : nullptr),
 									C4VInt(x),
 									C4VInt(y),
-									C4VObj(*target2 != nullptr ? *target2 : nullptr),
+									C4VObj(*target2  ? *target2 : nullptr),
 									C4VInt(interval),
 									data,
 									C4VInt(retries),
@@ -858,14 +858,14 @@ bool AppendCommand(C4ObjectPtr *obj, std::string command, lua_State *L) // opt: 
 
 luabridge::LuaRef GetCommand(C4ObjectPtr *obj, lua_State *L) // opt: int32_t commandNum
 {
-	if (obj == nullptr) return LuaNil(L);
+	if (!obj) return LuaNil(L);
 	int32_t commandNum = static_cast<int32_t>(luaL_optinteger(L, 3, 0));
 	C4Command *command = (*obj)->Command;
-	while (command != nullptr && commandNum--)
+	while (command  && commandNum--)
 	{
 		command = command->Next;
 	}
-	if (command == nullptr)
+	if (!command)
 	{
 		return LuaNil(L);
 	}
@@ -906,7 +906,7 @@ void SetName(C4ObjectPtr *obj, std::string newName)
 
 bool FnSetName(C4ObjectPtr *obj, std::string newName, lua_State *L) // opt: luabridge::LuaRef def, bool setInInfo, bool makeValidIfExists
 {
-	if (obj == nullptr) return false;
+	if (!obj) return false;
 	C4ID id = 0UL;
 	if (lua_gettop(L) >= 3)
 	{
@@ -924,7 +924,7 @@ bool FnSetName(C4ObjectPtr *obj, std::string newName, lua_State *L) // opt: luab
 int GetPlayers(lua_State *L)
 {
 	luabridge::LuaRef players = luabridge::newTable(L);
-	for (C4Player *player = Game.Players.First; player != nullptr; player = player->Next)
+	for (C4Player *player = Game.Players.First; player ; player = player->Next)
 	{
 		players.append(LuaHelpers::ref(L, player));
 	}
@@ -957,12 +957,12 @@ void SetMass(C4ObjectPtr *obj, int32_t newMass)
 	{ \
 		if (lua_gettop(L) < 1) return 0; \
 		const C4ObjectPtr *obj = luabridge::LuaRef::fromStack(L, 1); \
-		if (obj == nullptr || (*obj)->var == NO_OWNER || !ValidPlr((*obj)->var)) \
+		if (!obj || (*obj)->var == NO_OWNER || !ValidPlr((*obj)->var)) \
 		{ \
 			return 0; \
 		} \
 		C4Player *player = Game.Players.Get((*obj)->var); \
-		if (player == nullptr) \
+		if (!player) \
 		{ \
 			return 0; \
 		} \
@@ -975,12 +975,12 @@ void SetMass(C4ObjectPtr *obj, int32_t newMass)
 	{ \
 		if (lua_gettop(L) < 2) return 0; \
 		C4ObjectPtr *obj = luabridge::LuaRef::fromStack(L, 1); \
-		if (obj == nullptr) \
+		if (!obj) \
 		{ \
 			return 0; \
 		} \
 		C4PlayerPtr *player = luabridge::LuaRef::fromStack(L, 2); \
-		(*obj)->var = player != nullptr ? (*player)->Number : NO_OWNER; \
+		(*obj)->var = player  ? (*player)->Number : NO_OWNER; \
 		return 0; \
 	}
 
@@ -990,12 +990,12 @@ int SetOwner(lua_State *L) // C4ObjectPtr *obj, C4PlayerPtr *newPlayer
 {
 	if (lua_gettop(L) < 2) return 0;
 	const C4ObjectPtr *obj = luabridge::LuaRef::fromStack(L, 1);
-	if (obj == nullptr)
+	if (!obj)
 	{
 		return 0;
 	}
 	C4PlayerPtr *player = luabridge::LuaRef::fromStack(L, 2);
-	(*obj)->SetOwner(player != nullptr ? (*player)->Number : NO_OWNER);
+	(*obj)->SetOwner(player  ? (*player)->Number : NO_OWNER);
 	return 0;
 }
 
@@ -1036,12 +1036,12 @@ C4FindObject *CreateCriteriaFromTable(luabridge::LuaRef table)
 		C4SortObject *sortCriterion = nullptr;
 		C4FindObject *findCriterion = C4FindObject::CreateByValue(C4VArray(&array), &sortCriterion);
 
-		if (findCriterion != nullptr)
+		if (findCriterion)
 		{
 			findCriteria.push_back(findCriterion);
 		}
 
-		if (sortCriterion != nullptr)
+		if (sortCriterion)
 		{
 			sortCriteria.push_back(sortCriterion);
 		}
@@ -1069,7 +1069,7 @@ C4FindObject *CreateCriteriaFromTable(luabridge::LuaRef table)
 		}
 	}
 	C4FindObject *findCriterion = findCriteria.size() == 1 ? findCriteria[0] : new C4FindObjectAnd(static_cast<int32_t>(findCriteria.size()), &findCriteria[0], false);
-	if (sortCriterion != nullptr)
+	if (sortCriterion)
 	{
 		findCriterion->SetSort(sortCriterion);
 	}
@@ -1109,7 +1109,7 @@ luabridge::LuaRef FindObject(luabridge::LuaRef criteria)
 		{
 			C4Object *result = findCriteria->Find(Game.Objects, Game.Objects.Sectors);
 			delete findCriteria;
-			if (result != nullptr)
+			if (result)
 			{
 				return luabridge::LuaRef(L, LuaHelpers::ref(criteria.state(), result));
 			}
@@ -1140,13 +1140,13 @@ int32_t ObjectCount(luabridge::LuaRef criteria)
 
 bool GrabObjectInfo(C4ObjectPtr *obj, C4ObjectPtr *target)
 {
-	if (obj == nullptr || target == nullptr) return false;
+	if (!obj || !target) return false;
 	return (*obj)->GrabInfo(*target);
 }
 
 bool BurnMaterial(C4ObjectPtr *obj, int32_t x, int32_t y)
 {
-	if (obj == nullptr) return false;
+	if (!obj) return false;
 	int32_t mat = GBackMat(x, y);
 	return MatValid(mat) && Game.Material.Map[mat].Inflammable && Game.Landscape.ExtractMaterial(x, y) != MNone;
 }
@@ -1192,7 +1192,7 @@ int32_t GetParCount(const C4AulFuncPtr *func)
 std::vector<C4V_Type> GetParTypes(const C4AulFuncPtr *func)
 {
 	C4V_Type *types = (*func)->GetParType();
-	if (types != nullptr)
+	if (types)
 	{
 		return std::vector<C4V_Type>(types, types + (*func)->GetParCount());
 	}
@@ -1201,7 +1201,7 @@ std::vector<C4V_Type> GetParTypes(const C4AulFuncPtr *func)
 
 luabridge::LuaRef __call(C4AulFuncPtr *func, lua_State *L)
 {
-	if (func == nullptr) return LuaNil(L);
+	if (!func) return LuaNil(L);
 	func->checkObject();
 	int32_t argstart = 0;
 	C4ObjectPtr *obj = nullptr;
@@ -1219,7 +1219,7 @@ luabridge::LuaRef __call(C4AulFuncPtr *func, lua_State *L)
 	{
 		pars[arg - argstart - 1] = luabridge::Stack<C4Value>::get(L, arg);
 	}
-	return luabridge::LuaRef(L, (*func)->Exec(obj != nullptr ? *obj : nullptr, &pars));
+	return luabridge::LuaRef(L, (*func)->Exec(obj  ? *obj : nullptr, &pars));
 }
 }
 
@@ -1228,7 +1228,7 @@ namespace C4Material
 {
 #define MAT(x) C4MaterialCore *Get##x(const C4MaterialCore *mat) \
 { \
-	if (mat != nullptr) \
+	if (mat) \
 	{ \
 		int32_t index = Game.Material.Get(mat->s##x.c_str()); \
 		if (MatValid(index)) \
@@ -1252,13 +1252,13 @@ namespace C4Object
 {
 void __newindex(C4ObjectPtr *obj, std::string key, luabridge::LuaRef value)
 {
-	if (obj == nullptr) return;
+	if (!obj) return;
 	(*obj)->LuaLocals.emplace(key, value);
 }
 
 luabridge::LuaRef __index(C4ObjectPtr *obj, std::string key, lua_State *L)
 {
-	if (obj == nullptr) return LuaNil(L);
+	if (!obj) return LuaNil(L);
 	{
 		int index = lua_gettop(L);
 		luabridge::push(L, obj);
@@ -1280,7 +1280,7 @@ luabridge::LuaRef __index(C4ObjectPtr *obj, std::string key, lua_State *L)
 	}
 
 	C4Value *value = (*obj)->LocalNamed.GetItem(key.c_str());
-	if (value != nullptr)
+	if (value)
 	{
 		return luabridge::LuaRef(L, value);
 	}
@@ -1292,7 +1292,7 @@ luabridge::LuaRef __index(C4ObjectPtr *obj, std::string key, lua_State *L)
 	else
 	{
 		::C4AulFunc *f = (*obj)->Def->Script.GetSFunc(key.c_str(), AA_PROTECTED, true);
-		if (f != nullptr)
+		if (f)
 		{
 			return luabridge::LuaRef(L, LuaHelpers::ref(L, f));
 		}
@@ -1332,7 +1332,7 @@ int GetCaptain(lua_State *L)
 	if (lua_gettop(L) >= 1)
 	{
 		const C4PlayerPtr *player = luabridge::LuaRef::fromStack(L, 1);
-		if ((*player)->Captain != nullptr)
+		if ((*player)->Captain)
 		{
 			luabridge::push(L, LuaHelpers::ref(L, (*player)->Captain));
 			return 1;
@@ -1349,7 +1349,7 @@ int GetCursor(lua_State *L)
 	if (lua_gettop(L) >= 1)
 	{
 		const C4PlayerPtr *player = luabridge::LuaRef::fromStack(L, 1);
-		if ((*player)->Cursor != nullptr)
+		if ((*player)->Cursor)
 		{
 			luabridge::push(L, LuaHelpers::ref(L, (*player)->Cursor));
 			return 1;
@@ -1393,7 +1393,7 @@ int32_t GetSelectedCrewCount(const C4PlayerPtr *player)
 
 bool MakeCrewMember(C4PlayerPtr *player, C4ObjectPtr *obj)
 {
-	if (player == nullptr || obj == nullptr) return false;
+	if (!player || !obj) return false;
 	return (*player)->MakeCrewMember((*obj));
 }
 

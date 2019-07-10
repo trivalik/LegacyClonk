@@ -2142,17 +2142,24 @@ C4Value C4Object::Call(const char *szFunctionCall, C4AulParSet *pPars, bool fPas
 	if (!Def->LuaDef.isNil())
 	{
 		luabridge::LuaRef _this(Def->LuaDef.state(), LuaHelpers::ref(Def->LuaDef.state(), this));
-		if (pPars != nullptr)
+		try
 		{
-			return Game.LuaEngine.Call(_this, std::string{szFunctionCall}, _this,
-									pPars->Par[0], pPars->Par[1], pPars->Par[2],
-									pPars->Par[3], pPars->Par[4], pPars->Par[5]
-									/*pPars->Par[6], pPars->Par[7], pPars->Par[8],
-									pPars->Par[9]*/); // FIXME
+			if (pPars != nullptr)
+			{
+				return Game.LuaEngine.Call(_this, std::string{szFunctionCall}, _this,
+										pPars->Par[0], pPars->Par[1], pPars->Par[2],
+										pPars->Par[3], pPars->Par[4], pPars->Par[5]
+										/*pPars->Par[6], pPars->Par[7], pPars->Par[8],
+										pPars->Par[9]*/); // FIXME
+			}
+			else
+			{
+				return Game.LuaEngine.Call(_this, std::string{szFunctionCall}, _this);
+			}
 		}
-		else
+		catch (luabridge::LuaException const &e)
 		{
-			return Game.LuaEngine.Call(_this, std::string{szFunctionCall}, _this);
+			throw new C4AulExecError(this, e.what());
 		}
 	}
 	return Def->Script.ObjectCall(this, this, szFunctionCall, pPars, fPassError);

@@ -582,7 +582,7 @@ void C4Game::Clear()
 	LuaEngine.Clear();
 	for (auto it = LuaGraphics.begin(); it != LuaGraphics.end(); )
 	{
-		if (it->second != nullptr)
+		if (it->second)
 		{
 			delete it->second;
 			it->second = nullptr;

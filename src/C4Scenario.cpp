@@ -474,10 +474,12 @@ bool C4Scenario::Compile(const char *szSource, bool fLoadSection, const char *fi
 
 	if (std::is_same<Compiler, StdCompilerLuaRead>::value)
 	{
+		isLua = true;
 		return CompileFromBuf_LogWarn<Compiler>(mkNamingAdapt(mkParAdapt(*this, fLoadSection), "Scenario"), StdStrBuf::MakeRef(szSource), file);
 	}
 	else
 	{
+		isLua = false;
 		return CompileFromBuf_LogWarn<Compiler>(mkParAdapt(*this, fLoadSection), StdStrBuf::MakeRef(szSource), file);
 	}
 }

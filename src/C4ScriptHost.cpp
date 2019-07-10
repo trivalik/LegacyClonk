@@ -258,6 +258,14 @@ C4Value C4GameScriptHost::GRBroadcast(const char *szFunction, C4AulParSet *pPars
 				if (fRejectTest) if (!!vResult) return vResult;
 			}
 	// scenario script call
+	if (Game.C4S.isLua)
+	{
+		return Game.LuaEngine.Call("Scenario", szFunction,
+								   pPars->Par[0], pPars->Par[1], pPars->Par[2],
+								   pPars->Par[3], pPars->Par[4], pPars->Par[5],
+								   pPars->Par[6], pPars->Par[7]
+								   );
+	}
 	return Call(szFunction, pPars, fPassError);
 }
 

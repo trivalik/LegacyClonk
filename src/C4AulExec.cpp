@@ -83,7 +83,7 @@ void C4AulScriptContext::dump(StdStrBuf Dump)
 	// Context
 	if (Obj)
 		Dump.AppendFormat(" (obj %s)", C4VObj(Obj).GetDataString().getData());
-	else if (Func->Owner->Def != nullptr)
+	else if (Func->Owner->Def)
 		Dump.AppendFormat(" (def %s)", Func->Owner->Def->Name.c_str());
 	// Script
 	if (!fDirectExec && Func->Owner)

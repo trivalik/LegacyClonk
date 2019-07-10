@@ -305,6 +305,7 @@ public:
 	C4SWeather Weather;
 	C4SDisasters Disasters;
 	C4SEnvironment Environment;
+	bool isLua = false;
 
 public:
 	void SetExactLandscape();

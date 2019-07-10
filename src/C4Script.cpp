@@ -3505,28 +3505,8 @@ static C4Value FnCall_C4V(C4AulContext *cthr, C4Value *szFunction_C4V,
 
 	if (!szFunction || !cthr->Obj) return C4Value();
 	C4AulParSet Pars;
-	Copy2ParSet9(Pars, *par);
+	Copy2ParSet9(Pars, *par)
 	return cthr->Obj->Call(FnStringPar(szFunction), &Pars, true);
-}
-
-static C4Value FnObjectCall_C4V(C4AulContext *cthr,
-	C4Value *pObj_C4V, C4Value *szFunction_C4V,
-	C4Value *par0, C4Value *par1, C4Value *par2, C4Value *par3, C4Value *par4,
-	C4Value *par5, C4Value *par6, C4Value *par7)
-{
-	C4Object *pObj = pObj_C4V->getObj();
-	C4String *szFunction = szFunction_C4V->getStr();
-
-	if (!pObj || !szFunction) return C4Value();
-	if (!pObj->Def) return C4Value();
-	// get func
-	C4AulFunc *f;
-	if (!(f = pObj->Def->Script.GetSFunc(FnStringPar(szFunction), AA_PUBLIC, true))) return C4Value();
-	// copy pars
-	C4AulParSet Pars;
-	Copy2ParSet8(Pars, *par);
-	// exec
-	return f->Exec(pObj, &Pars, true);
 }
 
 static C4Value FnDefinitionCall_C4V(C4AulContext *cthr,
@@ -3545,9 +3525,9 @@ static C4Value FnDefinitionCall_C4V(C4AulContext *cthr,
 	if (!(pDef = C4Id2Def(idID))) return C4Value();
 	// copy parameters
 	C4AulParSet Pars;
-	Copy2ParSet8(Pars, *par);
+	Copy2ParSet8(Pars, *par)
 	// Call
-	return pDef->Script.Call(szFunc2, &Pars, true);
+	return pDef->Call(szFunc2, &Pars, true);
 }
 
 static C4Value FnGameCall_C4V(C4AulContext *cthr,
@@ -3560,9 +3540,13 @@ static C4Value FnGameCall_C4V(C4AulContext *cthr,
 	if (!szFunction) return C4Value();
 	// Make failsafe
 	char szFunc2[500 + 1]; sprintf(szFunc2, "~%s", FnStringPar(szFunction));
+	if (Game.C4S.isLua)
+	{
+		return Game.LuaEngine.Call("Scenario", szFunc2, *par0, *par1, *par2, *par3, *par4, *par5, *par6, *par7);
+	}
 	// copy parameters
 	C4AulParSet Pars;
-	Copy2ParSet9(Pars, *par);
+	Copy2ParSet9(Pars, *par)
 	// Call
 	return Game.Script.Call(szFunc2, &Pars, true);
 }
@@ -3579,50 +3563,39 @@ static C4Value FnGameCallEx_C4V(C4AulContext *cthr,
 	char szFunc2[500 + 1]; sprintf(szFunc2, "~%s", FnStringPar(szFunction));
 	// copy parameters
 	C4AulParSet Pars;
-	Copy2ParSet9(Pars, *par);
+	Copy2ParSet9(Pars, *par)
 	// Call
 	return Game.Script.GRBroadcast(szFunc2, &Pars, true);
 }
 
-static C4Value FnProtectedCall_C4V(C4AulContext *cthr,
-	C4Value *pObj_C4V, C4Value *szFunction_C4V,
-	C4Value *par0, C4Value *par1, C4Value *par2, C4Value *par3, C4Value *par4,
-	C4Value *par5, C4Value *par6, C4Value *par7)
-{
-	C4Object *pObj = pObj_C4V->getObj();
-	C4String *szFunction = szFunction_C4V->getStr();
-
-	if (!pObj || !szFunction) return C4Value();
-	if (!pObj->Def) return C4Value();
-	// get func
-	C4AulScriptFunc *f;
-	if (!(f = pObj->Def->Script.GetSFunc(FnStringPar(szFunction), AA_PROTECTED, true))) return C4Value();
-	// copy parameters
-	C4AulParSet Pars;
-	Copy2ParSet8(Pars, *par);
-	// exec
-	return f->Exec(pObj, &Pars, true);
+#define OBJECTCALL(name, access) \
+	static C4Value Fn##name##_C4V(C4AulContext *cthr, \
+							C4Value *pObj_C4V, C4Value *szFunction_C4V, \
+							C4Value *par0, C4Value *par1, C4Value *par2, C4Value *par3, C4Value *par4, \
+							C4Value *par5, C4Value *par6, C4Value *par7) \
+{ \
+	(void) cthr; \
+	C4Object *pObj = pObj_C4V->getObj(); \
+	C4String *szFunction = szFunction_C4V->getStr(); \
+	\
+	if (!pObj || !szFunction) return C4Value(); \
+	if (!pObj->Def) return C4Value(); \
+	\
+	C4AulParSet Pars; \
+	Copy2ParSet8(Pars, *par) \
+	if (!pObj->Def->LuaDef.isNil()) \
+	{ \
+		return pObj->Call(FnStringPar(szFunction), &Pars, false); \
+	} \
+	C4AulFunc *f; \
+	if (!(f = pObj->Def->Script.GetSFunc(FnStringPar(szFunction), access, true))) return C4Value(); \
+	\
+	return f->Exec(pObj, &Pars, true); \
 }
 
-static C4Value FnPrivateCall_C4V(C4AulContext *cthr,
-	C4Value *pObj_C4V, C4Value *szFunction_C4V,
-	C4Value *par0, C4Value *par1, C4Value *par2, C4Value *par3, C4Value *par4,
-	C4Value *par5, C4Value *par6, C4Value *par7)
-{
-	C4Object *pObj = pObj_C4V->getObj();
-	C4String *szFunction = szFunction_C4V->getStr();
-
-	if (!pObj || !szFunction) return C4Value();
-	if (!pObj->Def) return C4Value();
-	// get func
-	C4AulScriptFunc *f;
-	if (!(f = pObj->Def->Script.GetSFunc(FnStringPar(szFunction), AA_PRIVATE, true))) return C4Value();
-	// copy parameters
-	C4AulParSet Pars;
-	Copy2ParSet8(Pars, *par);
-	// exec
-	return f->Exec(pObj, &Pars, true);
-}
+OBJECTCALL(ObjectCall, AA_PUBLIC)
+OBJECTCALL(ProtectedCall, AA_PROTECTED)
+OBJECTCALL(PrivateCall, AA_PRIVATE)
 
 static C4Value FnEditCursor(C4AulContext *cth, C4Value *pPars)
 {

@@ -109,7 +109,7 @@ C4AulFunc::~C4AulFunc()
 		if (Owner->FuncL == this) Owner->FuncL = Prev;
 		Owner->Engine->FuncLookUp.Remove(this);
 	}
-	if (wrapper != nullptr)
+	if (wrapper)
 	{
 		wrapper->reset();
 		wrapper->decReferenceCount();

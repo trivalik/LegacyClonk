@@ -1057,7 +1057,7 @@ void C4Player::Clear()
 	delete pGamepad;
 	pGamepad = nullptr;
 	Status = 0;
-	if (wrapper != nullptr)
+	if (wrapper)
 	{
 		wrapper->reset();
 		wrapper->decReferenceCount();

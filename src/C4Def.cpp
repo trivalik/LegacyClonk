@@ -620,7 +620,7 @@ bool C4Def::Load(C4Group &hGroup,
 		if (fSuccess) if (!LooksLikeID(id))
 		{
 	#ifdef C4ENGINE
-			// wie geth ID?????ßßßß
+			// wie geth ID?????ÃŸÃŸÃŸÃŸ
 			if (Name.empty()) Name = GetFilename(hGroup.GetName());
 			LogF(LoadResStr("IDS_ERR_INVALIDID"), Name.c_str());
 	#endif
@@ -921,7 +921,7 @@ void C4Def::LoadGraphics(const std::string &base, const std::string &overlay, bo
 	};
 
 	auto *surface = getGraphics(base);
-	if (surface != nullptr)
+	if (surface)
 	{
 		C4Surface *overlaySurface = nullptr;
 		if (ColorByOwner)
@@ -1165,6 +1165,20 @@ void C4Def::Synchronize()
 	ClearFairCrewPhysicals();
 }
 
+C4Value C4Def::Call(const char *szFunction, C4AulParSet *pPars, bool fPassError)
+{
+	if (!szFunction) return C4VNull;
+	if (!LuaDef.isNil())
+	{
+		return Game.LuaEngine.Call(LuaDef, std::string{szFunction},
+							pPars->Par[0], pPars->Par[1], pPars->Par[2],
+							pPars->Par[3], pPars->Par[4], pPars->Par[5],
+							pPars->Par[6], pPars->Par[7]
+							);
+	}
+	return Script.FunctionCall(nullptr, szFunction, nullptr, pPars, false, fPassError);
+}
+
 #endif
 
 // C4DefList
@@ -1384,7 +1398,7 @@ bool C4DefList::Remove(C4ID id)
 
 void C4DefList::Remove(C4Def *def)
 {
-	for (auto it = table.begin(); it != table.end(); )
+	for (auto it = table.begin(); it != table.end();)
 	{
 		if (it->second == def)
 		{
@@ -1445,7 +1459,7 @@ C4Def *C4DefList::GetByPath(const std::string &path)
 int32_t C4DefList::CheckEngineVersion(int32_t ver1, int32_t ver2, int32_t ver3, int32_t ver4)
 {
 	int32_t rcount = 0;
-	for (auto it = table.begin(); it != table.end(); )
+	for (auto it = table.begin(); it != table.end();)
 	{
 		if (CompareVersion(
 				it->second->rC4XVer[0], it->second->rC4XVer[1], it->second->rC4XVer[2], it->second->rC4XVer[3],

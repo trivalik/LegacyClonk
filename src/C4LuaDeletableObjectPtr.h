@@ -40,11 +40,11 @@ public:
 
 	T *checkObject() const
 	{
-		if (object != nullptr)
+		if (object )
 		{
 			return object;
 		}
-		if (m_L != nullptr)
+		if (m_L)
 		{
 			luaL_error(m_L, "Object call: Target is zero!");
 		}

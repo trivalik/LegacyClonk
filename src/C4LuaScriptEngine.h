@@ -260,8 +260,9 @@ public:
 			{
 				context.push();
 				function.push();
-				LogErrorF("Function %s.%s not found",
-						  (context.isNil() ? "Global" : luaL_tolstring(L, -2, nullptr)), luaL_tolstring(L, -1, nullptr));
+				LogErrorF(lua_pushstring(L, FormatString("Function %s.%s not found",
+						  (context.isNil() ? "Global" : luaL_tolstring(L, -2, nullptr)), luaL_tolstring(L, -1, nullptr)).getData()));
+				throw luabridge::LuaException(L, LUA_ERRRUN);
 			}
 			return LuaNil(L);
 		}
@@ -274,7 +275,7 @@ public:
 			catch (luabridge::LuaException const &e)
 			{
 				LogErrorF("%s", e.what());
-				return LuaNil(L);
+				throw;
 			}
 		}
 	}
@@ -291,7 +292,8 @@ public:
 		{
 			if (functionName[0] != '~')
 			{
-				LogErrorF("Table %s not found", context.c_str());
+				LogErrorF(lua_pushstring(L, FormatString("Table %s not found", context.c_str()).getData()));
+				throw luabridge::LuaException(L, LUA_ERRRUN);
 			}
 			return LuaNil(L);
 		}
@@ -308,7 +310,7 @@ public:
 		catch (luabridge::LuaException const &e)
 		{
 			LogErrorF("%s", e.what());
-			return LuaNil(L);
+			throw;
 		}
 	}
 	luabridge::LuaRef Evaluate(const std::string &script);

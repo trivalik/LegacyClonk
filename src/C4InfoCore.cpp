@@ -233,7 +233,7 @@ void C4PhysicalInfo::PromotionUpdate(int32_t iRank, bool fUpdateTrainablePhysica
 		{
 			C4Value PhysVal(this->*PhysOff, C4V_Int);
 			C4AulParSet Pars(C4VString(szPhysName), C4VInt(iRank), C4VRef(&PhysVal));
-			if (!!pTrainDef->Script.Call(PSF_GetFairCrewPhysical, &Pars))
+			if (!!pTrainDef->Call(PSF_GetFairCrewPhysical, &Pars))
 			{
 				this->*PhysOff = PhysVal.getInt();
 			}

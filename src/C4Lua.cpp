@@ -25,7 +25,7 @@ bool C4Lua::Init()
 {
 	Clear();
 	L = luaL_newstate();
-	if (L == nullptr)
+	if (!L)
 	{
 		return false;
 	}
@@ -40,7 +40,7 @@ bool C4Lua::Init()
 
 void C4Lua::Clear()
 {
-	if (L != nullptr)
+	if (L)
 	{
 		lua_settop(L, 0);
 		lua_close(L);

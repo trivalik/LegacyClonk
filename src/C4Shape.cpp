@@ -697,7 +697,7 @@ void C4Shape::CompileFunc(StdCompiler *pComp, bool fRuntime)
 	// Note: Compiled directly into "Object" and "DefCore"-categories, so beware of name clashes
 	// (see C4Object::CompileFunc and C4DefCore::CompileFunc)
 	auto *luaComp = dynamic_cast<StdCompilerLuaRead *>(pComp);
-	if (luaComp != nullptr)
+	if (luaComp)
 	{
 		if (luaComp->Name("Shape"))
 		{
