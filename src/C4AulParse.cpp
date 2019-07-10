@@ -805,6 +805,7 @@ static const char *GetTTName(C4AulBCCType e)
 	case AB_Dec1_Postfix: return "AB_Dec1_Postfix"; // --
 
 	// postfix
+	case AB_Concat:           return "AB_Concat";           // ..
 	case AB_Pow:              return "AB_Pow";              // **
 	case AB_Div:              return "AB_Div";              // /
 	case AB_Mul:              return "AB_Mul";              // *
@@ -951,6 +952,7 @@ void C4AulParseState::AddBCC(C4AulBCCType eType, intptr_t X)
 		iStack++;
 		break;
 
+	case AB_Concat:
 	case AB_Pow:
 	case AB_Div:
 	case AB_Mul:

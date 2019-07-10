@@ -143,6 +143,7 @@ enum C4AulBCCType
 	AB_Dec1_Postfix, // --
 
 	// postfix
+	AB_Concat,           // ..
 	AB_Pow,              // **
 	AB_Div,              // /
 	AB_Mul,              // *

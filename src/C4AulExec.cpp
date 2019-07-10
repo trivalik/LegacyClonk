@@ -435,7 +435,6 @@ C4Value C4AulExec::Exec(C4AulBCC *pCPos, bool fPassErrors)
 				orig.HintType(C4V_Int);
 				break;
 			}
-			// postfix
 			case AB_Pow: // **
 			{
 				CheckOpPars(pCPos->bccX);
