@@ -51,13 +51,13 @@ int32_t GetPlayerNumber(DeletableObjectPtr<C4Player> *player)
 C4ID GetIDFromDef(luabridge::LuaRef def)
 {
 	C4ID id;
-	if (def["ID"].isNumber())
+	if (def.isNumber())
 	{
-		id = def["ID"];
+		id = def;
 	}
-	else if (def["ID"].isString())
+	else if (def.isString())
 	{
-		std::string i = def["ID"];
+		std::string i = def;
 		if (LooksLikeID(i.c_str()))
 		{
 			id = C4Id(i.c_str());
@@ -67,6 +67,10 @@ C4ID GetIDFromDef(luabridge::LuaRef def)
 			luaL_error(def.state(), "Definition has invalid ID: %s", i.c_str());
 			return 0L;
 		}
+	}
+	else if (def.isTable())
+	{
+		id = GetIDFromDef(def["ID"]);
 	}
 	else
 	{
@@ -179,28 +183,7 @@ int loadfile(lua_State *L)
 
 luabridge::LuaRef RegisterDefinition(luabridge::LuaRef table)
 {
-	C4ID id;
-	if (table["ID"].isNumber())
-	{
-		id = table["ID"];
-	}
-	else if (table["ID"].isString())
-	{
-		std::string i = table["ID"];
-		if (LooksLikeID(i.c_str()))
-		{
-			id = C4Id(i.c_str());
-		}
-		else
-		{
-			luaL_error(table.state(), "Definition has invalid ID: %s", i.c_str());
-			return LuaNil(table.state());
-		}
-	}
-	else
-	{
-		id = std::hash<luabridge::LuaRef>()(table);
-	}
+	C4ID id = LuaHelpers::GetIDFromDef(table);
 	C4Def *def = Game.Defs.ID2Def(id);
 	if (def)
 	{
@@ -233,16 +216,16 @@ luabridge::LuaRef RegisterDefinition(luabridge::LuaRef table)
 luabridge::LuaRef CreateObject(luabridge::LuaRef arguments, lua_State *L)
 {
 	luabridge::LuaRef table = arguments["Def"];
-	if (!table.isTable())
+	C4ID id = LuaHelpers::GetIDFromDef(table);
+	if (table.isTable())
 	{
-		return LuaHelpers::error(L, FormatString("Definition is not a table (type: %s)", lua_typename(table.state(), table.type())).getData());
-	}
-	else if (!table["Name"].isString() || table["Name"].tostring().empty())
-	{
-		return LuaHelpers::error(L, "Definition has no name");
-	}
+		if (!table["Name"].isString() || table["Name"].tostring().empty())
+		{
+			return LuaHelpers::error(L, "Definition has no name");
+		}
 
-	table = RegisterDefinition(table);
+		table = RegisterDefinition(table);
+	}
 
 	int32_t x = arguments["X"].isNumber() ? arguments["X"] : 0;
 	int32_t y = arguments["Y"].isNumber() ? arguments["Y"] : 0;
@@ -252,7 +235,7 @@ luabridge::LuaRef CreateObject(luabridge::LuaRef arguments, lua_State *L)
 	FIXED ydir = arguments["YDir"].isNumber() ? ftofix(arguments["YDir"].cast<float>()) : Fix0;
 	FIXED rdir = arguments["RDir"].isNumber() ? ftofix(arguments["RDir"].cast<float>()) : Fix0;
 
-	int32_t con = arguments["Con"].isNumber() ? arguments["Con"] : FullCon / 100;
+	int32_t con = arguments["Con"].isNumber() ? arguments["Con"] : 100;
 
 	C4PlayerPtr *owner = !arguments["Owner"].isNil() ? arguments["Owner"] : nullptr;
 	C4PlayerPtr *controller = !arguments["Controller"].isNil() ? arguments["Controller"] : owner;
@@ -262,7 +245,7 @@ luabridge::LuaRef CreateObject(luabridge::LuaRef arguments, lua_State *L)
 	C4ObjectPtr *creator = !arguments["Creator"].isNil() ? arguments["Creator"] : nullptr;
 
 	C4Object *obj = Game.NewObject(
-				Game.Defs.ID2Def(table["ID"].cast<C4ID>()),
+				Game.Defs.ID2Def(id),
 				creator  ? *creator : nullptr,
 				owner  ? (*owner)->Number : NO_OWNER,
 				nullptr,
@@ -272,7 +255,7 @@ luabridge::LuaRef CreateObject(luabridge::LuaRef arguments, lua_State *L)
 				controller  ? (*controller)->Number : NO_OWNER
 				);
 
-	return luabridge::LuaRef(L, LuaHelpers::ref(L, obj));
+	return obj ? luabridge::LuaRef(L, LuaHelpers::ref(L, obj)) : LuaNil(L);
 }
 
 void Explode(C4ObjectPtr *obj, int32_t level, lua_State *L) // opt: luabridge::LuaRef effect, std::string particle
@@ -1144,16 +1127,46 @@ bool GrabObjectInfo(C4ObjectPtr *obj, C4ObjectPtr *target)
 	return (*obj)->GrabInfo(*target);
 }
 
-bool BurnMaterial(C4ObjectPtr *obj, int32_t x, int32_t y)
+bool BurnMaterial(int32_t x, int32_t y)
 {
-	if (!obj) return false;
 	int32_t mat = GBackMat(x, y);
 	return MatValid(mat) && Game.Material.Map[mat].Inflammable && Game.Landscape.ExtractMaterial(x, y) != MNone;
 }
 
-int32_t ExtractLiquid(int32_t x, int32_t y)
+C4Material *ExtractLiquid(int32_t x, int32_t y, lua_State *L)
 {
-	return GBackLiquid(x, y) ? Game.Landscape.ExtractMaterial(x, y) : MNone;
+	if (GBackLiquid(x, y))
+	{
+		int32_t index = Game.Landscape.ExtractMaterial(x, y);
+		if (MatValid(index))
+		{
+			return &(Game.Material.Map[index]);
+		}
+	}
+	return LuaNil(L);
+}
+
+int32_t GetMaterialIndex(const C4Material *mat)
+{
+	if (!mat) return MNone;
+	return Game.Material.Get(mat->Name.c_str());
+}
+
+C4Material *GetMaterial(int32_t x, int32_t y)
+{
+	int32_t index = GBackMat(x, y);
+	return MatValid(index) ? &Game.Material.Map[index] : nullptr;
+}
+
+luabridge::LuaRef GetTexture(int32_t x, int32_t y, lua_State *L)
+{
+	int32_t tex = PixCol2Tex(GBackPix(x, y));
+	if (!tex) return LuaNil(L);
+
+	const C4TexMapEntry *texture = Game.TextureMap.GetEntry(tex);
+	if (!tex) return LuaNil(L);
+
+	return luabridge::LuaRef(L, std::string{texture->GetTextureName()});
 }
 
 #define PREFIX
@@ -1219,14 +1232,14 @@ luabridge::LuaRef __call(C4AulFuncPtr *func, lua_State *L)
 	{
 		pars[arg - argstart - 1] = luabridge::Stack<C4Value>::get(L, arg);
 	}
-	return luabridge::LuaRef(L, (*func)->Exec(obj  ? *obj : nullptr, &pars));
+	return luabridge::LuaRef(L, (*func)->Exec(obj ? *obj : nullptr, &pars));
 }
 }
 
-// C4Material
-namespace C4Material
+// C4MaterialCore
+namespace C4MaterialCore
 {
-#define MAT(x) C4MaterialCore *Get##x(const C4MaterialCore *mat) \
+#define MAT(x) ::C4MaterialCore *Get##x(const ::C4MaterialCore *mat) \
 { \
 	if (mat) \
 	{ \
@@ -1244,6 +1257,44 @@ MAT(InMatConvertTo)
 MAT(BelowTempConvertTo)
 MAT(AboveTempConvertTo)
 #undef MAT
+}
+
+// C4Material
+namespace C4Material
+{
+uint32_t GetMaterialCount(::C4Material *mat, lua_State *L)
+{
+	if (!mat) return 0;
+	int32_t index = GetMaterialIndex(mat);
+	if ((lua_gettop(L) >= 2 && lua_toboolean(L, 2)) || !mat->MinHeightCount)
+	{
+		return Game.Landscape.MatCount[index];
+	}
+	return Game.Landscape.EffectiveMatCount[index];
+}
+
+bool InsertMaterial(::C4Material *mat, int32_t x, int32_t y, lua_State *L)
+{
+	if (!mat) return false;
+	return Game.Landscape.InsertMaterial(
+				GetMaterialIndex(mat),
+				x, y,
+				static_cast<int32_t>(luaL_optinteger(L, 4, 0)),
+				static_cast<int32_t>(luaL_optinteger(L, 5, 0))
+				);
+}
+
+uint32_t ExtractMaterialAmount(::C4Material *mat, int32_t x, int32_t y, uint32_t amount)
+{
+	int32_t index = GetMaterialIndex(mat);
+	if (!MatValid(index))
+	{
+		return 0;
+	}
+	uint32_t extracted = 0;
+	for(; extracted < amount && GBackMat(x, y) == index && Game.Landscape.ExtractMaterial(x, y) == index; ++extracted);
+	return extracted;
+}
 }
 
 // C4ObjectPtr
@@ -1476,7 +1527,15 @@ bool C4LuaScriptEngine::Init()
 
 			.beginNamespace("Landscape")
 				.addFunction("BurnMaterial", &LuaScriptFn::BurnMaterial)
+				.addFunction("ExtractLiquid", &LuaScriptFn::ExtractLiquid)
+				.addFunction("GetMaterial", &LuaScriptFn::GetMaterial)
+				.addFunction("GetMaterialIndex", &LuaScriptFn::GetMaterialIndex)
+				.addFunction("GetTexture", &LuaScriptFn::GetTexture)
 				.addFunction("Incinerate", &LuaScriptFn::IncinerateLandscape)
+				.addFunction("IsSolid", &GBackSolid)
+				.addFunction("IsSemiSolid", &GBackSemiSolid)
+				.addFunction("IsLiquid", &GBackLiquid)
+				.addFunction("IsSky", &GBackIFT)
 			.endNamespace()
 
 			.addProperty("Players", &LuaScriptFn::GetPlayers, nullptr)
@@ -1576,11 +1635,17 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("PXSGfx", &C4MaterialCore::PXSGfx, false)
 
 			.addProperty("PXSGfxSize", &C4MaterialCore::PXSGfxSize, false)
-			.addProperty("BlastShiftTo", &LuaScriptFn::C4Material::GetBlastShiftTo)
-			.addProperty("InMatConvert", &LuaScriptFn::C4Material::GetInMatConvert)
-			.addProperty("InMatConvertTo", &LuaScriptFn::C4Material::GetInMatConvertTo)
-			.addProperty("BelowTempConvertTo", &LuaScriptFn::C4Material::GetBelowTempConvertTo)
-			.addProperty("AboveTempConvertTo", &LuaScriptFn::C4Material::GetAboveTempConvertTo)
+			.addProperty("BlastShiftTo", &LuaScriptFn::C4MaterialCore::GetBlastShiftTo)
+			.addProperty("InMatConvert", &LuaScriptFn::C4MaterialCore::GetInMatConvert)
+			.addProperty("InMatConvertTo", &LuaScriptFn::C4MaterialCore::GetInMatConvertTo)
+			.addProperty("BelowTempConvertTo", &LuaScriptFn::C4MaterialCore::GetBelowTempConvertTo)
+			.addProperty("AboveTempConvertTo", &LuaScriptFn::C4MaterialCore::GetAboveTempConvertTo)
+		.endClass()
+
+		.deriveClass<C4Material, C4MaterialCore>("C4Material")
+			.addFunction("GetCount", &LuaScriptFn::C4Material::GetMaterialCount)
+			.addFunction("Insert", &LuaScriptFn::C4Material::InsertMaterial)
+			.addFunction("Extract", &LuaScriptFn::C4Material::ExtractMaterialAmount)
 		.endClass()
 
 		.beginClass<LuaScriptFn::C4ObjectPtr>("C4Object")

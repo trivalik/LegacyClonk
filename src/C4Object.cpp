@@ -2159,7 +2159,10 @@ C4Value C4Object::Call(const char *szFunctionCall, C4AulParSet *pPars, bool fPas
 		}
 		catch (luabridge::LuaException const &e)
 		{
-			throw new C4AulExecError(this, e.what());
+			if (fPassError)
+			{
+				throw new C4AulExecError(this, e.what());
+			}
 		}
 	}
 	return Def->Script.ObjectCall(this, this, szFunctionCall, pPars, fPassError);
@@ -3179,8 +3182,12 @@ void C4Object::Clear()
 	delete pDrawTransform;   pDrawTransform   = nullptr;
 	delete pGfxOverlay;      pGfxOverlay      = nullptr;
 	while (FirstRef) FirstRef->Set(0);
-	// DO NOT DELETE wrapper HERE (gets deleted by reference counting)
-	wrapper->decReferenceCount();
+	if (wrapper != nullptr)
+	{
+		// DO NOT DELETE wrapper HERE (gets deleted by reference counting)
+		wrapper->decReferenceCount();
+		wrapper = nullptr;
+	}
 }
 
 bool C4Object::ContainedControl(uint8_t byCom)
@@ -4068,10 +4075,13 @@ bool C4Object::SetAction(int32_t iAct, C4Object *pTarget, C4Object *pTarget2, in
 	// Set new action
 	Action.Act = iAct;
 	Action.Name = "";
-	if (Action.Act > ActIdle) Action.Name = Def->ActMap[Action.Act].Name;
+	if (Action.Act > ActIdle)
+	{
+		Action.Name = Def->ActMap[Action.Act].Name;
+		Action.Procedure = Def->ActMap[Action.Act].Procedure;
+		Action.Length = Def->ActMap[Action.Act].Length;
+	}
 	Action.Phase = Action.PhaseDelay = 0;
-	Action.Procedure = Def->ActMap[Action.Act].Procedure;
-	Action.Length = Def->ActMap[Action.Act].Length;
 
 	// Set target if specified
 	if (pTarget) Action.Target = pTarget;
