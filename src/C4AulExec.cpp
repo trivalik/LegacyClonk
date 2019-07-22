@@ -1026,6 +1026,7 @@ C4Value C4AulExec::Exec(C4AulBCC *pCPos, bool fPassErrors)
 
 			case AB_CALL:
 			case AB_CALLFS:
+			case AB_CALLNF:
 			{
 				C4Value *pPars = pCurVal - C4AUL_MAX_Par + 1;
 				C4Value *pTargetVal = pCurVal - C4AUL_MAX_Par;
@@ -1056,6 +1057,23 @@ C4Value C4AulExec::Exec(C4AulBCC *pCPos, bool fPassErrors)
 					throw new C4AulExecError(pCurCtx->Obj,
 						FormatString("Object call: Invalid target type %s, expected object or id!", pTargetVal->GetTypeName()).getData());
 
+				if (pCPos->bccType == AB_CALLNF)
+				{
+					if (pDestObj)
+					{
+						if (Game.LuaEngine.FunctionNames.size() <= static_cast<size_t>(pCPos->bccX))
+						{
+							throw new C4AulExecError(pCurCtx->Obj, "Internal error: Missing function");
+						}
+						std::string name = Game.LuaEngine.FunctionNames[static_cast<size_t>(pCPos->bccX)];
+						*pTargetVal = pDestObj->Call(name.c_str(),
+													 &C4AulParSet(pPars[0], pPars[1], pPars[2],
+																  pPars[3], pPars[4], pPars[5],
+																  pPars[6], pPars[7], pPars[8], pPars[9]),
+								true);
+						break;
+					}
+				}
 				// Resolve overloads
 				C4AulFunc *pFunc = reinterpret_cast<C4AulFunc *>(pCPos->bccX);
 				while (pFunc->OverloadedBy)

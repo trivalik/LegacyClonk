@@ -805,7 +805,6 @@ static const char *GetTTName(C4AulBCCType e)
 	case AB_Dec1_Postfix: return "AB_Dec1_Postfix"; // --
 
 	// postfix
-	case AB_Concat:           return "AB_Concat";           // ..
 	case AB_Pow:              return "AB_Pow";              // **
 	case AB_Div:              return "AB_Div";              // /
 	case AB_Mul:              return "AB_Mul";              // *
@@ -847,6 +846,7 @@ static const char *GetTTName(C4AulBCCType e)
 	case AB_CALL:         return "AB_CALL";         // direct object call
 	case AB_CALLFS:       return "AB_CALLFS";       // failsafe direct call
 	case AB_CALLNS:       return "AB_CALLNS";       // direct object call: namespace operator
+	case AB_CALLNF:       return "AB_CALLNF";       // direct object call: function not found
 	case AB_STACK:        return "AB_STACK";        // push nulls / pop
 	case AB_INT:          return "AB_INT";          // constant: int
 	case AB_BOOL:         return "AB_BOOL";         // constant: bool
@@ -952,7 +952,6 @@ void C4AulParseState::AddBCC(C4AulBCCType eType, intptr_t X)
 		iStack++;
 		break;
 
-	case AB_Concat:
 	case AB_Pow:
 	case AB_Div:
 	case AB_Mul:
@@ -1008,6 +1007,7 @@ void C4AulParseState::AddBCC(C4AulBCCType eType, intptr_t X)
 
 	case AB_CALL:
 	case AB_CALLFS:
+	case AB_CALLNF:
 		iStack -= C4AUL_MAX_Par;
 		break;
 
@@ -2773,23 +2773,16 @@ void C4AulParseState::Parse_Expression2(int iParentPrio)
 			// search a function with the given name
 			if (!(pFunc = a->Engine->GetFirstFunc(Idtf)))
 			{
-				// not failsafe?
-				if (eCallType != AB_CALLFS && Type == PARSER)
-				{
-					throw new C4AulParseError(this, FormatString("direct object call: function %s not found", Idtf).getData());
-				}
-				// otherwise: nothing to call - just execute parameters and discard them
 				Shift();
-				Parse_Params(0, nullptr);
-				// remove target from stack, push a zero value as result
-				AddBCC(AB_STACK, -1); AddBCC(AB_STACK, +1);
-				// done
+				Parse_Params(C4AUL_MAX_Par, Idtf, nullptr);
+				Game.LuaEngine.FunctionNames.push_back(Idtf);
+				AddBCC(AB_CALLNF, static_cast<intptr_t>(Game.LuaEngine.FunctionNames.size() - 1));
 				break;
 			}
 		}
 		// add call chunk
 		Shift();
-		Parse_Params(C4AUL_MAX_Par, pFunc ? pFunc->Name : 0, pFunc);
+		Parse_Params(C4AUL_MAX_Par, pFunc ? pFunc->Name : nullptr, pFunc);
 		if (idNS != 0)
 			AddBCC(AB_CALLNS, (long)idNS);
 		AddBCC(eCallType, (long)pFunc);

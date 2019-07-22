@@ -16,7 +16,6 @@
 
 #include "C4LuaScriptEngine.h"
 #ifndef BIG_C4INCLUDE
-#include "C4Aul.h"
 #include "C4Command.h"
 #include "C4Components.h"
 #include "C4Def.h"
@@ -79,6 +78,52 @@ C4ID GetIDFromDef(luabridge::LuaRef def)
 	return id;
 }
 
+void PushObject(lua_State *L, C4Object *obj)
+{
+	if (obj && obj->wrapper)
+	{
+		luabridge::push(L, ref(L, obj));
+	}
+	else
+	{
+		lua_pushnil(L);
+	}
+}
+
+C4Value HandleUserdata(lua_State *L, int32_t index)
+{
+#define IS(name) luaL_testudata(L, index, #name)
+#define TO(name) luabridge::LuaRef::fromStack(L, index).cast<name *>()
+	if (IS(C4Action))
+	{
+		return C4VString(TO(C4Action)->Name.c_str());
+	}
+	else if (IS(C4AulFunc))
+	{
+		return C4VString(TO(DeletableObjectPtr<C4AulFunc>)->checkObject()->Name);
+	}
+	else if (IS(C4Def))
+	{
+		return C4VID(TO(DeletableObjectPtr<C4Def>)->checkObject()->id);
+	}
+	else if (IS(C4Material))
+	{
+		return C4VInt(Game.Material.Get(TO(C4Material)->Name.c_str()));
+	}
+	else if (IS(C4Object))
+	{
+		return C4VObj(TO(DeletableObjectPtr<C4Object>)->checkObject());
+	}
+	else if (IS(C4Player))
+	{
+		return C4VInt(TO(DeletableObjectPtr<C4Player>)->checkObject()->Number);
+	}
+	else
+	{
+		return C4VNull;
+	}
+}
+
 template<typename Ret, typename... Args> Ret CallC4Script(DeletableObjectPtr<C4Object> *obj, Ret (*function)(C4AulContext *, Args...), Args... args)
 {
 	C4AulContext context{obj->checkObject(), obj->checkObject()->Def, nullptr};
@@ -116,6 +161,7 @@ namespace LuaScriptFn
 
 #define PTR(x) typedef LuaHelpers::DeletableObjectPtr<x> x##Ptr;
 PTR(C4AulFunc)
+PTR(C4Def)
 PTR(C4Object)
 PTR(C4PlayerInfoCore)
 PTR(C4Player)
@@ -246,8 +292,8 @@ luabridge::LuaRef CreateObject(luabridge::LuaRef arguments, lua_State *L)
 
 	C4Object *obj = Game.NewObject(
 				Game.Defs.ID2Def(id),
-				creator  ? *creator : nullptr,
-				owner  ? (*owner)->Number : NO_OWNER,
+				creator ? *creator : nullptr,
+				owner ? (*owner)->Number : NO_OWNER,
 				nullptr,
 				x, y, r,
 				xdir, ydir, rdir,
@@ -1236,6 +1282,46 @@ luabridge::LuaRef __call(C4AulFuncPtr *func, lua_State *L)
 }
 }
 
+// C4Def
+#undef PREFIX
+#define PREFIX C4Def
+namespace C4Def
+{
+PROPERTY(std::string, Name)
+GET(C4Shape, Shape)
+GET(C4Rect, Entrance)
+GET(C4Rect, Collection)
+GET(C4Rect, PictureRect)
+GET(C4TargetRect, SolidMask)
+GET(C4TargetRect, TopFace)
+GET(int32_t, GrowthType)
+GET(int32_t, Basement)
+GET(bool, CanBeBase)
+GET(bool, CrewMember)
+GET(bool, NativeCrew)
+GET(int32_t, Mass)
+GET(int32_t, Value)
+GET(bool, Exclusive)
+GET(uint32_t, Category)
+GET(int32_t, Growth)
+GET(bool, Rebuyable)
+GET(int32_t, ContactIncinerate)
+GET(int32_t, BlastIncinerate)
+GET(bool, Constructable)
+GET(int32_t, Grab)
+GET(bool, Carryable)
+GET(bool, Rotateable)
+GET(bool, Chopable)
+GET(int32_t, Float)
+GET(bool, ColorByOwner)
+GET(bool, NoHorizontalMove)
+GET(int32_t, BorderBound)
+GET(int32_t, LiftTop)
+GET(int32_t, CollectionLimit)
+GET(uint32_t, GrabPutGet)
+GET(bool, ContainBlast)
+}
+
 // C4MaterialCore
 namespace C4MaterialCore
 {
@@ -1605,6 +1691,9 @@ bool C4LuaScriptEngine::Init()
 			.addFunction("__call", &LuaScriptFn::C4AulFunc::__call)
 		.endClass()
 
+		.beginClass<LuaScriptFn::C4DefPtr>("C4Def")
+		.endClass()
+
 		.beginClass<C4MaterialCore>("C4MaterialCore")
 			.addProperty("Name", &C4MaterialCore::Name, false)
 
@@ -1742,6 +1831,40 @@ bool C4LuaScriptEngine::Init()
 			.addFunction("SetFoW", &LuaScriptFn::C4Player::GetSetFoW)*/
 			.addFunction("MakeCrewMember", &LuaScriptFn::C4Player::MakeCrewMember)
 		.endClass();
+
+		/*.beginClass<C4Rect>("C4Rect")
+			.addProperty("X", &C4Rect::x)
+			.addProperty("Y", &C4Rect::y)
+			.addProperty("Width", &C4Rect::Wdt)
+			.addProperty("Height", &C4Rect::Hgt)
+			.addProperty("MiddleX", &C4Rect::GetMiddleX)
+			.addProperty("MiddleY", &C4Rect::GetMiddleY)
+			.addProperty("Bottom", &C4Rect::GetBottom)
+
+			.addFunction("Set", &C4Rect::Set)
+			.addFunction("__eq", &C4Rect::operator==)
+			.addFunction("Contains", static_cast<bool (C4Rect::*)(const C4Rect &)>(&C4Rect::Contains))
+			.addFunction("IntersectsLine", &C4Rect::IntersectsLine)
+			.addFunction("Normalize", &C4Rect::Normalize)
+			.addFunction("Enlarge", &C4Rect::Enlarge)
+		.endClass()
+
+		.deriveClass<C4TargetRect, C4Rect>("C4TargetRect")
+			.addProperty("TargetX", &C4TargetRect::tx)
+			.addProperty("TargetY", &C4TargetRect::ty)
+
+			.addFunction("Set", &C4TargetRect::Set)
+			.addFunction("ClipBy", &C4TargetRect::ClipBy)
+		.endClass()
+
+		.deriveClass<C4Shape, C4Rect>("C4Shape")
+			.addProperty("FireTop", &C4Shape::FireTop)
+			.addProperty("ContactDensity", &C4Shape::ContactDensity)
+			.addProperty("ContactCNAT", &C4Shape::ContactCNAT)
+			.addProperty("ContactCount", &C4Shape::ContactCount)
+
+			.addFunction("ContactCheck", &C4Shape::ContactCheck)
+		.endClass();*/
 #undef PREFIX
 #undef CONCAT
 #undef CONCAT2

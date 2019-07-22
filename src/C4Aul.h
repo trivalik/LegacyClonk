@@ -23,10 +23,11 @@
 
 #pragma once
 
+#include "C4Include.h"
 #include <C4ValueList.h>
 #include <C4ValueMap.h>
 #include <C4Id.h>
-#include "C4LuaScriptEngine.h"
+#include "C4LuaDeletableObjectPtr.h"
 #include <C4Script.h>
 #include <C4StringTable.h>
 
@@ -143,7 +144,6 @@ enum C4AulBCCType
 	AB_Dec1_Postfix, // --
 
 	// postfix
-	AB_Concat,           // ..
 	AB_Pow,              // **
 	AB_Div,              // /
 	AB_Mul,              // *
@@ -185,6 +185,7 @@ enum C4AulBCCType
 	AB_CALL,         // direct object call
 	AB_CALLFS,       // failsafe direct call
 	AB_CALLNS,       // direct object call: namespace operator
+	AB_CALLNF,       // direct object call: function not found
 	AB_STACK,        // push nulls / pop
 	AB_INT,          // constant: int
 	AB_BOOL,         // constant: bool

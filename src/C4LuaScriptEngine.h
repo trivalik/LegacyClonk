@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "C4Aul.h"
 #include "C4Lua.h"
 #include "C4LuaDeletableObjectPtr.h"
 #include "C4Include.h"
@@ -115,6 +116,8 @@ inline Ret ref(lua_State *L, T *obj)
 C4Object *Number2Object(int number);
 C4ID GetIDFromDef(luabridge::LuaRef def);
 int32_t GetPlayerNumber(DeletableObjectPtr<C4Player> *player);
+void PushObject(lua_State *L, C4Object *obj);
+C4Value HandleUserdata(lua_State *L, int32_t index);
 }
 
 namespace LuaScriptFn
@@ -131,7 +134,8 @@ template<> struct Stack<C4Value>
 		switch (value.GetType())
 		{
 		case C4V_Any:
-			lua_pushnil(L);
+			//lua_pushnil(L);
+			lua_pushnumber(L, 0);
 			break;
 
 		case C4V_Int:
@@ -164,11 +168,11 @@ template<> struct Stack<C4Value>
 			break;
 
 		case C4V_C4ObjectEnum:
-			luabridge::push(L, LuaHelpers::Number2Object(value.getInt()));
+			LuaHelpers::PushObject(L, LuaHelpers::Number2Object(value.getInt()));
 			break;
 
 		case C4V_C4Object:
-			luabridge::push(L, value.getObj());
+			LuaHelpers::PushObject(L, value.getObj());
 		}
 	}
 
@@ -179,18 +183,21 @@ template<> struct Stack<C4Value>
 		{
 		case LUA_TNONE:
 		case LUA_TNIL:
-			return C4Value();
+			return C4VNull;
 		case LUA_TNUMBER:
 			return C4VInt(value.cast<int32_t>());
 		case LUA_TSTRING:
 			return C4VString(value.tostring().c_str());
+
+		case LUA_TUSERDATA:
+		case LUA_TLIGHTUSERDATA:
+			return LuaHelpers::HandleUserdata(L, index);
+
 		case LUA_TTABLE:
 		case LUA_TFUNCTION:
-		case LUA_TUSERDATA:
 		case LUA_TTHREAD:
-		case LUA_TLIGHTUSERDATA:
 		default:
-			return C4Value();
+			return C4VNull;
 		}
 	}
 };
@@ -234,13 +241,21 @@ public:
 public:
 	bool Init();
 	void Clear();
-	template<typename... Args> luabridge::LuaRef Call(luabridge::LuaRef context, std::string functionName, Args... args)
+	enum class CallFlags
+	{
+		None = 0,
+		Log,
+		Throw,
+		ThrowC4Aul
+	};
+
+	template<CallFlags Flags = CallFlags::Throw, typename... Args> luabridge::LuaRef Call(luabridge::LuaRef context, std::string functionName, Args... args)
 	{
 		assert(L);
 		bool noThrow = functionName[0] == '~';
 		if (noThrow)
 		{
-			functionName = functionName.substr(1);
+			return Call<CallFlags::None>(context, functionName.substr(1), args...);
 		}
 
 		luabridge::LuaRef function(L);
@@ -256,13 +271,26 @@ public:
 
 		if (!function.isFunction())
 		{
-			if (!noThrow)
+			if constexpr (Flags != CallFlags::None)
 			{
 				context.push();
 				function.push();
-				LogErrorF(lua_pushstring(L, FormatString("Function %s.%s not found",
-						  (context.isNil() ? "Global" : luaL_tolstring(L, -2, nullptr)), luaL_tolstring(L, -1, nullptr)).getData()));
-				throw luabridge::LuaException(L, LUA_ERRRUN);
+				StdStrBuf s = FormatString("Function %s.%s not found",
+						  (context.isNil() ? "Global" : luaL_tolstring(L, -2, nullptr)), luaL_tolstring(L, -1, nullptr));
+
+				switch (Flags)
+				{
+				case CallFlags::Log:
+					LogErrorF(s.getData());
+					break;
+
+				case CallFlags::Throw:
+					lua_pushstring(L, s.getData());
+					throw luabridge::LuaException(L, LUA_ERRRUN);
+
+				case CallFlags::ThrowC4Aul:
+					throw new C4AulExecError(nullptr, s.getData());
+				}
 			}
 			return LuaNil(L);
 		}
@@ -270,47 +298,57 @@ public:
 		{
 			try
 			{
-				return Call(function, args...);
+				return function(args...);
 			}
 			catch (luabridge::LuaException const &e)
 			{
-				LogErrorF("%s", e.what());
-				throw;
+				switch (Flags)
+				{
+				case CallFlags::Throw:
+					throw;
+				case CallFlags::ThrowC4Aul:
+					throw new class C4AulExecError(nullptr, e.what());
+				case CallFlags::Log:
+					LogErrorF("%s", e.what());
+				default:
+					return LuaNil(L);
+				}
 			}
 		}
 	}
 
-	template<typename... Args> luabridge::LuaRef Call(const std::string &context, const std::string &functionName, Args... args)
+	template<CallFlags Flags = CallFlags::Throw, typename... Args> luabridge::LuaRef Call(const std::string &context, const std::string &functionName, Args... args)
 	{
 		assert(L);
 		luabridge::LuaRef ref = luabridge::getGlobal(L, context.c_str());
 		if (ref.isTable())
 		{
-			return Call(ref, functionName, args...);
+			return Call<Flags>(ref, functionName, args...);
 		}
 		else
 		{
 			if (functionName[0] != '~')
 			{
-				LogErrorF(lua_pushstring(L, FormatString("Table %s not found", context.c_str()).getData()));
-				throw luabridge::LuaException(L, LUA_ERRRUN);
+				if constexpr (Flags != CallFlags::None)
+				{
+					StdStrBuf s = FormatString("Table %s not found", context.c_str());
+
+					switch (Flags)
+					{
+					case CallFlags::Log:
+						LogErrorF(s.getData());
+						break;
+
+					case CallFlags::Throw:
+						lua_pushstring(L, s.getData());
+						throw luabridge::LuaException(L, LUA_ERRRUN);
+
+					case CallFlags::ThrowC4Aul:
+						throw new C4AulExecError(nullptr, s.getData());
+					}
+				}
 			}
 			return LuaNil(L);
-		}
-	}
-
-	template<typename... Args> luabridge::LuaRef Call(luabridge::LuaRef function, Args... args)
-	{
-		assert(L);
-		assert(function.isFunction());
-		try
-		{
-			return function(args...);
-		}
-		catch (luabridge::LuaException const &e)
-		{
-			LogErrorF("%s", e.what());
-			throw;
 		}
 	}
 	luabridge::LuaRef Evaluate(const std::string &script);
@@ -325,4 +363,7 @@ private:
 	size_t lines = 0;
 	size_t warnings = 0;
 	size_t errors = 0;
+	std::vector<std::string> FunctionNames;
+	friend class C4AulParseState;
+	friend class C4AulExec;
 };

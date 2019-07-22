@@ -2478,7 +2478,7 @@ bool C4Game::InitGameFinal()
 	if (!C4S.Head.SaveGame)
 	{
 		Script.Call(PSF_Initialize);
-		LuaEngine.Call("Scenario", PSF_Initialize);
+		LuaEngine.Call<C4LuaScriptEngine::CallFlags::Log>("Scenario", PSF_Initialize);
 	}
 	if (Objects.ObjectCount() != iObjCount) fScriptCreatedObjects = true;
 

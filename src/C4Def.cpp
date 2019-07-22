@@ -523,6 +523,8 @@ void C4Def::Default()
 	PortraitCount = 0;
 	Portraits = nullptr;
 	pFairCrewPhysical = nullptr;
+	wrapper = new LuaHelpers::DeletableObjectPtr<C4Def>(nullptr, this);
+	wrapper->incReferenceCount();
 #endif
 }
 
@@ -547,6 +549,12 @@ void C4Def::Clear()
 
 	PortraitCount = 0;
 	Portraits = nullptr;
+	if (wrapper != nullptr)
+	{
+		wrapper->reset();
+		wrapper->decReferenceCount();
+		wrapper = nullptr;
+	}
 
 #endif
 

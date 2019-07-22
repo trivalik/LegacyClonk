@@ -328,6 +328,7 @@ public:
 	C4DefGraphics Graphics; // base graphics. points to additional graphics
 	int32_t PortraitCount;
 	C4PortraitGraphics *Portraits; // Portraits (linked list of C4AdditionalDefGraphics)
+	LuaHelpers::DeletableObjectPtr<C4Def> *wrapper = nullptr;
 
 protected:
 	// copy of the physical info used in FairCrew-mode

@@ -21,12 +21,12 @@
 #include "C4Facet.h"
 #include "C4Id.h"
 #include "C4Landscape.h"
+#include "C4LuaDeletableObjectPtr.h"
 #include "C4Sector.h"
 #include "C4Value.h"
 #include "C4ValueList.h"
 #include "C4Effects.h"
 #include "C4Particles.h"
-#include "C4LuaScriptEngine.h"
 
 #include <array>
 
