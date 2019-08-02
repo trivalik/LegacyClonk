@@ -550,13 +550,14 @@ inline StdPtrAdapt<T> mkPtrAdaptNoNull(T *&rpObj) { return mkPtrAdapt<T>(rpObj, 
 // * Adaptor for STL containers
 // Writes a comma-separated list for compilers that support it. Otherwise, the size is calculated and safed.
 // The defaulting uses the standard STL operators (full match)
-template <class C>
+template <class C, typename R>
 struct StdSTLContainerAdapt
 {
-	StdSTLContainerAdapt(C &rStruct, StdCompiler::Sep eSep = StdCompiler::SEP_SEP)
-		: rStruct(rStruct), eSep(eSep) {}
+	StdSTLContainerAdapt(C &rStruct, StdCompiler::Sep eSep = StdCompiler::SEP_SEP, R (C::*f)(const typename C::value_type &) = &C::push_back)
+		: rStruct(rStruct), eSep(eSep), function(f) {}
 
 	C &rStruct; const StdCompiler::Sep eSep;
+	R (C::*function)(const typename C::value_type &);
 
 	inline void CompileFunc(StdCompiler *pComp) const
 	{
@@ -598,7 +599,7 @@ struct StdSTLContainerAdapt
 				{
 					T val;
 					pComp->Value(val);
-					rStruct.push_back(val);
+					(rStruct.*function)(val);
 				}
 				catch (StdCompiler::NotFoundException *pEx)
 				{
@@ -615,8 +616,17 @@ struct StdSTLContainerAdapt
 	inline StdSTLContainerAdapt &operator=(const C &nValue) { rStruct = nValue; return *this; }
 };
 
-template <class C>
-inline StdSTLContainerAdapt<C> mkSTLContainerAdapt(C &rTarget, StdCompiler::Sep eSep = StdCompiler::SEP_SEP) { return StdSTLContainerAdapt<C>(rTarget, eSep); }
+template <class C, typename R>
+inline StdSTLContainerAdapt<C, R> mkSTLContainerAdapt(C &rTarget, StdCompiler::Sep eSep = StdCompiler::SEP_SEP, R (C::*f)(const typename C::value_type &) = &C::push_back)
+{
+	return StdSTLContainerAdapt<C, R>(rTarget, eSep, f);
+}
+
+template<class C>
+inline StdSTLContainerAdapt<C, void> mkSTLContainerAdapt(C &rTarget, StdCompiler::Sep eSep = StdCompiler::SEP_SEP)
+{
+	return StdSTLContainerAdapt<C, void>(rTarget, eSep);
+}
 
 // * Adaptor for maps following the std::map and std::unordered_map interfaces
 // Writes the size of the map followed by a semicolon separated list of key=value pairs
