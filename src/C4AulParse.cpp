@@ -1425,6 +1425,11 @@ void C4AulParseState::Parse_FuncHead()
 			C4AulFunc *FnLink = new C4AulFunc(a, nullptr);
 			FnLink->LinkedTo = Fn; Fn->LinkedTo = FnLink;
 			Acc = AA_PUBLIC;
+
+			luabridge::getGlobalNamespace(Game.LuaEngine.state())
+					.beginNamespace("Game")
+						.addProperty(Idtf, Fn->wrapper, false) // TODO: does this increase the refcount?
+					.endNamespace();
 		}
 		else
 		{
@@ -1551,6 +1556,11 @@ void C4AulParseState::Parse_FuncHead()
 		C4AulFunc *FnLink = new C4AulFunc(a, nullptr);
 		FnLink->LinkedTo = Fn; Fn->LinkedTo = FnLink;
 		Acc = AA_PUBLIC;
+
+		luabridge::getGlobalNamespace(Game.LuaEngine.state())
+				.beginNamespace("Game")
+					.addProperty(Idtf, Fn->wrapper, false) // TODO: does this increase the refcount?
+				.endNamespace();
 	}
 	else
 	{
