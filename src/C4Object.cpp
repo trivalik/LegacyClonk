@@ -2148,9 +2148,9 @@ C4Value C4Object::Call(const char *szFunctionCall, C4AulParSet *pPars, bool fPas
 			{
 				return Game.LuaEngine.Call<C4LuaScriptEngine::CallFlags::Throw>(_this, std::string{szFunctionCall}, _this,
 										pPars->Par[0], pPars->Par[1], pPars->Par[2],
-										pPars->Par[3], pPars->Par[4], pPars->Par[5]
-										/*pPars->Par[6], pPars->Par[7], pPars->Par[8],
-										pPars->Par[9]*/); // FIXME
+										pPars->Par[3], pPars->Par[4], pPars->Par[5],
+										pPars->Par[6], pPars->Par[7], pPars->Par[8],
+										pPars->Par[9]);
 			}
 			else
 			{
