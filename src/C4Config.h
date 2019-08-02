@@ -36,6 +36,8 @@
 #include "C4Include.h"
 #include "StdWindow.h"
 
+#include <set>
+
 class C4ConfigGeneral
 {
 public:
@@ -56,7 +58,7 @@ public:
 	StdStrBuf SaveGameFolder;
 	StdStrBuf SaveDemoFolder;
 	StdStrBuf ScreenshotFolder;
-	char MissionAccess[CFG_MaxString + 1];
+	std::set<std::string> MissionAccess;
 	bool FPS;
 	bool Record;
 	bool MMTimer;    // use multimedia-timers

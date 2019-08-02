@@ -82,7 +82,7 @@ bool C4GameSave::SaveCore()
 		if (!Game.Parameters.Save(*pSaveGroup, &Game.C4S)) return false;
 	}
 	// clear MissionAccess in save games and records (sulai)
-	*rC4S.Head.MissionAccess = 0;
+	rC4S.Head.MissionAccess.clear();
 	// OldGfx is no longer supported
 	// checks for IsExact() || ExactLandscape wouldn't catch scenarios using more than 23 materials, so let's make it easy
 	rC4S.Head.ForcedGfxMode = C4SGFXMODE_NEWGFX;

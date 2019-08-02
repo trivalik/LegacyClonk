@@ -184,7 +184,9 @@ const int32_t C4S_MaxPlayerDefault = 12;
 void C4SHead::Default()
 {
 	Origin.Clear();
-	std::memset(this, 0, sizeof(C4SHead));
+	std::memset(this, 0, static_cast<size_t>(reinterpret_cast<intptr_t>(&MissionAccess) - reinterpret_cast<intptr_t>(C4XVer)));
+	MissionAccess.clear();
+	std::memset(this, 0, static_cast<size_t>(reinterpret_cast<intptr_t>(&Origin) - reinterpret_cast<intptr_t>(&NetworkGame)));
 	Icon = 18;
 	MaxPlayer = MaxPlayerLeague = C4S_MaxPlayerDefault;
 	MinPlayer = 0; // auto-determine by mode
@@ -220,7 +222,7 @@ void C4SHead::CompileFunc(StdCompiler *pComp, bool fSection)
 	if (!fSection)
 	{
 		pComp->Value(mkNamingAdapt(mkStringAdaptMA(Engine),        "Engine",                ""));
-		pComp->Value(mkNamingAdapt(mkStringAdaptMA(MissionAccess), "MissionAccess",         ""));
+		pComp->Value(mkNamingAdapt(mkStringAdaptA(MissionAccess),  "MissionAccess",         ""));
 		pComp->Value(mkNamingAdapt(NetworkGame,                    "NetworkGame",           false));
 		pComp->Value(mkNamingAdapt(NetworkRuntimeJoin,             "NetworkRuntimeJoin",    false));
 		pComp->Value(mkNamingAdapt(ForcedGfxMode,                  "ForcedGfxMode",         0));

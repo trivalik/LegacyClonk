@@ -202,11 +202,11 @@ bool C4Game::OpenScenario()
 	DefinitionFilenames.insert(DefinitionFilenames.end(), localDefs.begin(), localDefs.end());
 
 	// Check mission access
-	if (C4S.Head.MissionAccess[0])
-		if (!SIsModule(Config.General.MissionAccess, C4S.Head.MissionAccess))
-		{
-			LogFatal(LoadResStr("IDS_PRC_NOMISSIONACCESS")); return false;
-		}
+	if (C4S.Head.MissionAccess.size() && Config.General.MissionAccess.count(C4S.Head.MissionAccess))
+	{
+		LogFatal(LoadResStr("IDS_PRC_NOMISSIONACCESS"));
+		return false;
+	}
 
 	// Title
 	Title.LoadEx(LoadResStr("IDS_CNS_TITLE"), ScenarioFile, C4CFN_Title, Config.General.LanguageEx);

@@ -323,7 +323,7 @@ void C4MapFolderData::CreateGUIElements(C4StartupScenSelDlg *pMainDlg, C4GUI::Wi
 	{
 		AccessGfx *pGfx = ppAccessGfxList[i];
 		const char *szPassword = pGfx->sPassword.getData();
-		if (!szPassword || !*szPassword || SIsModule(Config.General.MissionAccess, szPassword))
+		if (!szPassword || !*szPassword || Config.General.MissionAccess.count(szPassword))
 		{
 			// ACCESS TO GFX GRANTED: draw it
 			rContainer.AddElement(new MapPic(pGfx->rcfOverlayPos, pGfx->fctOverlay));
@@ -725,7 +725,7 @@ bool C4ScenarioListLoader::Scenario::CanOpen(StdStrBuf &sErrOut)
 	C4StartupScenSelDlg *pDlg = C4StartupScenSelDlg::pInstance;
 	if (!pDlg) return false;
 	// check mission access
-	if (C4S.Head.MissionAccess[0] && !SIsModule(Config.General.MissionAccess, C4S.Head.MissionAccess))
+	if (C4S.Head.MissionAccess.size() && Config.General.MissionAccess.count(C4S.Head.MissionAccess))
 	{
 		sErrOut.Copy(LoadResStr("IDS_PRC_NOMISSIONACCESS"));
 		return false;
@@ -1762,7 +1762,11 @@ void C4StartupScenSelDlg::KeyCheat2(const StdStrBuf &rsCheatCode)
 		const char *szPass = rsCheatCode.getPtr(1);
 		if (szPass && *szPass)
 		{
-			SRemoveModules(Config.General.MissionAccess, szPass, false);
+			auto it = Config.General.MissionAccess.find(szPass);
+			if (it != Config.General.MissionAccess.end())
+			{
+				Config.General.MissionAccess.erase(it);
+			}
 			UpdateList();
 			UpdateSelection();
 			return;
@@ -1773,7 +1777,7 @@ void C4StartupScenSelDlg::KeyCheat2(const StdStrBuf &rsCheatCode)
 	const char *szPass = rsCheatCode.getPtr(0);
 	if (szPass && *szPass)
 	{
-		SAddModules(Config.General.MissionAccess, szPass, false);
+		Config.General.MissionAccess.insert(szPass);
 		UpdateList();
 		UpdateSelection();
 		return;

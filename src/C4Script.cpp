@@ -2398,8 +2398,7 @@ static bool FnGameOver(C4AulContext *cthr, long iGameOverValue /* provided for f
 
 static bool FnGainMissionAccess(C4AulContext *cthr, C4String *szPassword)
 {
-	if (SLen(Config.General.MissionAccess) + SLen(FnStringPar(szPassword)) + 3 > CFG_MaxString) return false;
-	SAddModule(Config.General.MissionAccess, FnStringPar(szPassword));
+	Config.General.MissionAccess.insert(FnStringPar(szPassword));
 	return true;
 }
 
@@ -3989,8 +3988,8 @@ static bool FnGetMissionAccess(C4AulContext *cthr, C4String *strMissionAccess)
 	if (Game.Control.SyncMode())
 		Log("Warning: using GetMissionAccess may cause desyncs when playing records!");
 
-	if (!Config.General.MissionAccess) return false;
-	return SIsModule(Config.General.MissionAccess, FnStringPar(strMissionAccess));
+	if (Config.General.MissionAccess.empty()) return false;
+	return Config.General.MissionAccess.count(FnStringPar(strMissionAccess));
 }
 
 // Helper to read or write a value from/to a structure. Must be two

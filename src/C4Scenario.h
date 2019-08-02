@@ -68,6 +68,7 @@ enum C4SFilmMode
 
 class C4SHead
 {
+	// If you change the member layout, don't forget to adapt the memset calls in Default()!
 public:
 	int32_t C4XVer[4];
 	char Title[C4MaxTitle + 1];
@@ -83,7 +84,7 @@ public:
 	int32_t DisableMouse;
 	int32_t RandomSeed;
 	char Engine[C4MaxTitle + 1]; // Relative filename of engine to be used for this scenario
-	char MissionAccess[C4MaxTitle + 1];
+	std::string MissionAccess;
 	bool NetworkGame;
 	bool NetworkRuntimeJoin;
 	int32_t ForcedGfxMode; // 0: free; 1/2: newgfx/oldgfx

@@ -81,7 +81,38 @@ void C4ConfigGeneral::CompileFunc(StdCompiler *pComp)
 	pComp->Value(mkNamingAdapt(SaveGameFolder, "SaveGameFolder", "Savegames.c4f", false, true));
 	pComp->Value(mkNamingAdapt(SaveDemoFolder, "SaveDemoFolder", "Records.c4f",   false, true));
 #ifdef C4ENGINE
-	pComp->Value(mkNamingAdapt(s(MissionAccess), "MissionAccess", "", false, true));
+	if (pComp->isCompiler())
+	{
+		try
+		{
+			MissionAccess.clear();
+			std::string access;
+			pComp->Value(mkNamingAdapt(mkStringAdaptA(access), "MissionAccess", ""));
+			if (access.size())
+			{
+				for (size_t pos = access.find(";"), oldpos = 0; pos != std::string::npos; oldpos = pos, pos = access.find(";", pos + 1))
+				{
+					MissionAccess.insert(access.substr(oldpos, pos));
+				}
+			}
+		}
+		catch (StdCompiler::Exception *e)
+		{
+			delete e;
+		}
+	}
+
+	if (MissionAccess.empty())
+	{
+		typedef decltype(MissionAccess) T;
+		typedef typename T::iterator It;
+		pComp->Value(mkNamingAdapt(
+						mkSTLContainerAdapt(
+							 MissionAccess,
+							 StdCompiler::SEP_SEP,
+							 static_cast<std::pair<It, bool>(T::*)(const typename T::value_type &)>(&decltype(MissionAccess)::insert)
+							 ), "MissionAccess", decltype(MissionAccess)(), false, true));
+	}
 #endif
 	pComp->Value(mkNamingAdapt(FPS,              "FPS",              false,         false, true));
 	pComp->Value(mkNamingAdapt(Record,           "Record",           false,         false, true));
