@@ -2504,7 +2504,8 @@ void C4LuaScriptEngine::Clear()
 luabridge::LuaRef C4LuaScriptEngine::Evaluate(const std::string &script)
 {
 	assert(L);
-	switch (luaL_loadbufferx(L, script.c_str(), script.size(), "Evaluate", "t"))
+	StdStrBuf line = FormatString("return %s;", script.c_str());
+	switch (luaL_loadbufferx(L, line.getData(), line.getSize() - 1, "Evaluate", "t"))
 	{
 	case LUA_ERRSYNTAX:
 		LogErrorF("%s", lua_tostring(L, -1));
@@ -2515,14 +2516,14 @@ luabridge::LuaRef C4LuaScriptEngine::Evaluate(const std::string &script)
 	default:
 		break;
 	}
-	try
+
+	if (lua_pcall(L, 0, 1, 0) != LUA_OK)
 	{
-		luabridge::LuaException::pcall(L, 0, 1, 0);
+		LogErrorF("%s", lua_tostring(L, -1));
+		lua_pop(L, 1);
+		return LuaNil(L);
 	}
-	catch (luabridge::LuaException const &e)
-	{
-		LogErrorF("%s", e.what());
-	}
+
 	return luabridge::LuaRef::fromStack(L);
 }
 
