@@ -131,6 +131,7 @@ enum C4AulBCCType
 	AB_PAR_R,        // Par statement
 	AB_PAR_V,
 	AB_FUNC,         // function
+	AB_FUNCNF,       // function (not found)
 
 	// prefix
 	AB_Inc1,   // ++

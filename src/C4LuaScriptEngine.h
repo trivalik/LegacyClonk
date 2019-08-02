@@ -366,4 +366,5 @@ private:
 	std::vector<std::string> FunctionNames;
 	friend class C4AulParseState;
 	friend class C4AulExec;
+	friend class C4AulScript;
 };

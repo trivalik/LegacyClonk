@@ -963,6 +963,25 @@ C4Value C4AulExec::Exec(C4AulBCC *pCPos, bool fPassErrors)
 				break;
 			}
 
+			case AB_FUNCNF:
+			{
+				if (Game.LuaEngine.FunctionNames.size() <= static_cast<size_t>(pCPos->bccX))
+				{
+					throw new C4AulExecError(pCurCtx->Obj, "Internal error: Missing function");
+				}
+				const std::string &name = Game.LuaEngine.FunctionNames[static_cast<size_t>(pCPos->bccX)];
+				C4Value *pPars = pCurVal - C4AUL_MAX_Par + 1;
+				*pPars = Game.LuaEngine.Call<C4LuaScriptEngine::CallFlags::ThrowC4Aul>(
+							luabridge::LuaRef(Game.LuaEngine.state()), name,
+							pPars[0], pPars[1], pPars[2],
+							pPars[3], pPars[4], pPars[5],
+							pPars[6], pPars[7], pPars[8],
+							pPars[9]
+						);
+				PopValuesUntil(pPars);
+				break;
+			}
+
 			case AB_VAR_R: case AB_VAR_V:
 				if (!pCurVal->ConvertTo(C4V_Int))
 					throw new C4AulExecError(pCurCtx->Obj, FormatString("Var: index of type %s, int expected!", pCurVal->GetTypeName()).getData());

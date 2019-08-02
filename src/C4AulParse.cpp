@@ -792,6 +792,7 @@ static const char *GetTTName(C4AulBCCType e)
 	case AB_PAR_R:     return "AB_PAR_R";     // Par statement
 	case AB_PAR_V:     return "AB_PAR_V";
 	case AB_FUNC:      return "AB_FUNC";      // function
+	case AB_FUNCNF:    return "AB_FUNCNF";    // function (not found)
 
 	// prefix
 	case AB_Inc1:   return "AB_Inc1";   // ++
@@ -1003,6 +1004,10 @@ void C4AulParseState::AddBCC(C4AulBCCType eType, intptr_t X)
 
 	case AB_FUNC:
 		iStack -= reinterpret_cast<C4AulFunc *>(X)->GetParCount() - 1;
+		break;
+
+	case AB_FUNCNF:
+		iStack -= C4AUL_MAX_Par - 1;
 		break;
 
 	case AB_CALL:
@@ -2006,9 +2011,10 @@ void C4AulParseState::Parse_Statement()
 					Done = true;
 					break;
 				}
-				// -> func not found
-				throw new C4AulParseError(this, "unknown identifier: ", Idtf);
+				// -> func not found, try runtime resolution
 			}
+
+			const std::string functionName = Idtf;
 			Shift();
 			// check if it's a label - labels like OCF_Living are OK (ugh...)
 			if (TokenType == ATT_COLON)
@@ -2019,8 +2025,17 @@ void C4AulParseState::Parse_Statement()
 			}
 			// The preparser assumes the syntax is correct
 			if (TokenType == ATT_BOPEN || Type == PARSER)
-				Parse_Params(FoundFn ? FoundFn->GetParCount() : 10, FoundFn ? FoundFn->Name : Idtf, FoundFn);
-			AddBCC(AB_FUNC, (long)FoundFn);
+				Parse_Params(FoundFn ? FoundFn->GetParCount() : C4AUL_MAX_Par, FoundFn ? FoundFn->Name : functionName.c_str(), FoundFn);
+
+			if (FoundFn)
+			{
+				AddBCC(AB_FUNC, (long)FoundFn);
+			}
+			else
+			{
+				Game.LuaEngine.FunctionNames.push_back(functionName);
+				AddBCC(AB_FUNCNF, static_cast<intptr_t>(Game.LuaEngine.FunctionNames.size() - 1));
+			}
 			if (gotohack)
 			{
 				AddBCC(AB_RETURN);
@@ -2546,8 +2561,21 @@ void C4AulParseState::Parse_Expression(int iParentPrio)
 				}
 				else
 				{
-					// identifier could not be resolved
-					throw new C4AulParseError(this, "unknown identifier: ", Idtf);
+					Shift();
+					if (TokenType == ATT_BOPEN)
+					{
+						const std::string functionName = Idtf;
+						Parse_Params(C4AUL_MAX_Par, functionName.c_str(), nullptr);
+
+						// identifier could not be resolved, try runtime resolution
+						Game.LuaEngine.FunctionNames.push_back(functionName);
+						AddBCC(AB_FUNCNF, static_cast<intptr_t>(Game.LuaEngine.FunctionNames.size() - 1));
+					}
+					else
+					{
+						// identifier could not be resolved
+						throw new C4AulParseError(this, "unknown identifier: ", Idtf);
+					}
 				}
 			}
 		}
@@ -2773,9 +2801,12 @@ void C4AulParseState::Parse_Expression2(int iParentPrio)
 			// search a function with the given name
 			if (!(pFunc = a->Engine->GetFirstFunc(Idtf)))
 			{
+				const std::string functionName = Idtf;
+
 				Shift();
-				Parse_Params(C4AUL_MAX_Par, Idtf, nullptr);
-				Game.LuaEngine.FunctionNames.push_back(Idtf);
+				Parse_Params(C4AUL_MAX_Par, functionName.c_str(), nullptr);
+
+				Game.LuaEngine.FunctionNames.push_back(functionName);
 				AddBCC(AB_CALLNF, static_cast<intptr_t>(Game.LuaEngine.FunctionNames.size() - 1));
 				break;
 			}
@@ -3098,6 +3129,8 @@ bool C4AulScript::Parse()
 					{
 					case AB_FUNC: case AB_CALL: case AB_CALLFS:
 						LogSilentF("%s\t'%s'\n", GetTTName(eType), X ? ((C4AulFunc *)X)->Name : ""); break;
+					case AB_FUNCNF:
+						LogSilentF("%s\t'%s'\n", GetTTName(eType), X ? Game.LuaEngine.FunctionNames[static_cast<size_t>(X)].c_str() : ""); break;
 					case AB_STRING:
 						LogSilentF("%s\t'%s'\n", GetTTName(eType), X ? ((C4String *)X)->Data.getData() : ""); break;
 					default:
