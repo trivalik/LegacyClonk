@@ -32,8 +32,149 @@
 #include "C4Wrappers.h"
 #endif
 
+#include <numeric>
 #include <sstream>
 #include <cstring>
+
+size_t std::hash<luabridge::LuaRef>::operator()(luabridge::LuaRef ref, bool recursive) const
+{
+	switch (ref.type())
+	{
+	case LUA_TNONE:
+	case LUA_TNIL:
+		return hash<decltype(NULL)>()(0L);
+	case LUA_TNUMBER:
+		return hash<int32_t>()(ref.cast<int32_t>());
+	case LUA_TSTRING:
+		return hash<std::string>()(ref.tostring());
+	case LUA_TTABLE:
+	{
+		if (recursive)
+		{
+			return hash<decltype(NULL)>()(0L); // FIXME: Invalid key to 'next'
+		}
+		size_t _hash = 0L;
+		hash<string> shash;
+		for (const auto &kv : ref.cast<map<string, luabridge::LuaRef>>())
+		{
+			_hash ^= (shash(kv.first) ^ (*this)(kv.second, true));
+		}
+		return _hash;
+	}
+	case LUA_TFUNCTION:
+	case LUA_TUSERDATA:
+	case LUA_TTHREAD:
+	case LUA_TLIGHTUSERDATA:
+	default:
+		return hash<decltype(NULL)>()(0);
+	}
+}
+
+namespace luabridge
+{
+
+void Stack<C4Value>::push(lua_State *L, C4Value value)
+{
+	switch (value.GetType())
+	{
+	case C4V_Any:
+		//lua_pushnil(L);
+		lua_pushinteger(L, 0);
+		break;
+
+	case C4V_Int:
+		lua_pushinteger(L, value.getIntOrID());
+		break;
+
+	case C4V_C4ID:
+	{
+		C4Def *def = Game.Defs.ID2Def(static_cast<C4ID>(value.getIntOrID()));
+		if (def)
+		{
+			luabridge::push(L, LuaHelpers::ref(L, def));
+		}
+		else
+		{
+			lua_pushnil(L);
+		}
+		break;
+	}
+
+	case C4V_Bool:
+		lua_pushboolean(L, value.getBool());
+		break;
+
+	case C4V_String:
+		lua_pushstring(L, value.getStr()->Data.getData());
+		break;
+
+	case C4V_Array:
+	{
+		LuaRef table = newTable(L);
+		C4ValueArray *array = value.getArray();
+		for (int32_t i = 0; i < array->GetSize(); ++i)
+		{
+			table[i + 1] = (*array)[i];
+		}
+		luabridge::push(L, table);
+	}
+		break;
+
+	case C4V_pC4Value:
+		push(L, value.GetRef());
+		break;
+
+	case C4V_C4ObjectEnum:
+		LuaHelpers::PushObject(L, LuaHelpers::Number2Object(value.getInt()));
+		break;
+
+	case C4V_C4Object:
+		LuaHelpers::PushObject(L, value.getObj());
+	}
+}
+
+C4Value Stack<C4Value>::get(lua_State *L, int index)
+{
+	switch (lua_type(L, index))
+	{
+	case LUA_TNONE:
+		assert(false);
+		return C4VNull;
+	case LUA_TNIL:
+		return C4VNull;
+	case LUA_TNUMBER:
+		return C4VInt(static_cast<int32_t>(lua_tointeger(L, index)));
+	case LUA_TSTRING:
+		return C4VString(lua_tostring(L, index));
+
+	case LUA_TUSERDATA:
+	case LUA_TLIGHTUSERDATA:
+		return LuaHelpers::HandleUserdata(L, index);
+
+	case LUA_TTABLE:
+	case LUA_TFUNCTION:
+	case LUA_TTHREAD:
+	default:
+		return C4VNull;
+	}
+}
+
+#ifdef USE_FIXED
+
+void Stack<FIXED>::push(lua_State *L, const FIXED &fixed)
+{
+	static_assert(std::is_floating_point<lua_Number>::value, "lua_Number is not a floating-point type");
+	lua_pushnumber(L, static_cast<lua_Number>(fixtof(fixed)));
+}
+
+FIXED Stack<FIXED>::get(lua_State *L, int index)
+{
+	static_assert(std::is_floating_point<lua_Number>::value, "lua_Number is not a floating-point type");
+	return ftofix(static_cast<float>(lua_tonumber(L, index)));
+}
+
+#endif
+}
 
 namespace LuaHelpers
 {
@@ -44,7 +185,7 @@ C4Object *Number2Object(int number)
 
 int32_t GetPlayerNumber(DeletableObjectPtr<C4Player> *player)
 {
-	return player  ? (*player)->Number : NO_OWNER;
+	return player ? (*player)->Number : NO_OWNER;
 }
 
 C4ID GetIDFromDef(luabridge::LuaRef def)
@@ -116,7 +257,8 @@ C4Value HandleUserdata(lua_State *L, int32_t index)
 	}
 	else if (IS(C4Player))
 	{
-		return C4VInt(TO(DeletableObjectPtr<C4Player>)->checkObject()->Number);
+		C4Player *player = TO(DeletableObjectPtr<C4Player>)->checkObject();
+		return C4VInt(player ? player->Number : NO_OWNER);
 	}
 	else
 	{
@@ -135,6 +277,20 @@ template<typename... Args> C4Value CallC4Script(DeletableObjectPtr<C4Object> *ob
 	C4AulContext context{obj->checkObject(), obj->checkObject()->Def, nullptr};
 	C4AulParSet pars(args...);
 	return function(&context, pars.Par);
+}
+
+template<class T> auto *GetRawPointerFromContext(luabridge::LuaRef context)
+{
+	typedef std::conditional_t<std::is_pointer_v<T>, std::remove_pointer_t<T>, T> Ret;
+
+	LogF("Ret: %s", typeid(Ret).name());
+
+	std::optional<DeletableObjectPtr<Ret> *> opt = cast<DeletableObjectPtr<Ret> *>(context);
+	if (opt && *opt)
+	{
+		return (*opt)->checkObject();
+	}
+	return static_cast<Ret *>(nullptr);
 }
 }
 
@@ -227,8 +383,9 @@ int loadfile(lua_State *L)
 	return luaL_error(L, "loadfile is disabled due to security reasons");
 }
 
-luabridge::LuaRef RegisterDefinition(luabridge::LuaRef table)
+luabridge::LuaRef RegisterDefinition(luabridge::LuaRef context, luabridge::LuaRef table)
 {
+	(void) context;
 	C4ID id = LuaHelpers::GetIDFromDef(table);
 	C4Def *def = Game.Defs.ID2Def(id);
 	if (def)
@@ -259,7 +416,7 @@ luabridge::LuaRef RegisterDefinition(luabridge::LuaRef table)
 	return table;
 }
 
-luabridge::LuaRef CreateObject(luabridge::LuaRef arguments, lua_State *L)
+luabridge::LuaRef CreateObject(luabridge::LuaRef context, luabridge::LuaRef arguments, lua_State *L)
 {
 	luabridge::LuaRef table = arguments["Def"];
 	C4ID id = LuaHelpers::GetIDFromDef(table);
@@ -270,7 +427,7 @@ luabridge::LuaRef CreateObject(luabridge::LuaRef arguments, lua_State *L)
 			return LuaHelpers::error(L, "Definition has no name");
 		}
 
-		table = RegisterDefinition(table);
+		table = RegisterDefinition(context, table);
 	}
 
 	int32_t x = arguments["X"].isNumber() ? arguments["X"] : 0;
@@ -311,7 +468,7 @@ void Explode(C4ObjectPtr *obj, int32_t level, lua_State *L) // opt: luabridge::L
 	auto effect = luabridge::LuaRef::fromStack(L, 3);
 	if (effect.isTable())
 	{
-		RegisterDefinition(effect);
+		RegisterDefinition(luabridge::LuaRef(L, LuaHelpers::ref(L, obj->checkObject())), effect);
 		id = effect["ID"];
 	}
 	else if (effect.isNumber())
@@ -331,8 +488,9 @@ bool Incinerate(C4ObjectPtr *obj, lua_State *L) // opt: C4Player *player
 							 : NO_OWNER);
 }
 
-bool IncinerateLandscape(int32_t x, int32_t y)
+bool IncinerateLandscape(luabridge::LuaRef context, int32_t x, int32_t y)
 {
+	(void) context;
 	return Game.Landscape.Incinerate(x, y);
 }
 
@@ -1105,8 +1263,9 @@ C4FindObject *CreateCriteriaFromTable(luabridge::LuaRef table)
 	return findCriterion;
 }
 
-luabridge::LuaRef FindObjects(luabridge::LuaRef criteria)
+luabridge::LuaRef FindObjects(luabridge::LuaRef context, luabridge::LuaRef criteria)
 {
+	(void) context;
 	lua_State *L = criteria.state();
 	if (criteria.isTable())
 	{
@@ -1128,8 +1287,9 @@ luabridge::LuaRef FindObjects(luabridge::LuaRef criteria)
 	return LuaHelpers::error(L, "FindObject: No valid search criteria specified");
 }
 
-luabridge::LuaRef FindObject(luabridge::LuaRef criteria)
+luabridge::LuaRef FindObject(luabridge::LuaRef context, luabridge::LuaRef criteria)
 {
+	(void) context;
 	lua_State *L = criteria.state();
 	if (criteria.isTable())
 	{
@@ -1151,8 +1311,9 @@ luabridge::LuaRef FindObject(luabridge::LuaRef criteria)
 	return LuaHelpers::error(L, "FindObject: No valid search criteria specified");
 }
 
-int32_t ObjectCount(luabridge::LuaRef criteria)
+int32_t ObjectCount(luabridge::LuaRef context, luabridge::LuaRef criteria)
 {
+	(void) context;
 	lua_State *L = criteria.state();
 	if (criteria.isTable())
 	{
@@ -1173,14 +1334,29 @@ bool GrabObjectInfo(C4ObjectPtr *obj, C4ObjectPtr *target)
 	return (*obj)->GrabInfo(*target);
 }
 
-bool BurnMaterial(int32_t x, int32_t y)
+bool BurnMaterial(luabridge::LuaRef context, int32_t x, int32_t y)
 {
+	(void) context;
 	int32_t mat = GBackMat(x, y);
 	return MatValid(mat) && Game.Material.Map[mat].Inflammable && Game.Landscape.ExtractMaterial(x, y) != MNone;
 }
 
-C4Material *ExtractLiquid(int32_t x, int32_t y, lua_State *L)
+void Smoke(luabridge::LuaRef context, int32_t x, int32_t y, int32_t level, lua_State *L) // opt: int32_t dwClr
 {
+	(void) context;
+	auto dwClr = static_cast<uint32_t>(luaL_optinteger(L, 5, 0));
+	::Smoke(x, y, level, dwClr);
+}
+
+void Bubble(luabridge::LuaRef context, int32_t x, int32_t y)
+{
+	(void) context;
+	BubbleOut(x, y);
+}
+
+C4Material *ExtractLiquid(luabridge::LuaRef context, int32_t x, int32_t y, lua_State *L)
+{
+	(void) context;
 	if (GBackLiquid(x, y))
 	{
 		int32_t index = Game.Landscape.ExtractMaterial(x, y);
@@ -1192,20 +1368,23 @@ C4Material *ExtractLiquid(int32_t x, int32_t y, lua_State *L)
 	return LuaNil(L);
 }
 
-int32_t GetMaterialIndex(const C4Material *mat)
+int32_t GetMaterialIndex(luabridge::LuaRef context, const C4Material *mat)
 {
+	(void) context;
 	if (!mat) return MNone;
 	return Game.Material.Get(mat->Name.c_str());
 }
 
-C4Material *GetMaterial(int32_t x, int32_t y)
+C4Material *GetMaterial(luabridge::LuaRef context, int32_t x, int32_t y)
 {
+	(void) context;
 	int32_t index = GBackMat(x, y);
 	return MatValid(index) ? &Game.Material.Map[index] : nullptr;
 }
 
-luabridge::LuaRef GetTexture(int32_t x, int32_t y, lua_State *L)
+luabridge::LuaRef GetTexture(luabridge::LuaRef context, int32_t x, int32_t y, lua_State *L)
 {
+	(void) context;
 	int32_t tex = PixCol2Tex(GBackPix(x, y));
 	if (!tex) return LuaNil(L);
 
@@ -1213,6 +1392,285 @@ luabridge::LuaRef GetTexture(int32_t x, int32_t y, lua_State *L)
 	if (!tex) return LuaNil(L);
 
 	return luabridge::LuaRef(L, std::string{texture->GetTextureName()});
+}
+
+#define M(t) bool GBack##t(luabridge::LuaRef context, int32_t x, int32_t y) \
+{ \
+	(void) context; \
+	return ::GBack##t(x, y); \
+}
+
+M(Solid)
+M(SemiSolid)
+M(Liquid)
+M(IFT)
+
+#undef M
+
+void BlastObjects(C4ObjectPtr *obj, int32_t x, int32_t y, int32_t level, lua_State *L) // opt: C4ObjectPtr *container, C4Player *causedBy
+{
+	if (!obj) return;
+
+	auto *container  = lua_gettop(L) >= 5 ? luabridge::LuaRef::fromStack(L, 5).cast<C4ObjectPtr *>() : nullptr;
+	auto causedBy = lua_gettop(L) >= 6 ? LuaHelpers::GetPlayerNumber(luabridge::LuaRef::fromStack(L, 6).cast<C4PlayerPtr *>()) : NO_OWNER;
+
+	if (causedBy == NO_OWNER)
+	{
+		causedBy = (*obj)->Controller;
+	}
+
+	Game.BlastObjects(x, y, level, *container, causedBy, *obj);
+}
+
+void BlastObject(C4ObjectPtr *obj, int32_t level, lua_State *L) // opt: C4PlayerPtr *causedBy
+{
+	if (!obj || !(*obj)->Status) return;
+
+	auto causedBy = lua_gettop(L) >= 4 ? LuaHelpers::GetPlayerNumber(luabridge::LuaRef::fromStack(L, 4).cast<C4PlayerPtr *>()) : NO_OWNER;
+	if (causedBy == NO_OWNER)
+	{
+		causedBy = (*obj)->Controller;
+	}
+
+	(*obj)->Blast(level, causedBy);
+}
+
+void BlastFree(luabridge::LuaRef context, int32_t x, int32_t y, int32_t level, lua_State *L) // opt: C4PlayerPtr *causedBy
+{
+	(void) context;
+
+	auto causedBy = lua_gettop(L) >= 4 ? LuaHelpers::GetPlayerNumber(luabridge::LuaRef::fromStack(L, 4).cast<C4PlayerPtr *>()) : NO_OWNER;
+	Game.Landscape.BlastFree(x, y, level, BoundBy((level / 10) - 1, 1, 3), causedBy);
+}
+
+void Sound(luabridge::LuaRef /* soundNamespace */, luabridge::LuaRef context, luabridge::LuaRef arguments, lua_State *L)
+{
+	auto *player = !arguments["Player"].isNil() ? arguments["Player"].cast<C4PlayerPtr *>() : nullptr;
+	if (player && !(*player)->LocalControl)
+	{
+		return;
+	}
+
+	bool global = arguments["Global"].isBool() ? arguments["Global"] : false;
+
+	C4Object *obj = nullptr;
+	if (!global)
+	{
+		C4ObjectPtr *a = context;
+		std::optional<C4ObjectPtr *> opt = LuaHelpers::cast<C4ObjectPtr *>(context);
+		if (opt)
+		{
+			assert(*opt);
+			obj = **opt;
+		}
+		//obj = LuaHelpers::GetRawPointerFromContext<decltype(obj)>(context);
+	}
+
+	auto loop = !arguments["LoopCount"].isNil() ? BoundBy(arguments["LoopCount"].cast<int32_t>(), -1, 1) : 0;
+	bool multiple = arguments["Multiple"].isBool() ? arguments["Multiple"] : false;
+	std::string sound = arguments["Name"].isString() ? arguments["Name"].tostring() : "";
+
+	if (loop >= 0)
+	{
+		if (!multiple && GetSoundInstance(sound.c_str(), obj))
+		{
+			return;
+		}
+
+		auto volume = !arguments["Volume"].isNil() ? BoundBy(arguments["Volume"].cast<int32_t>(), 1, 100) : 100;
+		if (!(arguments["X"].isNil() && arguments["Y"].isNil()))
+		{
+			if (global)
+			{
+				luaL_error(L, "Global sounds must not have coordinates specified!");
+			}
+
+			else if (obj)
+			{
+				luaL_error(L, "Object sounds must not have coordinates specified!");
+			}
+			else if (arguments["X"].isNil() || arguments["Y"].isNil())
+			{
+				luaL_error(L, "Invalid coordinates specified for sound playback!");
+			}
+			StartSoundEffectAt(sound.c_str(), arguments["X"], arguments["Y"], !!loop, volume);
+		}
+		else
+		{
+			int32_t customFalloffDistance = !arguments["CustomFalloffDistance"].isNil() ? arguments["CustomFalloffDistance"] : 0;
+			StartSoundEffect(sound.c_str(), !!loop, volume, obj, customFalloffDistance);
+		}
+	}
+	else
+	{
+		StopSoundEffect(sound.c_str(), obj);
+	}
+}
+
+void SoundLevel(luabridge::LuaRef context, std::string sound, int32_t level)
+{
+	::SoundLevel(sound.c_str(), LuaHelpers::GetRawPointerFromContext<C4Object *>(context), level);
+}
+
+void Music(lua_State *L) // luabridge::LuaRef musicNamespace, luabridge::LuaRef context, std::string songName (nillable), opt: bool loop
+{
+	Application.MusicSystem.Stop();
+	if (lua_isnoneornil(L, 3))
+	{
+		Config.Sound.RXMusic = false;
+	}
+	else
+	{
+		Config.Sound.RXMusic = Application.MusicSystem.Play(lua_tostring(L, 3), !!luaL_optinteger(L, 4, 0));
+	}
+}
+
+int32_t MusicLevel(luabridge::LuaRef context, int32_t level)
+{
+	(void) context;
+	Game.SetMusicLevel(level);
+	return Application.MusicSystem.SetVolume(level);
+}
+
+int32_t SetPlaylist(luabridge::LuaRef context, luabridge::LuaRef playlist, lua_State *L) // opt: bool restartMusic
+{
+	(void) context;
+
+	auto p = playlist.cast<std::vector<std::string>>();
+	std::string l = std::accumulate(std::next(p.begin()), p.end(), p[0], [](const std::string &a, const std::string &b)
+	{
+		return a + ";" + b;
+	});
+
+	int32_t filesInPlaylist = Application.MusicSystem.SetPlayList(l.c_str());
+	Game.PlayList.Copy(l.c_str());
+
+	if (!!luaL_optinteger(L, 3, 0) && Config.Sound.RXMusic)
+	{
+		Application.MusicSystem.Play();
+	}
+	return Game.Control.SyncMode() ? 0 : filesInPlaylist;
+}
+
+bool GameOver(lua_State *L) // luabridge::LuaRef context, opt: int32_t gameOverValue (unused?!)
+{
+	(void) L;
+	return Game.DoGameOver();
+}
+
+void GainMissionAccess(luabridge::LuaRef context, std::string password)
+{
+	(void) context;
+	Config.General.MissionAccess.insert(password);
+}
+
+void AddMessage(luabridge::LuaRef context, luabridge::LuaRef arguments, lua_State *L)
+{
+	if (arguments["Message"].isNil())
+	{
+		luaL_error(L, "No message specified!");
+		return;
+	}
+	std::string message = arguments["Message"];
+	int32_t x = !arguments["X"].isNil() ? arguments["X"] : 0;
+	int32_t y = !arguments["Y"].isNil() ? arguments["Y"] : 0;
+	int32_t player = LuaHelpers::GetPlayerNumber(arguments["Player"]);
+
+	auto *obj = LuaHelpers::GetRawPointerFromContext<C4Object *>(context);
+	if (obj)
+	{
+		Game.Messages.Append(C4GM_Target, message.c_str(), obj, player, x - obj->x, y - obj->y, FWhite);
+	}
+	else
+	{
+		Game.Messages.Append(C4GM_Global, message.c_str(), obj, player == NO_OWNER ? ANY_OWNER : player, x, y, FWhite);
+	}
+}
+
+void ScriptGo(luabridge::LuaRef context, bool go)
+{
+	(void) context;
+	Game.Script.Go = go;
+}
+
+void CastPXS(luabridge::LuaRef context, C4Material *material, int32_t amount, int32_t level, int32_t x, int32_t y)
+{
+	(void) context;
+	Game.PXS.Cast(Game.Material.Get(material->Name.c_str()), amount, x, y, level);
+}
+
+void CastObjects(luabridge::LuaRef context, C4DefPtr *def, int32_t amount, int32_t level, int32_t x, int32_t y)
+{
+	if (!def) return;
+	auto *obj = LuaHelpers::GetRawPointerFromContext<C4Object *>(context);
+	Game.CastObjects((*def)->id, obj, amount, level, x, y, obj ? obj->Owner : NO_OWNER, obj ? obj->Controller : NO_OWNER);
+}
+
+luabridge::LuaRef PlaceVegetation(luabridge::LuaRef context, C4DefPtr *def, int32_t x, int32_t y, int32_t width, int32_t height, int32_t growth, lua_State *L)
+{
+	(void) context;
+	if (!def) return LuaNil(L);
+
+	C4Object *obj = Game.PlaceVegetation((*def)->id, x, y, width, height, growth);
+	return obj ? luabridge::LuaRef(L, LuaHelpers::ref(L, obj)) : LuaNil(L);
+}
+
+luabridge::LuaRef PlaceAnimal(luabridge::LuaRef context, C4DefPtr *def, lua_State *L)
+{
+	(void) context;
+	if (!def) return LuaNil(L);
+
+	C4Object *obj = Game.PlaceAnimal((*def)->id);
+	return obj ? luabridge::LuaRef(L, LuaHelpers::ref(L, obj)) : LuaNil(L);
+}
+
+// DrawVolcanoBranch - left out
+
+
+luabridge::LuaRef ObjectCall(C4ObjectPtr *obj, std::string functionName, lua_State *L) // opt: arguments
+{
+	if (!obj) return LuaNil(L);
+
+	C4AulParSet pars;
+	for (int32_t i = 3; i < std::min(lua_gettop(L) + 1, C4AUL_MAX_Par + 3); ++i)
+	{
+		pars[i - 3] = luabridge::LuaRef::fromStack(L, i);
+	}
+
+	try
+	{
+		return luabridge::LuaRef(L, (*obj)->Call(functionName.c_str(), &pars, true));
+	}
+	catch (C4AulExecError *e)
+	{
+		e->show();
+		delete e;
+		return LuaHelpers::error(L, "");
+	}
+}
+
+int Call(lua_State *L) // opt: arguments
+{
+	if (lua_gettop(L) < 2) return 0;
+
+	size_t size;
+	const char *functionName = luaL_checklstring(L, 2, &size);
+	if (!size)
+	{
+		return 0;
+	}
+
+	luabridge::LuaRef function = luabridge::getGlobal(L, "Game")[functionName];
+	if (function.isNil())
+	{
+		return 0;
+	}
+
+	function.push();
+	lua_insert(L, 2);
+	int top = lua_gettop(L) - 2;
+	lua_call(L, lua_gettop(L) - 2, LUA_MULTRET);
+	return lua_gettop(L) - top;
 }
 
 #define PREFIX
@@ -1258,27 +1716,38 @@ std::vector<C4V_Type> GetParTypes(const C4AulFuncPtr *func)
 	return {};
 }
 
-luabridge::LuaRef __call(C4AulFuncPtr *func, lua_State *L)
+luabridge::LuaRef __call(C4AulFuncPtr *func, luabridge::LuaRef context, lua_State *L) // opt: arguments
 {
 	if (!func) return LuaNil(L);
 	func->checkObject();
-	int32_t argstart = 0;
-	C4ObjectPtr *obj = nullptr;
-	if (luaL_testudata(L, 1, "C4Object"))
+
+	int32_t top = lua_gettop(L);
+
+	C4ObjectPtr *obj = context;
+	/*std::optional<decltype(obj)> opt = LuaHelpers::cast<decltype(obj)>(context);
+	if (opt)
 	{
-		obj = luabridge::LuaRef::fromStack(L, 1);
-		++argstart;
-	}
-	if (lua_gettop(L) > C4AUL_MAX_Par + argstart)
+		obj = *opt;*/
+
+		if (obj)
+		{
+			LogF("foobar: %s", (*obj)->Name.getData());
+		}
+	//}
+	assert(top == lua_gettop(L));
+
+	if (lua_gettop(L) > C4AUL_MAX_Par + 2)
 	{
 		return LuaHelpers::error(L, "Too many arguments supplied (%d / %d)", lua_gettop(L), C4AUL_MAX_Par);
 	}
+
 	C4AulParSet pars;
-	for (int32_t arg = argstart + 1; arg <= lua_gettop(L); ++arg)
+	for (int32_t arg = 3; arg <= top; ++arg)
 	{
-		pars[arg - argstart - 1] = luabridge::Stack<C4Value>::get(L, arg);
+		pars[arg - 3] = luabridge::LuaRef::fromStack(L, arg).cast<C4Value>();
 	}
-	return luabridge::LuaRef(L, (*func)->Exec(obj ? *obj : nullptr, &pars));
+	C4Value ret = func->checkObject()->Exec(obj ? obj->checkObject() : nullptr, &pars);
+	return luabridge::LuaRef(L, ret);
 }
 }
 
@@ -1351,7 +1820,7 @@ namespace C4Material
 uint32_t GetMaterialCount(::C4Material *mat, lua_State *L)
 {
 	if (!mat) return 0;
-	int32_t index = GetMaterialIndex(mat);
+	int32_t index = GetMaterialIndex(LuaNil(L), mat);
 	if ((lua_gettop(L) >= 2 && lua_toboolean(L, 2)) || !mat->MinHeightCount)
 	{
 		return Game.Landscape.MatCount[index];
@@ -1363,16 +1832,16 @@ bool InsertMaterial(::C4Material *mat, int32_t x, int32_t y, lua_State *L)
 {
 	if (!mat) return false;
 	return Game.Landscape.InsertMaterial(
-				GetMaterialIndex(mat),
+				GetMaterialIndex(LuaNil(L), mat),
 				x, y,
 				static_cast<int32_t>(luaL_optinteger(L, 4, 0)),
 				static_cast<int32_t>(luaL_optinteger(L, 5, 0))
 				);
 }
 
-uint32_t ExtractMaterialAmount(::C4Material *mat, int32_t x, int32_t y, uint32_t amount)
+uint32_t ExtractMaterialAmount(::C4Material *mat, int32_t x, int32_t y, uint32_t amount, lua_State *L)
 {
-	int32_t index = GetMaterialIndex(mat);
+	int32_t index = GetMaterialIndex(LuaNil(L), mat);
 	if (!MatValid(index))
 	{
 		return 0;
@@ -1396,6 +1865,9 @@ void __newindex(C4ObjectPtr *obj, std::string key, luabridge::LuaRef value)
 luabridge::LuaRef __index(C4ObjectPtr *obj, std::string key, lua_State *L)
 {
 	if (!obj) return LuaNil(L);
+
+	LogF("key: %s", key.c_str());
+
 	{
 		int index = lua_gettop(L);
 		luabridge::push(L, obj);
@@ -1410,14 +1882,12 @@ luabridge::LuaRef __index(C4ObjectPtr *obj, std::string key, lua_State *L)
 		}
 	}
 
-	auto i = (*obj)->LuaLocals.find(key);
-	if (i != (*obj)->LuaLocals.end())
+	if (auto i = (*obj)->LuaLocals.find(key); i != (*obj)->LuaLocals.end())
 	{
 		return i->second;
 	}
 
-	C4Value *value = (*obj)->LocalNamed.GetItem(key.c_str());
-	if (value)
+	if (C4Value *value = (*obj)->LocalNamed.GetItem(key.c_str()); value)
 	{
 		return luabridge::LuaRef(L, value);
 	}
@@ -1426,14 +1896,12 @@ luabridge::LuaRef __index(C4ObjectPtr *obj, std::string key, lua_State *L)
 	{
 		return (*obj)->Def->LuaDef[key];
 	}
-	else
+
+	if (::C4AulFunc *f = (*obj)->Def->Script.GetSFunc(key.c_str(), AA_PROTECTED, true); f)
 	{
-		::C4AulFunc *f = (*obj)->Def->Script.GetSFunc(key.c_str(), AA_PROTECTED, true);
-		if (f)
-		{
-			return luabridge::LuaRef(L, LuaHelpers::ref(L, f));
-		}
+		return luabridge::LuaRef(L, LuaHelpers::ref(L, f));
 	}
+
 	return LuaNil(L);
 }
 }
@@ -1463,6 +1931,9 @@ PROPERTY(int32_t, Value)
 GET(int32_t, InitialValue)
 GET(int32_t, ValueGain)
 GET(int32_t, ObjectsOwned)
+GET(int32_t, ShowControl)
+GET(int32_t, ShowControlPos)
+GET(int32_t, FlashCom)
 
 int GetCaptain(lua_State *L)
 {
@@ -1478,8 +1949,12 @@ int GetCaptain(lua_State *L)
 	return 0;
 }
 
-GET(bool, AutoContextMenu)
-GET(int32_t, ControlStyle)
+
+PROPERTY(bool, AutoContextMenu)
+PROPERTY(int32_t, ControlStyle)
+GET(int32_t, LastCom)
+GET(int32_t, LastComDelay)
+GET(int32_t, LastComDownDouble)
 
 int GetCursor(lua_State *L)
 {
@@ -1534,6 +2009,107 @@ bool MakeCrewMember(C4PlayerPtr *player, C4ObjectPtr *obj)
 	return (*player)->MakeCrewMember((*obj));
 }
 
+std::string GetAtClientName(const C4PlayerPtr *player)
+{
+	return (*player)->AtClientName;
+}
+
+bool HostileTo(C4PlayerPtr *player1, C4PlayerPtr *player2, lua_State *L) // opt: bool checkOneWayOnly
+{
+	if (!player1 || !player2) return false;
+
+	if (!!luaL_optinteger(L, 3, 0))
+	{
+		return Game.Players.HostilityDeclared((*player1)->Number, (*player2)->Number);
+	}
+	return ::Hostile((*player1)->Number, (*player2)->Number);
+}
+
+bool SetHostility(C4PlayerPtr *player1, C4PlayerPtr *player2, bool hostile, lua_State *L) // opt: bool silent, bool noCalls
+{
+	if (!player1 || !player2) return false;
+
+	if (!luaL_optinteger(L, 5, 0)
+			&& !!Game.Script.GRBroadcast(
+				PSF_RejectHostilityChange,
+				&C4AulParSet(C4VInt((*player1)->Number), C4VInt((*player2)->Number), C4VBool(hostile)),
+				true,
+				true
+				)
+			)
+	{
+		return false;
+	}
+
+	bool oldHostility = Game.Players.HostilityDeclared((*player1)->Number, (*player2)->Number);
+	if (!(*player1)->SetHostility((*player2)->Number, hostile, !!luaL_optinteger(L, 4, 0)))
+	{
+		return false;
+	}
+
+	Game.Script.GRBroadcast(
+				PSF_OnHostilityChange,
+				&C4AulParSet(C4VInt((*player1)->Number), C4VInt((*player2)->Number), C4VBool(hostile), C4VBool(oldHostility)),
+				true
+				);
+
+	return true;
+}
+
+int GetPlayerView(lua_State *L) // const C4PlayerPtr *player
+{
+	if (lua_gettop(L) < 1) return 0;
+
+	const C4PlayerPtr *player = luabridge::LuaRef::fromStack(L, 1);
+	if ((*player)->ViewMode == C4PVM_Target)
+	{
+		::C4Object *target = (*player)->ViewTarget;
+		if (target)
+		{
+			luabridge::push(L, LuaHelpers::ref(L, target));
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int SetPlayerView(lua_State *L) // C4PlayerPtr *player, C4ObjectPtr *obj
+{
+	if (lua_gettop(L) < 2) return 0;
+
+	C4PlayerPtr *player = luabridge::LuaRef::fromStack(L, 1);
+	C4ObjectPtr *obj = luabridge::LuaRef::fromStack(L, 2);
+	if (!obj) return 0;
+
+	(*player)->SetViewMode(C4PVM_Target, *obj);
+	return 0;
+}
+
+void SetPlayerShowControl(C4PlayerPtr *player, int32_t control)
+{
+	if (!player) return;
+	(*player)->ShowControl = control;
+}
+
+void SetPlayerShowCommand(C4PlayerPtr *player, int32_t command)
+{
+	if (!player) return;
+
+	(*player)->FlashCom = command;
+	Config.Graphics.ShowCommands = true;
+}
+
+void SetPlayerShowControlPos(C4PlayerPtr *player, int32_t pos)
+{
+	if (!player) return;
+	(*player)->ShowControlPos = pos;
+}
+
+std::string GetPlayerControlName(C4PlayerPtr *player, int32_t control, lua_State *L) // opt: bool
+{
+	if (!player) return "";
+	return PlrControlKeyName((*player)->Number, control, !!luaL_optinteger(L, 3, 0)).getData();
+}
 }
 
 #undef GET
@@ -1600,31 +2176,66 @@ bool C4LuaScriptEngine::Init()
 				C(BackgroundOrForeground)
 			.endNamespace()
 
-			.addFunction("CreateObject", &LuaScriptFn::CreateObject)
-			.addFunction("FindObjects", &LuaScriptFn::FindObjects)
-			.addFunction("FindObject", &LuaScriptFn::FindObject)
-			.addFunction("ObjectCount", &LuaScriptFn::ObjectCount)
+			.addFunction("Call", &LuaScriptFn::Call)
+			.addFunction("GameOver", &LuaScriptFn::GameOver)
+			.addFunction("ScriptGo", &LuaScriptFn::ScriptGo)
 
 			.beginNamespace("Environment")
 				.addProperty("Gravity", &LuaScriptFn::GetGravity, &LuaScriptFn::SetGravity)
-				.addFunction("Smoke", &Smoke)
-				.addFunction("Bubble", &BubbleOut)
+
+				.addFunction("Bubble", &LuaScriptFn::Bubble)
+				.addFunction("Smoke", &LuaScriptFn::Smoke)
 			.endNamespace()
 
 			.beginNamespace("Landscape")
+				.addFunction("BlastFree", &LuaScriptFn::BlastFree)
 				.addFunction("BurnMaterial", &LuaScriptFn::BurnMaterial)
 				.addFunction("ExtractLiquid", &LuaScriptFn::ExtractLiquid)
 				.addFunction("GetMaterial", &LuaScriptFn::GetMaterial)
 				.addFunction("GetMaterialIndex", &LuaScriptFn::GetMaterialIndex)
 				.addFunction("GetTexture", &LuaScriptFn::GetTexture)
 				.addFunction("Incinerate", &LuaScriptFn::IncinerateLandscape)
-				.addFunction("IsSolid", &GBackSolid)
-				.addFunction("IsSemiSolid", &GBackSemiSolid)
-				.addFunction("IsLiquid", &GBackLiquid)
-				.addFunction("IsSky", &GBackIFT)
+				.addFunction("IsSolid", &LuaScriptFn::GBackSolid)
+				.addFunction("IsSemiSolid", &LuaScriptFn::GBackSemiSolid)
+				.addFunction("IsLiquid", &LuaScriptFn::GBackLiquid)
+				.addFunction("IsSky", &LuaScriptFn::GBackIFT)
+				.addFunction("PlaceAnimal", &LuaScriptFn::PlaceAnimal)
+				.addFunction("PlaceVegetation", &LuaScriptFn::PlaceVegetation)
+			.endNamespace()
+
+			.beginNamespace("Message")
+				.addFunction("Add", &LuaScriptFn::AddMessage)
+			.endNamespace()
+
+			.beginNamespace("Music")
+				.addFunction("__call", &LuaScriptFn::Music)
+				.addFunction("SetLevel", &LuaScriptFn::MusicLevel)
+				.addFunction("SetPlaylist", &LuaScriptFn::SetPlaylist)
+			.endNamespace()
+
+			.beginNamespace("Objects")
+				.addFunction("Count", &LuaScriptFn::ObjectCount)
+				.addFunction("Create", &LuaScriptFn::CreateObject)
+				.addFunction("FindMany", &LuaScriptFn::FindObjects)
+				.addFunction("Find", &LuaScriptFn::FindObject)
 			.endNamespace()
 
 			.addProperty("Players", &LuaScriptFn::GetPlayers, nullptr)
+
+			.beginNamespace("PXS")
+				.addFunction("Cast", &LuaScriptFn::CastPXS)
+			.endNamespace()
+
+			.beginNamespace("Sound")
+				.addFunction("__call", &LuaScriptFn::Sound)
+				.addFunction("SetLevel", &LuaScriptFn::SoundLevel)
+			.endNamespace()
+
+			.beginNamespace("System")
+				.addFunction("GainMissionAccss", &LuaScriptFn::GainMissionAccess)
+			.endNamespace()
+
+
 		.endNamespace()
 
 		.beginNamespace("ObjectStatus")
@@ -1696,7 +2307,6 @@ bool C4LuaScriptEngine::Init()
 
 		.beginClass<C4MaterialCore>("C4MaterialCore")
 			.addProperty("Name", &C4MaterialCore::Name, false)
-
 
 			.addProperty("MapChunKType", &C4MaterialCore::MapChunkType, false)
 			.addProperty("Density", &C4MaterialCore::Density, false)
@@ -1773,6 +2383,9 @@ bool C4LuaScriptEngine::Init()
 			.addFunction("FinishCommand", &LuaScriptFn::FinishCommand)
 			.addFunction("SetName", &LuaScriptFn::FnSetName)
 			.addFunction("GrabObjectInfo", &LuaScriptFn::GrabObjectInfo)
+			.addFunction("BlastObjects", &LuaScriptFn::BlastObjects)
+			.addFunction("BlastObject", &LuaScriptFn::BlastObject)
+			.addFunction("Call", &LuaScriptFn::ObjectCall)
 
 			.addProperty("Name", &LuaScriptFn::GetName, &LuaScriptFn::SetName)
 			//.addProperty("Description") <- inherited by C4Object::Def.LuaDef
@@ -1810,26 +2423,36 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("Control", &LuaScriptFn::C4Player::GetControl)
 			.addProperty("MouseControl", &LuaScriptFn::C4Player::GetMouseControl)
 			.addProperty("PlayerStartIndex", &LuaScriptFn::C4Player::GetPlrStartIndex)
-			//.addProperty("Client", &LuaScriptFn::C4Player::GetAtClientName)
+			.addProperty("ClientName", &LuaScriptFn::C4Player::GetAtClientName)
 			.addProperty("Wealth", &LuaScriptFn::C4Player::GetWealth, &LuaScriptFn::C4Player::SetWealth)
 			.addProperty("Points", &LuaScriptFn::C4Player::GetPoints, &LuaScriptFn::C4Player::SetPoints)
 			.addProperty("Value", &LuaScriptFn::C4Player::GetValue, &LuaScriptFn::C4Player::SetValue)
 			.addProperty("InitialValue", &LuaScriptFn::C4Player::GetInitialValue)
 			.addProperty("ValueGain", &LuaScriptFn::C4Player::GetValueGain)
 			.addProperty("ObjectsOwned", &LuaScriptFn::C4Player::GetObjectsOwned)
+			.addProperty("ShowControl", &LuaScriptFn::C4Player::GetShowControl)
+			.addProperty("ShowControlPosition", &LuaScriptFn::C4Player::GetShowControlPos)
+			.addProperty("FlashCommand", &LuaScriptFn::C4Player::GetFlashCom)
 			.addProperty("Captain", &LuaScriptFn::C4Player::GetCaptain)
-			.addProperty("AutoContextMenu", &LuaScriptFn::C4Player::GetAutoContextMenu)
-			.addProperty("ControlStyle", &LuaScriptFn::C4Player::GetControlStyle)
+			.addProperty("AutoContextMenu", &LuaScriptFn::C4Player::GetAutoContextMenu, &LuaScriptFn::C4Player::SetAutoContextMenu)
+			.addProperty("ControlStyle", &LuaScriptFn::C4Player::GetControlStyle, &LuaScriptFn::C4Player::SetControlStyle)
+			.addProperty("LastCommand", &LuaScriptFn::C4Player::GetLastCom)
+			.addProperty("LastCOmmandDelay", &LuaScriptFn::C4Player::GetLastComDelay)
+			.addProperty("LastCommandDownDouble", &LuaScriptFn::C4Player::GetLastComDownDouble)
 			.addProperty("Type", &LuaScriptFn::C4Player::GetType)
 			.addProperty("Cursor", &LuaScriptFn::C4Player::GetCursor, &LuaScriptFn::C4Player::SetCursor)
-			//.addProperty("ActiveCrewCount", &LuaScriptFn::C4Player::GetActiveCrewCount)
-			//.addProperty("SelectedCrewCount", &LuaScriptFn::C4Player::GetGetSelectedCrewCount)
+			.addProperty("ActiveCrewCount", &LuaScriptFn::C4Player::GetActiveCrewCount)
+			.addProperty("SelectedCrewCount", &LuaScriptFn::C4Player::GetSelectedCrewCount)
+			.addProperty("ViewTarget", &LuaScriptFn::C4Player::GetPlayerView, &LuaScriptFn::C4Player::SetPlayerView)
 
-			/*.addFunction("Eliminate", &LuaScriptFn::C4Player::GetEliminate)
-			.addFunction("Surrender", &LuaScriptFn::C4Player::GetSurrender)
-			.addFunction("DoWealth", &LuaScriptFn::C4Player::GetDoWealth)
-			.addFunction("SetFoW", &LuaScriptFn::C4Player::GetSetFoW)*/
+			/*.addFunction("Eliminate", &LuaScriptFn::C4Player::Eliminate)
+			.addFunction("Surrender", &LuaScriptFn::C4Player::Surrender)
+			.addFunction("DoWealth", &LuaScriptFn::C4Player::DoWealth)
+			.addFunction("SetFoW", &LuaScriptFn::C4Player::SetFoW)*/
 			.addFunction("MakeCrewMember", &LuaScriptFn::C4Player::MakeCrewMember)
+			.addFunction("HostileTo", &LuaScriptFn::C4Player::HostileTo)
+			.addFunction("SetHostility", &LuaScriptFn::C4Player::SetHostility)
+
 		.endClass();
 
 		/*.beginClass<C4Rect>("C4Rect")

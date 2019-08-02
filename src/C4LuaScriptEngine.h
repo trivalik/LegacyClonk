@@ -28,44 +28,45 @@
 
 namespace std
 {
-template<> class hash<luabridge::LuaRef>
-{
-public:
-	size_t operator()(luabridge::LuaRef ref, bool recursive = false) const
+	template<> class hash<luabridge::LuaRef>
 	{
-		switch (ref.type())
-		{
-		case LUA_TNONE:
-		case LUA_TNIL:
-			return hash<decltype(NULL)>()(0L);
-		case LUA_TNUMBER:
-			return hash<int32_t>()(ref.cast<int32_t>());
-		case LUA_TSTRING:
-			return hash<std::string>()(ref.tostring());
-		case LUA_TTABLE:
-		{
-			if (recursive)
-			{
-				return hash<decltype(NULL)>()(0L); // FIXME: Invalid key to 'next'
-			}
-			size_t _hash = 0L;
-			hash<string> shash;
-			for (const auto &kv : ref.cast<map<string, luabridge::LuaRef>>())
-			{
-				_hash ^= (shash(kv.first) ^ (*this)(kv.second, true));
-			}
-			return _hash;
-		}
-		case LUA_TFUNCTION:
-		case LUA_TUSERDATA:
-		case LUA_TTHREAD:
-		case LUA_TLIGHTUSERDATA:
-		default:
-			return hash<decltype(NULL)>()(0);
-		}
-	}
+	public:
+		size_t operator()(luabridge::LuaRef ref, bool recursive = false) const;
+	};
+}
+
+namespace luabridge
+{
+template<> struct Stack<C4Value>
+{
+	static void push(lua_State *L, C4Value value);
+	static C4Value get(lua_State *L, int index);
 };
 
+/*template<> struct Stack<StdStrBuf>
+{
+	static void push(lua_State *L, const StdStrBuf &buf)
+	{
+		lua_pushstring(L, buf.getData());
+	}
+
+	static StdStrBuf get(lua_State *L, int index)
+	{
+		StdStrBuf buf;
+		buf.Copy(lua_tostring(L, index));
+		return buf;
+	}
+};*/
+
+#ifdef USE_FIXED
+
+template<> struct Stack<FIXED>
+{
+	static void push(lua_State *L, const FIXED &fixed);
+	static FIXED get(lua_State *L, int index);
+};
+
+#endif
 }
 
 #define LuaNil(x) luabridge::LuaRef(x)
@@ -113,6 +114,34 @@ inline Ret ref(lua_State *L, T *obj)
 	return Ret(meta(L, obj->wrapper));
 }
 
+template<typename T> std::optional<T> cast(luabridge::LuaRef ref)
+{
+	struct Pcall
+	{
+		luabridge::LuaRef ref;
+		T result;
+		static int run(lua_State *L)
+		{
+			auto *p = static_cast<Pcall *>(lua_touserdata(L, 1));
+			p->result = p->ref.template cast<T>();
+			return 0;
+		}
+	};
+
+	Pcall p{ref};
+	lua_pushcfunction(ref.state(), &Pcall::run);
+	lua_pushlightuserdata(ref.state(), &p);
+
+	int result = lua_pcall(ref.state(), 1, 0, 0);
+	if (result != LUA_OK)
+	{
+		lua_pop(ref.state(), 1);
+		return {};
+	}
+
+	return {p.result};
+}
+
 C4Object *Number2Object(int number);
 C4ID GetIDFromDef(luabridge::LuaRef def);
 int32_t GetPlayerNumber(DeletableObjectPtr<C4Player> *player);
@@ -123,115 +152,6 @@ C4Value HandleUserdata(lua_State *L, int32_t index);
 namespace LuaScriptFn
 {
 luabridge::LuaRef RegisterDefinition(luabridge::LuaRef table);
-}
-
-namespace luabridge
-{
-template<> struct Stack<C4Value>
-{
-	static void push(lua_State *L, C4Value value)
-	{
-		switch (value.GetType())
-		{
-		case C4V_Any:
-			//lua_pushnil(L);
-			lua_pushnumber(L, 0);
-			break;
-
-		case C4V_Int:
-		case C4V_C4ID:
-			lua_pushnumber(L, value.getIntOrID());
-			break;
-
-		case C4V_Bool:
-			lua_pushboolean(L, value.getBool());
-			break;
-
-		case C4V_String:
-			lua_pushstring(L, value.getStr()->Data.getData());
-			break;
-
-		case C4V_Array:
-		{
-			LuaRef table = newTable(L);
-			C4ValueArray *array = value.getArray();
-			for (int32_t i = 0; i < array->GetSize(); ++i)
-			{
-				table[i + 1] = (*array)[i];
-			}
-			luabridge::push(L, table);
-		}
-			break;
-
-		case C4V_pC4Value:
-			push(L, value.GetRef());
-			break;
-
-		case C4V_C4ObjectEnum:
-			LuaHelpers::PushObject(L, LuaHelpers::Number2Object(value.getInt()));
-			break;
-
-		case C4V_C4Object:
-			LuaHelpers::PushObject(L, value.getObj());
-		}
-	}
-
-	static C4Value get(lua_State *L, int index)
-	{
-		LuaRef value(L, index);
-		switch (value.type())
-		{
-		case LUA_TNONE:
-		case LUA_TNIL:
-			return C4VNull;
-		case LUA_TNUMBER:
-			return C4VInt(value.cast<int32_t>());
-		case LUA_TSTRING:
-			return C4VString(value.tostring().c_str());
-
-		case LUA_TUSERDATA:
-		case LUA_TLIGHTUSERDATA:
-			return LuaHelpers::HandleUserdata(L, index);
-
-		case LUA_TTABLE:
-		case LUA_TFUNCTION:
-		case LUA_TTHREAD:
-		default:
-			return C4VNull;
-		}
-	}
-};
-
-/*template<> struct Stack<StdStrBuf>
-{
-	static void push(lua_State *L, const StdStrBuf &buf)
-	{
-		lua_pushstring(L, buf.getData());
-	}
-
-	static StdStrBuf get(lua_State *L, int index)
-	{
-		StdStrBuf buf;
-		buf.Copy(lua_tostring(L, index));
-		return buf;
-	}
-};*/
-#ifdef USE_FIXED
-template<> struct Stack<FIXED>
-{
-	static void push(lua_State *L, const FIXED &fixed)
-	{
-		static_assert(std::is_floating_point<lua_Number>::value, "lua_Number is not a floating-point type");
-		lua_pushnumber(L, static_cast<lua_Number>(fixtof(fixed)));
-	}
-
-	static FIXED get(lua_State *L, int index)
-	{
-		static_assert(std::is_floating_point<lua_Number>::value, "lua_Number is not a floating-point type");
-		return ftofix(static_cast<float>(lua_tonumber(L, index)));
-	}
-};
-#endif
 }
 
 class C4LuaScriptEngine : public C4Lua
@@ -274,9 +194,8 @@ public:
 			if constexpr (Flags != CallFlags::None)
 			{
 				context.push();
-				function.push();
 				StdStrBuf s = FormatString("Function %s.%s not found",
-						  (context.isNil() ? "Global" : luaL_tolstring(L, -2, nullptr)), luaL_tolstring(L, -1, nullptr));
+						  (context.isNil() ? "Global" : luaL_tolstring(L, -2, nullptr)), functionName.c_str());
 
 				switch (Flags)
 				{
