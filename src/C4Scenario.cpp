@@ -23,7 +23,6 @@
 #include <C4Random.h>
 #include <C4Group.h>
 #include <C4Game.h>
-#endif
 
 #ifdef C4ENGINE
 #include <C4Wrappers.h>
