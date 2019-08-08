@@ -1749,11 +1749,12 @@ luabridge::LuaRef __call(C4AulFuncPtr *func, luabridge::LuaRef context, lua_Stat
 }
 }
 
-// C4Def
-#undef PREFIX
-#define PREFIX C4Def
+// C4DefPtr
 namespace C4Def
 {
+#undef PREFIX
+#define PREFIX C4Def
+
 PROPERTY(std::string, Name)
 GET(C4Shape, Shape)
 GET(C4Rect, Entrance)
@@ -2038,10 +2039,16 @@ GET(bool, Evaluated)
 GET(int32_t, Number)
 GET(int32_t, ID)
 GET(int32_t, Team) // TODO: C4TeamPtr?
-GET(uint32_t, ColorDw)
+PROPERTY(uint32_t, ColorDw)
 GET(int32_t, Control)
-GET(int32_t, MouseControl)
+PROPERTY(int32_t, MouseControl)
 GET(int32_t, PlrStartIndex)
+
+std::string GetAtClientName(const C4PlayerPtr *player)
+{
+	return (*player)->AtClientName;
+}
+
 PROPERTY(int32_t, Wealth)
 PROPERTY(int32_t, Points)
 PROPERTY(int32_t, Value)
@@ -2049,8 +2056,14 @@ GET(int32_t, InitialValue)
 GET(int32_t, ValueGain)
 GET(int32_t, ObjectsOwned)
 GET(int32_t, ShowControl)
-GET(int32_t, ShowControlPos)
+PROPERTY(int32_t, ShowControlPos)
 GET(int32_t, FlashCom)
+
+void SetFlashCom(C4PlayerPtr *player, int32_t newFlashCom)
+{
+	(*player)->FlashCom = newFlashCom;
+	Config.Graphics.ShowCommands = true;
+}
 
 int GetCaptain(lua_State *L)
 {
@@ -2066,9 +2079,8 @@ int GetCaptain(lua_State *L)
 	return 0;
 }
 
-
 PROPERTY(bool, AutoContextMenu)
-PROPERTY(int32_t, ControlStyle)
+PROPERTY(bool, ControlStyle)
 GET(int32_t, LastCom)
 GET(int32_t, LastComDelay)
 GET(int32_t, LastComDownDouble)
@@ -2120,15 +2132,45 @@ int32_t GetSelectedCrewCount(const C4PlayerPtr *player)
 	return (*player)->GetSelectedCrewCount();
 }
 
+void Eliminate(C4PlayerPtr *player, lua_State *L) // opt: bool removeDirect
+{
+	if (!player || (*player)->Eliminated) return;
+
+	if (LuaHelpers::optboolean(L, 2, false))
+	{
+		if (Game.Control.isCtrlHost())
+		{
+			Game.Players.CtrlRemove((*player)->Number, false);
+		}
+	}
+	else
+	{
+		(*player)->Eliminate();
+	}
+}
+
+void Surrender(C4PlayerPtr *player)
+{
+	if (!player || (*player)->Eliminated) return;
+	(*player)->Surrender();
+}
+
+void DoWealth(C4PlayerPtr *player, int32_t wealthChange)
+{
+	if (!player || !wealthChange) return;
+	(*player)->DoWealth(wealthChange);
+}
+
+void SetFoW(C4PlayerPtr *player, bool enabled)
+{
+	if (!player) return;
+	(*player)->SetFoW(enabled);
+}
+
 bool MakeCrewMember(C4PlayerPtr *player, C4ObjectPtr *obj)
 {
 	if (!player || !obj) return false;
 	return (*player)->MakeCrewMember((*obj));
-}
-
-std::string GetAtClientName(const C4PlayerPtr *player)
-{
-	return (*player)->AtClientName;
 }
 
 bool HostileTo(C4PlayerPtr *player1, C4PlayerPtr *player2, lua_State *L) // opt: bool checkOneWayOnly
@@ -2420,6 +2462,16 @@ bool C4LuaScriptEngine::Init()
 		.endClass()
 
 		.beginClass<LuaScriptFn::C4DefPtr>("C4Def")
+			.addProperty("Name", &LuaScriptFn::C4Def::GetName, &LuaScriptFn::C4Def::SetName)
+			.addProperty("Shape", &LuaScriptFn::C4Def::GetShape)
+			.addProperty("Entrance", &LuaScriptFn::C4Def::GetEntrance)
+			.addProperty("Collection", &LuaScriptFn::C4Def::GetCollection)
+			.addProperty("PictureRect", &LuaScriptFn::C4Def::GetPictureRect)
+			.addProperty("SolidMask", &LuaScriptFn::C4Def::GetSolidMask)
+			.addProperty("TopFace", &LuaScriptFn::C4Def::GetTopFace)
+			.addProperty("GrowthType", &LuaScriptFn::C4Def::GetGrowthType)
+			.addProperty("Basement", &LuaScriptFn::C4Def::GetBasement)
+			.addProperty("CanBeBase", &LuaScriptFn::C4Def::GetCanBeBase)
 		.endClass()
 
 		.beginClass<C4IDList>("C4IDList")
@@ -2543,7 +2595,7 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("Number", &LuaScriptFn::C4Player::GetNumber)
 			.addProperty("ID", &LuaScriptFn::C4Player::GetID)
 			.addProperty("Team", &LuaScriptFn::C4Player::GetTeam)
-			.addProperty("Color", &LuaScriptFn::C4Player::GetColorDw)
+			.addProperty("Color", &LuaScriptFn::C4Player::GetColorDw, &LuaScriptFn::C4Player::SetColorDw)
 			.addProperty("Control", &LuaScriptFn::C4Player::GetControl)
 			.addProperty("MouseControl", &LuaScriptFn::C4Player::GetMouseControl)
 			.addProperty("PlayerStartIndex", &LuaScriptFn::C4Player::GetPlrStartIndex)
@@ -2555,13 +2607,13 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("ValueGain", &LuaScriptFn::C4Player::GetValueGain)
 			.addProperty("ObjectsOwned", &LuaScriptFn::C4Player::GetObjectsOwned)
 			.addProperty("ShowControl", &LuaScriptFn::C4Player::GetShowControl)
-			.addProperty("ShowControlPosition", &LuaScriptFn::C4Player::GetShowControlPos)
-			.addProperty("FlashCommand", &LuaScriptFn::C4Player::GetFlashCom)
+			.addProperty("ShowControlPosition", &LuaScriptFn::C4Player::GetShowControlPos, &LuaScriptFn::C4Player::SetShowControlPos)
+			.addProperty("FlashCommand", &LuaScriptFn::C4Player::GetFlashCom, &LuaScriptFn::C4Player::SetFlashCom)
 			.addProperty("Captain", &LuaScriptFn::C4Player::GetCaptain)
 			.addProperty("AutoContextMenu", &LuaScriptFn::C4Player::GetAutoContextMenu, &LuaScriptFn::C4Player::SetAutoContextMenu)
-			.addProperty("ControlStyle", &LuaScriptFn::C4Player::GetControlStyle, &LuaScriptFn::C4Player::SetControlStyle)
+			.addProperty("JumpAndRunControl", &LuaScriptFn::C4Player::GetControlStyle, &LuaScriptFn::C4Player::SetControlStyle)
 			.addProperty("LastCommand", &LuaScriptFn::C4Player::GetLastCom)
-			.addProperty("LastCOmmandDelay", &LuaScriptFn::C4Player::GetLastComDelay)
+			.addProperty("LastCommandDelay", &LuaScriptFn::C4Player::GetLastComDelay)
 			.addProperty("LastCommandDownDouble", &LuaScriptFn::C4Player::GetLastComDownDouble)
 			.addProperty("Type", &LuaScriptFn::C4Player::GetType)
 			.addProperty("Cursor", &LuaScriptFn::C4Player::GetCursor, &LuaScriptFn::C4Player::SetCursor)
@@ -2569,13 +2621,14 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("SelectedCrewCount", &LuaScriptFn::C4Player::GetSelectedCrewCount)
 			.addProperty("ViewTarget", &LuaScriptFn::C4Player::GetPlayerView, &LuaScriptFn::C4Player::SetPlayerView)
 
-			/*.addFunction("Eliminate", &LuaScriptFn::C4Player::Eliminate)
+			.addFunction("Eliminate", &LuaScriptFn::C4Player::Eliminate)
 			.addFunction("Surrender", &LuaScriptFn::C4Player::Surrender)
 			.addFunction("DoWealth", &LuaScriptFn::C4Player::DoWealth)
-			.addFunction("SetFoW", &LuaScriptFn::C4Player::SetFoW)*/
+			.addFunction("SetFoW", &LuaScriptFn::C4Player::SetFoW)
 			.addFunction("MakeCrewMember", &LuaScriptFn::C4Player::MakeCrewMember)
 			.addFunction("HostileTo", &LuaScriptFn::C4Player::HostileTo)
 			.addFunction("SetHostility", &LuaScriptFn::C4Player::SetHostility)
+			.addFunction("GetControlName", &LuaScriptFn::C4Player::GetPlayerControlName)
 
 		.endClass();
 
