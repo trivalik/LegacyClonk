@@ -1461,14 +1461,7 @@ void Sound(luabridge::LuaRef /* soundNamespace */, luabridge::LuaRef context, lu
 	C4Object *obj = nullptr;
 	if (!global)
 	{
-		C4ObjectPtr *a = context;
-		std::optional<C4ObjectPtr *> opt = LuaHelpers::cast<C4ObjectPtr *>(context);
-		if (opt)
-		{
-			assert(*opt);
-			obj = **opt;
-		}
-		//obj = LuaHelpers::GetRawPointerFromContext<decltype(obj)>(context);
+		obj = LuaHelpers::GetRawPointerFromContext<decltype(obj)>(context);
 	}
 
 	auto loop = !arguments["LoopCount"].isNil() ? BoundBy(arguments["LoopCount"].cast<int32_t>(), -1, 1) : 0;
@@ -1728,17 +1721,17 @@ luabridge::LuaRef __call(C4AulFuncPtr *func, luabridge::LuaRef context, lua_Stat
 
 	int32_t top = lua_gettop(L);
 
-	C4ObjectPtr *obj = context;
-	/*std::optional<decltype(obj)> opt = LuaHelpers::cast<decltype(obj)>(context);
+	C4ObjectPtr *obj = nullptr;
+	std::optional<decltype(obj)> opt = LuaHelpers::cast<decltype(obj)>(context);
 	if (opt)
 	{
-		obj = *opt;*/
+		obj = *opt;
 
 		if (obj)
 		{
 			LogF("foobar: %s", (*obj)->Name.getData());
 		}
-	//}
+	}
 	assert(top == lua_gettop(L));
 
 	if (lua_gettop(L) > C4AUL_MAX_Par + 2)
