@@ -395,7 +395,7 @@ luabridge::LuaRef RegisterDefinition(luabridge::LuaRef context, luabridge::LuaRe
 	C4Def *def = Game.Defs.ID2Def(id);
 	if (def)
 	{
-		if (def->LuaDef != table)
+		if (!(def->LuaDef == table))
 		{
 			return LuaHelpers::error(table.state(), FormatString("Internal error: Definition with the generated ID %ld (%s) already exists",
 									   id, C4IdText(id)).getData());
