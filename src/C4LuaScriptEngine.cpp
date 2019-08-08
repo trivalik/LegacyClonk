@@ -266,6 +266,11 @@ C4Value HandleUserdata(lua_State *L, int32_t index)
 	}
 }
 
+bool optboolean(lua_State *L, int index, bool defaultValue)
+{
+	return lua_gettop(L) >= index ? lua_toboolean(L, index) : defaultValue;
+}
+
 template<typename Ret, typename... Args> Ret CallC4Script(DeletableObjectPtr<C4Object> *obj, Ret (*function)(C4AulContext *, Args...), Args... args)
 {
 	C4AulContext context{obj->checkObject(), obj->checkObject()->Def, nullptr};
@@ -530,7 +535,7 @@ bool Punch(C4ObjectPtr *obj, C4ObjectPtr *target, int32_t strength)
 bool Kill(C4ObjectPtr *obj, lua_State *L) // opt: bool forced, C4Player *player
 {
 	if (!obj) return false;
-	bool forced = lua_gettop(L) >= 2 ? lua_toboolean(L, 2) : false;
+	bool forced = LuaHelpers::optboolean(L, 2, false);
 	if (lua_gettop(L) >= 3)
 	{
 		int32_t player = LuaHelpers::GetPlayerNumber(luabridge::LuaRef::fromStack(L, 2).cast<C4PlayerPtr *>());
@@ -546,7 +551,7 @@ bool Kill(C4ObjectPtr *obj, lua_State *L) // opt: bool forced, C4Player *player
 void Fling(C4ObjectPtr *obj, float xdir, float ydir, lua_State *L) // opt: bool addSpeed, C4Player *player
 {
 	if (!obj) return;
-	bool addSpeed = lua_gettop(L) > 3 ? lua_toboolean(L, 4) : false;
+	bool addSpeed = LuaHelpers::optboolean(L, 4, false);
 
 	int32_t player = NO_OWNER;
 	if (lua_gettop(L) >= 5)
@@ -606,7 +611,7 @@ void Split2Components(C4ObjectPtr *obj)
 void RemoveObject(C4ObjectPtr *obj, lua_State *L) // opt: bool ejectContents
 {
 	if (!obj) return;
-	(*obj)->AssignRemoval(lua_gettop(L) >= 2 ? lua_toboolean(L, 2) : false);
+	(*obj)->AssignRemoval(LuaHelpers::optboolean(L, 2, false));
 }
 
 void SetPosition(C4ObjectPtr *obj, int32_t x, int32_t y, lua_State *L) // opt: bool checkBounds
@@ -616,7 +621,7 @@ void SetPosition(C4ObjectPtr *obj, int32_t x, int32_t y, lua_State *L) // opt: b
 							 static_cast<long>(x),
 							 static_cast<long>(y),
 							 static_cast<C4Object *>(nullptr),
-							 static_cast<bool>(lua_gettop(L) >= 4 ? lua_toboolean(L, 4) : false)
+							 LuaHelpers::optboolean(L, 4, false)
 							 );
 }
 
@@ -656,7 +661,7 @@ void DoEnergy(C4ObjectPtr *obj, int32_t change, lua_State *L) // opt: bool exact
 	LuaHelpers::CallC4Script(obj, &FnDoEnergy,
 							 static_cast<long>(change),
 							 static_cast<C4Object *>(nullptr),
-							 static_cast<bool>(lua_gettop(L) >= 3 ? lua_toboolean(L, 3) : false),
+							 LuaHelpers::optboolean(L, 3, false),
 							 static_cast<long>(luaL_optinteger(L, 4, 0)),
 							 static_cast<long>(player + 1)
 							 );
@@ -706,7 +711,7 @@ bool DoMagicEnergy(C4ObjectPtr *obj, int32_t change, lua_State *L) // opt: bool 
 	return LuaHelpers::CallC4Script(obj, &FnDoMagicEnergy,
 									static_cast<long>(change),
 									static_cast<C4Object *>(nullptr),
-									static_cast<bool>(lua_gettop(L) >= 3 ? lua_toboolean(L, 3) : false)
+									LuaHelpers::optboolean(L, 3, false)
 									);
 }
 
@@ -1103,8 +1108,8 @@ bool FnSetName(C4ObjectPtr *obj, std::string newName, lua_State *L) // opt: luab
 							 C4VString(newName.c_str()).getStr(),
 							 static_cast<C4Object *>(nullptr),
 							 id,
-							 lua_gettop(L) >= 4 ? static_cast<bool>(lua_toboolean(L, 4)) : false,
-							 lua_gettop(L) >= 5 ? static_cast<bool>(lua_toboolean(L, 5)) : false
+							 LuaHelpers::optboolean(L, 5, false),
+							 LuaHelpers::optboolean(L, 6, false)
 							 );
 }
 
@@ -1817,11 +1822,11 @@ MAT(AboveTempConvertTo)
 // C4Material
 namespace C4Material
 {
-uint32_t GetMaterialCount(::C4Material *mat, lua_State *L)
+uint32_t GetMaterialCount(::C4Material *mat, lua_State *L) // opt: bool real
 {
 	if (!mat) return 0;
 	int32_t index = GetMaterialIndex(LuaNil(L), mat);
-	if ((lua_gettop(L) >= 2 && lua_toboolean(L, 2)) || !mat->MinHeightCount)
+	if (LuaHelpers::optboolean(L, 2, false) || !mat->MinHeightCount)
 	{
 		return Game.Landscape.MatCount[index];
 	}
