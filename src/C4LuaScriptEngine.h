@@ -81,37 +81,11 @@ template<typename... Args> luabridge::LuaRef error(lua_State *L, const char *err
 	return LuaNil(L);
 }
 
-template<class T> T *meta(lua_State *L, T *obj)
-{
-	assert(L);
-	luabridge::push(L, obj);
-	int top = lua_gettop(L);
-
-	lua_getmetatable(L, -1);
-	int meta = lua_gettop(L);
-
-	lua_getfield(L, meta, "__index");
-	int mark = lua_gettop(L);
-
-	lua_getfield(L, meta, "__index_old");
-	if (!lua_isnil(L, -1))
-	{
-		lua_setfield(L, meta, "__index");
-		lua_settop(L, mark);
-		lua_setfield(L, meta, "__index_old");
-
-		lua_settop(L, meta);
-		lua_setmetatable(L, top);
-	}
-	lua_settop(L, top - 1);
-	return obj;
-}
-
 template<class T, typename Ptr = DeletableObjectPtr<T>, typename Ret = luabridge::RefCountedObjectPtr<Ptr>>
 inline Ret ref(lua_State *L, T *obj)
 {
 	obj->wrapper->setState(L);
-	return Ret(meta(L, obj->wrapper));
+	return Ret(obj->wrapper);
 }
 
 template<typename T> std::optional<T> cast(luabridge::LuaRef ref)

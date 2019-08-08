@@ -1888,10 +1888,93 @@ uint32_t ExtractMaterialAmount(::C4Material *mat, int32_t x, int32_t y, uint32_t
 
 namespace C4Object
 {
-void __newindex(C4ObjectPtr *obj, std::string key, luabridge::LuaRef value)
+
+namespace
+{
+
+std::optional<luabridge::LuaRef> CheckLuaLocals(::C4Object *obj, const std::string &key)
+{
+	if (auto i = obj->LuaLocals.find(key); i != obj->LuaLocals.end())
+	{
+		return i->second;
+	}
+	return std::nullopt;
+}
+
+std::optional<C4Value *> CheckC4ScriptLocals(::C4Object *obj, const std::string &key)
+{
+	if (C4Value *value = obj->LocalNamed.GetItem(key.c_str()); value)
+	{
+		return std::move(value);
+	}
+	return std::nullopt;
+}
+
+std::optional<luabridge::LuaRef> CheckDef(lua_State *L, ::C4Object *obj, const std::string &key)
+{
+	if (luabridge::LuaRef value = luabridge::LuaRef(L, obj->Def->wrapper)[key]; !value.isNil())
+	{
+		return std::move(value);
+	}
+	return std::nullopt;
+}
+
+std::optional<luabridge::LuaRef> CheckLuaDef(::C4Object *obj, const std::string &key)
+{
+	if (!obj->Def->LuaDef.isNil() && !obj->Def->LuaDef[key].isNil())
+	{
+		return obj->Def->LuaDef[key];
+	}
+	return std::nullopt;
+}
+
+std::optional<::C4AulFunc *> CheckScriptFunctions(::C4Object *obj, const std::string &key)
+{
+	if (::C4AulFunc *f = obj->Def->Script.GetSFunc(key.c_str(), AA_PROTECTED, true); f)
+	{
+		return std::move(f);
+	}
+	return std::nullopt;
+}
+
+}
+
+void __newindex(C4ObjectPtr *obj, std::string key, luabridge::LuaRef value, lua_State *L)
 {
 	if (!obj) return;
-	(*obj)->LuaLocals.emplace(key, value);
+
+	if (luabridge::LuaRef v = luabridge::LuaRef(L, &luabridge::CFunc::indexMetaMethod)(obj, key); !v.isNil())
+	{
+		try
+		{
+			luabridge::LuaRef(L, &luabridge::CFunc::newindexObjectMetaMethod)(obj, key, value);
+			return;
+		}
+
+		catch (luabridge::LuaException const &)
+		{
+		}
+	}
+
+	else if (auto opt = CheckC4ScriptLocals(*obj, key); opt)
+	{
+		(*obj)->LocalNamed[key.c_str()] = value;
+	}
+
+	else if (auto opt = CheckDef(L, *obj, key); opt)
+	{
+		luabridge::LuaRef(L, (*obj)->Def->wrapper)[key] = value;
+	}
+
+	else if (auto opt = CheckLuaDef(*obj, key); opt)
+	{
+		(*obj)->Def->LuaDef[key] = value;
+	}
+
+	else
+	{
+		(*obj)->LuaLocals.insert_or_assign(key, value);
+	}
 }
 
 luabridge::LuaRef __index(C4ObjectPtr *obj, std::string key, lua_State *L)
@@ -1900,38 +1983,34 @@ luabridge::LuaRef __index(C4ObjectPtr *obj, std::string key, lua_State *L)
 
 	LogF("key: %s", key.c_str());
 
+	if (luabridge::LuaRef value = luabridge::LuaRef(L, &luabridge::CFunc::indexMetaMethod)(obj, key); !value.isNil())
 	{
-		int index = lua_gettop(L);
-		luabridge::push(L, obj);
-		lua_getmetatable(L, -1);
-		lua_getfield(L, -1, "__index_old");
-		auto ref = luabridge::LuaRef::fromStack(L);
-		lua_settop(L, index);
-		luabridge::LuaRef value = ref(obj, key);
-		if (!value.isNil())
-		{
-			return value;
-		}
+		return value;
 	}
 
-	if (auto i = (*obj)->LuaLocals.find(key); i != (*obj)->LuaLocals.end())
+	else if (auto opt = CheckLuaLocals(*obj, key); opt)
 	{
-		return i->second;
+		return *opt;
 	}
 
-	if (C4Value *value = (*obj)->LocalNamed.GetItem(key.c_str()); value)
+	else if (auto opt = CheckC4ScriptLocals(*obj, key); opt)
 	{
-		return luabridge::LuaRef(L, value);
+		return luabridge::LuaRef(L, **opt);
 	}
 
-	if (!(*obj)->Def->LuaDef.isNil() && !(*obj)->Def->LuaDef[key].isNil())
+	else if (auto opt = CheckDef(L, *obj, key); opt)
 	{
-		return (*obj)->Def->LuaDef[key];
+		return *opt;
 	}
 
-	if (::C4AulFunc *f = (*obj)->Def->Script.GetSFunc(key.c_str(), AA_PROTECTED, true); f)
+	else if (auto opt = CheckLuaDef(*obj, key); opt)
 	{
-		return luabridge::LuaRef(L, LuaHelpers::ref(L, f));
+		return *opt;
+	}
+
+	else if (auto opt = CheckScriptFunctions(*obj, key); opt)
+	{
+		return luabridge::LuaRef(L, LuaHelpers::ref(L, *opt));
 	}
 
 	return LuaNil(L);
@@ -2387,7 +2466,7 @@ bool C4LuaScriptEngine::Init()
 
 		.beginClass<LuaScriptFn::C4ObjectPtr>("C4Object")
 			.addFunction("__newindex", &LuaScriptFn::C4Object::__newindex)
-			.addFunction("__index_old", &LuaScriptFn::C4Object::__index)
+			.addFunction("__index", &LuaScriptFn::C4Object::__index)
 
 			.addFunction("Explode", &LuaScriptFn::Explode)
 			.addFunction("Incinerate", &LuaScriptFn::Incinerate)
