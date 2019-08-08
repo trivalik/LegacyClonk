@@ -29,12 +29,25 @@ bool C4Lua::Init()
 	{
 		return false;
 	}
-	luaopen_base(L);
-	luaopen_bit32(L);
-	luaopen_coroutine(L);
-	luaopen_math(L);
-	luaopen_string(L);
-	luaopen_table(L);
+
+#if LUA_VERSION_NUM < 503
+#define OPEN(x) luaopen_##x(L)
+#else
+#define OPEN(x) luaL_requiref(L, "_G", luaopen_##x, 1)
+#endif
+
+	luaL_openlibs(L);
+
+	/*OPEN(base);
+	OPEN(bit32);
+	OPEN(coroutine);
+	OPEN(math);
+	OPEN(string);
+	OPEN(table);*/
+
+#undef OPEN
+
+	lua_settop(L, 0);
 	return true;
 }
 
