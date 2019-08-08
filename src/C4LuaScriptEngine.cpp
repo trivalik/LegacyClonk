@@ -1796,6 +1796,40 @@ GET(uint32_t, GrabPutGet)
 GET(bool, ContainBlast)
 }
 
+// C4IDList
+namespace C4IDList
+{
+void __newindex(::C4IDList *list, C4DefPtr *key, int32_t value, lua_State *L)
+{
+	if (!list) return;
+
+	if (!key)
+	{
+		luaL_error(L, "Definition cannot be nil");
+	}
+	list->SetIDCount((*key)->id, value, true);
+}
+
+int32_t __index(::C4IDList *list, C4DefPtr *key, lua_State *L)
+{
+	if (!list) return LuaNil(L);
+
+	if (!key)
+	{
+		luaL_error(L, "Definition cannot be nil");
+	}
+
+	return list->GetIDCount((*key)->id);
+}
+
+int32_t __len(::C4IDList *list)
+{
+	if (!list) return 0;
+	return list->GetNumberOfIDs();
+}
+
+}
+
 // C4MaterialCore
 namespace C4MaterialCore
 {
@@ -2308,6 +2342,12 @@ bool C4LuaScriptEngine::Init()
 		.endClass()
 
 		.beginClass<LuaScriptFn::C4DefPtr>("C4Def")
+		.endClass()
+
+		.beginClass<C4IDList>("C4IDList")
+			.addFunction("__index", &LuaScriptFn::C4IDList::__index)
+			.addFunction("__newindex", &LuaScriptFn::C4IDList::__newindex)
+			.addFunction("__len", &LuaScriptFn::C4IDList::__len)
 		.endClass()
 
 		.beginClass<C4MaterialCore>("C4MaterialCore")
