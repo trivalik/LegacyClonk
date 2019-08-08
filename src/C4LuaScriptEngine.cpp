@@ -2015,6 +2015,12 @@ luabridge::LuaRef __index(C4ObjectPtr *obj, std::string key, lua_State *L)
 
 	return LuaNil(L);
 }
+
+std::string __tostring(C4ObjectPtr *obj)
+{
+	if (!obj) return "";
+	return FormatString("%s #%d", (*obj)->Name.getData(), (*obj)->Number).getData();
+}
 }
 
 // C4PlayerPtr
@@ -2467,6 +2473,7 @@ bool C4LuaScriptEngine::Init()
 		.beginClass<LuaScriptFn::C4ObjectPtr>("C4Object")
 			.addFunction("__newindex", &LuaScriptFn::C4Object::__newindex)
 			.addFunction("__index", &LuaScriptFn::C4Object::__index)
+			.addFunction("__tostring", &LuaScriptFn::C4Object::__tostring)
 
 			.addFunction("Explode", &LuaScriptFn::Explode)
 			.addFunction("Incinerate", &LuaScriptFn::Incinerate)
