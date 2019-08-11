@@ -87,6 +87,13 @@ void C4IDList::Clear()
 	C4IDListChunk::Clear();
 	// reset count
 	Count = 0;
+
+	if (wrapper)
+	{
+		wrapper->reset();
+		wrapper->decReferenceCount();
+		wrapper = nullptr;
+	}
 }
 
 bool C4IDList::IsClear() const
@@ -404,6 +411,8 @@ void C4IDList::Draw(C4Facet &cgo, int32_t iSelection,
 void C4IDList::Default()
 {
 	Clear();
+	wrapper = new LuaHelpers::DeletableObjectPtr<C4IDList>(nullptr, this);
+	wrapper->incReferenceCount();
 }
 
 bool C4IDList::SwapItems(size_t iIndex1, size_t iIndex2)

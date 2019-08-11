@@ -323,6 +323,7 @@ namespace LuaScriptFn
 #define PTR(x) typedef LuaHelpers::DeletableObjectPtr<x> x##Ptr;
 PTR(C4AulFunc)
 PTR(C4Def)
+PTR(C4IDList)
 PTR(C4Object)
 PTR(C4PlayerInfoCore)
 PTR(C4Player)
@@ -1690,6 +1691,31 @@ int Call(lua_State *L) // opt: arguments
 	GET(type, property) \
 	SET(type, property)
 
+#define LIST_GET(type, property) int Get##property(lua_State *L) \
+{ \
+	if (lua_gettop(L) < 1) return 0; \
+\
+	luabridge::push(L, LuaHelpers::ref(L, &(*luabridge::LuaRef::fromStack(L, 1).cast<const CONCAT2(PREFIX, Ptr) *>())->property)); \
+	return 1; \
+}
+
+#define LIST_SET(type, property) int Set##property(lua_State *L) \
+{ \
+	if (lua_gettop(L) < 2) return 0; \
+\
+	CONCAT2(PREFIX, Ptr) *ptr = luabridge::LuaRef::fromStack(L, 1); \
+	CONCAT2(type, Ptr) *list = luabridge::LuaRef::fromStack(L, 2); \
+\
+	if (!ptr || !list) return 0; \
+\
+	(*ptr)->property = **list; \
+	return 1; \
+}
+
+#define LIST(type, property) \
+	LIST_GET(type, property) \
+	LIST_SET(type, property)
+
 // C4AulFuncPtr
 
 namespace C4AulFunc
@@ -1790,10 +1816,10 @@ GET(uint32_t, GrabPutGet)
 GET(bool, ContainBlast)
 }
 
-// C4IDList
+// C4IDListPtr
 namespace C4IDList
 {
-void __newindex(::C4IDList *list, C4DefPtr *key, int32_t value, lua_State *L)
+void __newindex(C4IDListPtr *list, C4DefPtr *key, luabridge::LuaRef value, lua_State *L)
 {
 	if (!list) return;
 
@@ -1801,10 +1827,17 @@ void __newindex(::C4IDList *list, C4DefPtr *key, int32_t value, lua_State *L)
 	{
 		luaL_error(L, "Definition cannot be nil");
 	}
-	list->SetIDCount((*key)->id, value, true);
+
+	if (value.isNil())
+	{
+		(*list)->DeleteItem(static_cast<size_t>((*list)->GetIndex((*key)->id)));
+		return;
+	}
+
+	(*list)->SetIDCount((*key)->id, value.cast<int32_t>(), true);
 }
 
-int32_t __index(::C4IDList *list, C4DefPtr *key, lua_State *L)
+int32_t __index(C4IDListPtr *list, C4DefPtr *key, lua_State *L)
 {
 	if (!list) return LuaNil(L);
 
@@ -1813,13 +1846,13 @@ int32_t __index(::C4IDList *list, C4DefPtr *key, lua_State *L)
 		luaL_error(L, "Definition cannot be nil");
 	}
 
-	return list->GetIDCount((*key)->id);
+	return (*list)->GetIDCount((*key)->id);
 }
 
-int32_t __len(::C4IDList *list)
+int32_t __len(C4IDListPtr *list)
 {
 	if (!list) return 0;
-	return list->GetNumberOfIDs();
+	return (*list)->GetNumberOfIDs();
 }
 
 }
@@ -2274,6 +2307,9 @@ std::string GetPlayerControlName(C4PlayerPtr *player, int32_t control, lua_State
 #undef GET
 #undef SET
 #undef PROPERTY
+#undef LIST_GET
+#undef LIST_SET
+#undef LIST
 
 }
 
@@ -2474,7 +2510,7 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("CanBeBase", &LuaScriptFn::C4Def::GetCanBeBase)
 		.endClass()
 
-		.beginClass<C4IDList>("C4IDList")
+		.beginClass<LuaScriptFn::C4IDListPtr>("C4IDList")
 			.addFunction("__index", &LuaScriptFn::C4IDList::__index)
 			.addFunction("__newindex", &LuaScriptFn::C4IDList::__newindex)
 			.addFunction("__len", &LuaScriptFn::C4IDList::__len)

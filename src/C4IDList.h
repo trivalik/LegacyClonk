@@ -19,6 +19,7 @@
 #pragma once
 
 #include <C4Id.h>
+#include "C4LuaDeletableObjectPtr.h"
 
 // note that setting the chunk size for ID-Lists so low looks like an enormous waste
 // at first glance - however, due there's an incredibly large number of small ID-Lists
@@ -53,6 +54,9 @@ public:
 
 protected:
 	size_t Count; // number of IDs in this list
+
+public:
+	LuaHelpers::DeletableObjectPtr<C4IDList> *wrapper = nullptr;
 
 public:
 	// General
