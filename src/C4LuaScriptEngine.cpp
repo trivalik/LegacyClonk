@@ -205,7 +205,7 @@ C4ID GetIDFromDef(luabridge::LuaRef def)
 		else
 		{
 			luaL_error(def.state(), "Definition has invalid ID: %s", i.c_str());
-			return 0L;
+			return 0UL;
 		}
 	}
 	else if (def.isTable())
@@ -418,22 +418,26 @@ luabridge::LuaRef RegisterDefinition(luabridge::LuaRef context, luabridge::LuaRe
 			return LuaHelpers::error(table.state(), FormatString("Internal error: Cannot add definition to definition list").getData());
 		}
 	}
-	table["ID"] = id;
-	return table;
+	return luabridge::LuaRef(table.state(), LuaHelpers::ref(table.state(), def));
 }
 
 luabridge::LuaRef CreateObject(luabridge::LuaRef context, luabridge::LuaRef arguments, lua_State *L)
 {
 	luabridge::LuaRef table = arguments["Def"];
-	C4ID id = LuaHelpers::GetIDFromDef(table);
+	C4Def *def = nullptr;
 	if (table.isTable())
 	{
+		def = Game.Defs.ID2Def(LuaHelpers::GetIDFromDef(table));
 		if (!table["Name"].isString() || table["Name"].tostring().empty())
 		{
 			return LuaHelpers::error(L, "Definition has no name");
 		}
 
 		table = RegisterDefinition(context, table);
+	}
+	else if (def = LuaHelpers::GetRawPointerFromContext<C4Def>(table); !def)
+	{
+		return LuaHelpers::error(L, "No definition specified");
 	}
 
 	int32_t x = arguments["X"].isNumber() ? arguments["X"] : 0;
@@ -454,7 +458,7 @@ luabridge::LuaRef CreateObject(luabridge::LuaRef context, luabridge::LuaRef argu
 	C4ObjectPtr *creator = !arguments["Creator"].isNil() ? arguments["Creator"] : nullptr;
 
 	C4Object *obj = Game.NewObject(
-				Game.Defs.ID2Def(id),
+				def,
 				creator ? *creator : nullptr,
 				owner ? (*owner)->Number : NO_OWNER,
 				nullptr,
@@ -467,21 +471,15 @@ luabridge::LuaRef CreateObject(luabridge::LuaRef context, luabridge::LuaRef argu
 	return obj ? luabridge::LuaRef(L, LuaHelpers::ref(L, obj)) : LuaNil(L);
 }
 
-void Explode(C4ObjectPtr *obj, int32_t level, lua_State *L) // opt: luabridge::LuaRef effect, std::string particle
+void Explode(C4ObjectPtr *obj, int32_t level, lua_State *L) // opt: C4DefPtr *effect, std::string particle
 {
 	if (!obj) return;
-	C4ID id = 0L;
-	auto effect = luabridge::LuaRef::fromStack(L, 3);
-	if (effect.isTable())
-	{
-		RegisterDefinition(luabridge::LuaRef(L, LuaHelpers::ref(L, obj->checkObject())), effect);
-		id = effect["ID"];
-	}
-	else if (effect.isNumber())
-	{
-		id = effect;
-	}
-	(*obj)->Explode(level, id, luaL_optlstring(L, 4, "", nullptr));
+
+	(*obj)->Explode(
+				level,
+				(*luabridge::LuaRef::fromStack(L, 3).cast<C4DefPtr *>())->id,
+				luaL_optlstring(L, 4, "", nullptr)
+				);
 }
 
 bool Incinerate(C4ObjectPtr *obj, lua_State *L) // opt: C4Player *player
@@ -754,14 +752,14 @@ bool ResetPhysical(C4ObjectPtr *obj, std::string physical)
 									);
 }
 
-int32_t GetPhysical(C4ObjectPtr *obj, std::string physical, lua_State *L) // opt: int32_t mode, luabridge::LuaDef def
+int32_t GetPhysical(C4ObjectPtr *obj, std::string physical, lua_State *L) // opt: int32_t mode, C4DefPtr *def
 {
 	return static_cast<int32_t>(LuaHelpers::CallC4Script(obj, &FnGetPhysical,
 														 C4VString(physical.c_str()).getStr(),
 														 static_cast<long>(luaL_optinteger(L, 3, 0)),
 														 static_cast<C4Object *>(nullptr),
 														 lua_gettop(L) >= 4
-														   ? LuaHelpers::GetIDFromDef(luabridge::LuaRef::fromStack(L, 4))
+														   ? (*luabridge::LuaRef::fromStack(L, 4).cast<C4DefPtr *>())->id
 														   : 0L)
 														 );
 }
@@ -1097,13 +1095,13 @@ void SetName(C4ObjectPtr *obj, std::string newName)
 	(*obj)->SetName(newName.c_str());
 }
 
-bool FnSetName(C4ObjectPtr *obj, std::string newName, lua_State *L) // opt: luabridge::LuaRef def, bool setInInfo, bool makeValidIfExists
+bool FnSetName(C4ObjectPtr *obj, std::string newName, lua_State *L) // opt: C4DefPtr *def, bool setInInfo, bool makeValidIfExists
 {
 	if (!obj) return false;
 	C4ID id = 0UL;
 	if (lua_gettop(L) >= 3)
 	{
-		id = LuaHelpers::GetIDFromDef(luabridge::LuaRef::fromStack(L, 3));
+		id = (*luabridge::LuaRef::fromStack(L, 3).cast<C4DefPtr *>())->id;
 	}
 	return LuaHelpers::CallC4Script(obj, &::FnSetName,
 							 C4VString(newName.c_str()).getStr(),
