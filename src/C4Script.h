@@ -148,3 +148,9 @@ void InitFunctionMap(C4AulScriptEngine *pEngine); // add functions to engine
 // an additional callback for Construct.
 #define PSF_ControlCommandAcquire      "~ControlCommandAcquire" // C4Object *pTarget (unused), int iRangeX, int iRangeY, C4Object *pExcludeContainer, C4ID idAcquireDef
 #define PSF_ControlCommandConstruction "~ControlCommandConstruction" // C4Object *pTarget (unused), int iRangeX, int iRangeY, C4Object *pTarget2 (unused), C4ID idConstructDef
+
+// Constants
+constexpr int32_t CSPF_FixedAttributes    = 1 << 0,
+				  CSPF_NoScenarioInit     = 1 << 1,
+				  CSPF_NoEliminationCheck = 1 << 2,
+				  CSPF_Invisible          = 1 << 3;

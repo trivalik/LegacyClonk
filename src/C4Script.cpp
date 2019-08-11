@@ -2939,11 +2939,6 @@ static C4String *FnGetLeagueProgressData(C4AulContext *cthr, long idPlayer)
 	return String(info->GetLeagueProgressData());
 }
 
-static const int32_t CSPF_FixedAttributes    = 1 << 0,
-                     CSPF_NoScenarioInit     = 1 << 1,
-                     CSPF_NoEliminationCheck = 1 << 2,
-                     CSPF_Invisible          = 1 << 3;
-
 static bool FnCreateScriptPlayer(C4AulContext *cthr, C4String *szName, long dwColor, long idTeam, long dwFlags, C4ID idExtra)
 {
 	// safety

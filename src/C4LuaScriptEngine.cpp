@@ -1625,6 +1625,83 @@ luabridge::LuaRef PlaceAnimal(luabridge::LuaRef context, C4DefPtr *def, lua_Stat
 
 // DrawVolcanoBranch - left out
 
+luabridge::LuaRef GetDefinition(luabridge::LuaRef context, int32_t index, lua_State *L) // opt: uint32_t category
+{
+	(void) context;
+	auto category = static_cast<uint32_t>(luaL_optinteger(L, 3, C4D_All));
+
+	if (C4Def *def = Game.Defs.GetDef(index, category); def)
+	{
+		return luabridge::LuaRef(L, LuaHelpers::ref(L, def));
+	}
+
+	return LuaNil(L);
+}
+
+luabridge::LuaRef GetLeaguePerformance(luabridge::LuaRef context, C4PlayerPtr *player, lua_State *L)
+{
+	(void) context;
+	if (!player || !Game.PlayerInfos.GetPlayerInfoByID((*player)->ID)) return LuaNil(L);
+
+	return luabridge::LuaRef(L, Game.RoundResults.GetLeaguePerformance((*player)->ID));
+}
+
+void SetLeaguePerformance(luabridge::LuaRef context, C4PlayerPtr *player, int32_t newPerformance)
+{
+	(void) context;
+	if (!player || !Game.PlayerInfos.GetPlayerInfoByID((*player)->ID)) return;
+
+	Game.RoundResults.SetLeaguePerformance(newPerformance, (*player)->ID);
+}
+
+luabridge::LuaRef GetLeagueProgressData(luabridge::LuaRef context, C4PlayerPtr *player, lua_State *L)
+{
+	(void) context;
+	if (!Game.Parameters.League.getLength() || !player) return LuaNil(L);
+
+	C4PlayerInfo *info = Game.PlayerInfos.GetPlayerInfoByID((*player)->ID);
+	if (!info) return LuaNil(L);
+
+	return luabridge::LuaRef(L, std::string{info->GetLeagueProgressData()});
+}
+
+void SetLeagueProgressData(luabridge::LuaRef context, C4PlayerPtr *player, std::string newProgressData)
+{
+	(void) context;
+	if (!Game.Parameters.League.getLength() || !player) return;
+
+	C4PlayerInfo *info = Game.PlayerInfos.GetPlayerInfoByID((*player)->ID);
+	if (!info) return;
+
+	info->SetLeagueProgressData(newProgressData.c_str());
+}
+
+void CreateScriptPlayer(luabridge::LuaRef context, std::string name, uint32_t color, lua_State *L) // opt: uint32_t team, uint32_t flags, C4DefPtr *extra
+{
+	(void) context;
+	if (!Game.Control.isCtrlHost() || name.empty()) return;
+
+	auto *playerInfo = new C4PlayerInfo;
+
+	auto flags = static_cast<uint32_t>(luaL_optinteger(L, 5, 0U));
+	uint32_t infoFlags = 0U;
+
+	if (flags & CSPF_FixedAttributes) infoFlags |= C4PlayerInfo::PIF_AttributesFixed;
+	if (flags & CSPF_NoScenarioInit) infoFlags |= C4PlayerInfo::PIF_NoScenarioInit;
+	if (flags & CSPF_NoEliminationCheck) infoFlags |= C4PlayerInfo::PIF_NoEliminationCheck;
+	if (flags & CSPF_Invisible) infoFlags |= C4PlayerInfo::PIF_Invisible;
+
+	C4DefPtr *extra = nullptr;
+	if (lua_gettop(L) >= 6)
+	{
+		extra = luabridge::LuaRef::fromStack(L, 6);
+	}
+	playerInfo->SetAsScriptPlayer(name.c_str(), color, infoFlags, (*extra)->id);
+	playerInfo->SetTeam(static_cast<int32_t>(luaL_optinteger(L, 4, 0U)));
+
+	C4ClientPlayerInfos joinPacket{nullptr, true, playerInfo};
+	Game.PlayerInfos.DoPlayerInfoUpdate(&joinPacket);
+}
 
 luabridge::LuaRef ObjectCall(C4ObjectPtr *obj, std::string functionName, lua_State *L) // opt: arguments
 {
@@ -2056,6 +2133,8 @@ std::string __tostring(C4ObjectPtr *obj)
 	return FormatString("%s #%d", (*obj)->Name.getData(), (*obj)->Number).getData();
 }
 
+LIST(C4IDList, Component)
+
 }
 
 // C4ObjectListPtr
@@ -2171,6 +2250,69 @@ int SetCursor(lua_State *L)
 		auto newCursor = luabridge::LuaRef::fromStack(L, 2);
 		(*player)->SetCursor(!newCursor.isNil() ? *(newCursor.cast<C4ObjectPtr *>()) : nullptr, false, false);
 	}
+	return 0;
+}
+
+int GetViewCursor(lua_State *L)
+{
+	if (lua_gettop(L) >= 1)
+	{
+		const C4PlayerPtr *player = luabridge::LuaRef::fromStack(L, 1);
+		if ((*player)->Cursor)
+		{
+			luabridge::push(L, LuaHelpers::ref(L, (*player)->ViewCursor));
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int SetViewCursor(lua_State *L)
+{
+	if (lua_gettop(L) >= 2)
+	{
+		C4PlayerPtr *player = luabridge::LuaRef::fromStack(L, 1);
+		auto newViewCursor = luabridge::LuaRef::fromStack(L, 2);
+		(*player)->ViewCursor = !newViewCursor.isNil() ? *(newViewCursor.cast<C4ObjectPtr *>()) : nullptr;
+	}
+	return 0;
+}
+
+LIST_GET(C4IDList, HomeBaseMaterial)
+
+bool DoHomeBaseMaterial(C4PlayerPtr *player, C4DefPtr *def, int32_t change)
+{
+	if (!player || !def || !change) return false;
+
+	int32_t lastCount = (*player)->HomeBaseMaterial.GetIDCount((*def)->id);
+	if (!(*player)->HomeBaseMaterial.SetIDCount((*def)->id, lastCount + change, true))
+	{
+		return false;
+	}
+
+	if (Game.Rules & C4RULE_TeamHombase)
+	{
+		(*player)->SyncHomebaseMaterialToTeam();
+	}
+
+	return true;
+}
+
+LIST(C4IDList, HomeBaseProduction)
+LIST(C4IDList, Knowledge) // TODO: category parameter?
+LIST(C4IDList, Magic)
+LIST_GET(C4ObjectList, Crew)
+
+int GetHiRank(lua_State *L) // const C4PlayerPtr *player
+{
+	if (lua_gettop(L) < 1) return 0;
+
+	if (::C4Object *obj = (*luabridge::LuaRef::fromStack(L, 1).cast<const C4PlayerPtr *>())->GetHiRankActiveCrew(false); obj)
+	{
+		luabridge::push(L, LuaHelpers::ref(L, obj));
+		return 1;
+	}
+
 	return 0;
 }
 
@@ -2443,6 +2585,18 @@ bool C4LuaScriptEngine::Init()
 				.addFunction("PlaceVegetation", &LuaScriptFn::PlaceVegetation)
 			.endNamespace()
 
+			.beginNamespace("League")
+				.beginNamespace("Performance")
+					.addFunction("__newindex", &LuaScriptFn::SetLeaguePerformance)
+					.addFunction("__index", &LuaScriptFn::GetLeaguePerformance)
+				.endNamespace()
+
+				.beginNamespace("ProgressData")
+					.addFunction("__newindex", &LuaScriptFn::SetLeagueProgressData)
+					.addFunction("__index", &LuaScriptFn::GetLeagueProgressData)
+				.endNamespace()
+			.endNamespace()
+
 			.beginNamespace("Message")
 				.addFunction("Add", &LuaScriptFn::AddMessage)
 			.endNamespace()
@@ -2510,6 +2664,15 @@ bool C4LuaScriptEngine::Init()
 		.endNamespace()
 
 #undef PREFIX
+#define PREFIX CSPF
+		.beginNamespace("ScriptPlayer")
+			C(FixedAttributes)
+			C(NoScenarioInit)
+			C(NoEliminationCheck)
+			C(Invisible)
+		.endNamespace()
+
+#undef PREFIX
 #define PREFIX VIS
 		.beginNamespace("Visibility")
 			C(All)
@@ -2539,6 +2702,10 @@ bool C4LuaScriptEngine::Init()
 		.endClass()
 
 		.beginClass<LuaScriptFn::C4AulFuncPtr>("C4AulFunc")
+			.addProperty("Name", &LuaScriptFn::C4AulFunc::GetName)
+			.addProperty("ParameterCount", &LuaScriptFn::C4AulFunc::GetParCount)
+			//.addProperty("ParameterTypes", &LuaScriptFn::C4AulFunc::GetParTypes)
+
 			.addFunction("__call", &LuaScriptFn::C4AulFunc::__call)
 		.endClass()
 
@@ -2661,6 +2828,7 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("Controller", &LuaScriptFn::GetController, &LuaScriptFn::SetController)
 			.addProperty("Killer", &LuaScriptFn::GetKiller, &LuaScriptFn::SetKiller)
 			.addProperty("OCF", &LuaScriptFn::GetOCF)
+			.addProperty("Components", &LuaScriptFn::C4Object::GetComponent, &LuaScriptFn::C4Object::SetComponent)
 		.endClass()
 
 		.beginClass<LuaScriptFn::C4ObjectListPtr>("C4ObjectListPtr")
@@ -2697,6 +2865,11 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("ShowControlPosition", &LuaScriptFn::C4Player::GetShowControlPos, &LuaScriptFn::C4Player::SetShowControlPos)
 			.addProperty("FlashCommand", &LuaScriptFn::C4Player::GetFlashCom, &LuaScriptFn::C4Player::SetFlashCom)
 			.addProperty("Captain", &LuaScriptFn::C4Player::GetCaptain)
+			.addProperty("Crew", &LuaScriptFn::C4Player::GetCrew)
+			.addProperty("HiRank", &LuaScriptFn::C4Player::GetHiRank)
+			.addProperty("Knowledge", &LuaScriptFn::C4Player::GetKnowledge, &LuaScriptFn::C4Player::SetKnowledge)
+			.addProperty("HomeBaseMaterial", &LuaScriptFn::C4Player::GetHomeBaseMaterial)
+			.addProperty("HomeBaseProduction", &LuaScriptFn::C4Player::GetHomeBaseProduction, &LuaScriptFn::C4Player::SetHomeBaseProduction)
 			.addProperty("AutoContextMenu", &LuaScriptFn::C4Player::GetAutoContextMenu, &LuaScriptFn::C4Player::SetAutoContextMenu)
 			.addProperty("JumpAndRunControl", &LuaScriptFn::C4Player::GetControlStyle, &LuaScriptFn::C4Player::SetControlStyle)
 			.addProperty("LastCommand", &LuaScriptFn::C4Player::GetLastCom)
@@ -2704,6 +2877,7 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("LastCommandDownDouble", &LuaScriptFn::C4Player::GetLastComDownDouble)
 			.addProperty("Type", &LuaScriptFn::C4Player::GetType)
 			.addProperty("Cursor", &LuaScriptFn::C4Player::GetCursor, &LuaScriptFn::C4Player::SetCursor)
+			.addProperty("ViewCursor", &LuaScriptFn::C4Player::GetViewCursor, &LuaScriptFn::C4Player::SetViewCursor)
 			.addProperty("ActiveCrewCount", &LuaScriptFn::C4Player::GetActiveCrewCount)
 			.addProperty("SelectedCrewCount", &LuaScriptFn::C4Player::GetSelectedCrewCount)
 			.addProperty("ViewTarget", &LuaScriptFn::C4Player::GetPlayerView, &LuaScriptFn::C4Player::SetPlayerView)
@@ -2716,8 +2890,8 @@ bool C4LuaScriptEngine::Init()
 			.addFunction("HostileTo", &LuaScriptFn::C4Player::HostileTo)
 			.addFunction("SetHostility", &LuaScriptFn::C4Player::SetHostility)
 			.addFunction("GetControlName", &LuaScriptFn::C4Player::GetPlayerControlName)
-
-		.endClass();
+			.addFunction("DoHomeBaseMaterial", &LuaScriptFn::C4Player::DoHomeBaseMaterial)
+		.endClass()
 
 		/*.beginClass<C4Rect>("C4Rect")
 			.addProperty("X", &C4Rect::x)
