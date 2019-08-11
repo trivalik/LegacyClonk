@@ -50,6 +50,7 @@ public:
 	virtual ~C4ObjectList();
 
 	C4ObjectLink *First, *Last;
+	LuaHelpers::DeletableObjectPtr<C4ObjectList> *wrapper = nullptr;
 	int Mass;
 	std::list<int32_t> *pEnumerated;
 

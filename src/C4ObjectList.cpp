@@ -48,6 +48,13 @@ void C4ObjectList::Clear()
 	}
 	First = Last = nullptr;
 	delete pEnumerated; pEnumerated = nullptr;
+
+	if (wrapper)
+	{
+		wrapper->reset();
+		wrapper->decReferenceCount();
+		wrapper = nullptr;
+	}
 }
 
 const int MaxTempListID = 500;
@@ -767,6 +774,8 @@ void C4ObjectList::Default()
 	First = Last = nullptr;
 	Mass = 0;
 	pEnumerated = nullptr;
+	wrapper = new LuaHelpers::DeletableObjectPtr<C4ObjectList>(nullptr, this);
+	wrapper->incReferenceCount();
 }
 
 void C4ObjectList::UpdateTransferZones()

@@ -325,6 +325,7 @@ PTR(C4AulFunc)
 PTR(C4Def)
 PTR(C4IDList)
 PTR(C4Object)
+PTR(C4ObjectList)
 PTR(C4PlayerInfoCore)
 PTR(C4Player)
 #undef PTR
@@ -2053,6 +2054,37 @@ std::string __tostring(C4ObjectPtr *obj)
 	if (!obj) return "";
 	return FormatString("%s #%d", (*obj)->Name.getData(), (*obj)->Number).getData();
 }
+
+}
+
+// C4ObjectListPtr
+
+namespace C4ObjectList
+{
+
+void __newindex(C4ObjectListPtr *list, size_t key, luabridge::LuaRef value, lua_State *L)
+{
+	(void) list;
+	(void) key;
+	(void) value;
+
+	luabridge::CFunc::readOnlyError(L);
+}
+
+luabridge::LuaRef __index(C4ObjectListPtr *list, int32_t key, lua_State *L)
+{
+	if (!list || key >= (*list)->ObjectCount()) return LuaNil(L);
+
+	::C4Object *obj = (*list)->GetObject(key);
+	return obj ? luabridge::LuaRef(L, LuaHelpers::ref(L, obj)) : LuaNil(L);
+}
+
+int32_t __len(C4ObjectListPtr *list)
+{
+	if (!list) return 0;
+	return (*list)->ObjectCount();
+}
+
 }
 
 // C4PlayerPtr
@@ -2614,6 +2646,12 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("Controller", &LuaScriptFn::GetController, &LuaScriptFn::SetController)
 			.addProperty("Killer", &LuaScriptFn::GetKiller, &LuaScriptFn::SetKiller)
 			.addProperty("OCF", &LuaScriptFn::GetOCF)
+		.endClass()
+
+		.beginClass<LuaScriptFn::C4ObjectListPtr>("C4ObjectListPtr")
+			.addFunction("__newindex", &LuaScriptFn::C4ObjectList::__newindex)
+			.addFunction("__index", &LuaScriptFn::C4ObjectList::__index)
+			.addFunction("__len", &LuaScriptFn::C4ObjectList::__len)
 		.endClass()
 
 		.beginClass<LuaScriptFn::C4PlayerInfoCorePtr>("C4PlayerInfoCore")
