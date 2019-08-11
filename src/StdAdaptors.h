@@ -20,6 +20,8 @@
 #include "Standard.h"
 #include "StdCompiler.h"
 
+#include <set>
+
 // * Wrappers for C4Compiler-types
 
 // Whole-line string, automatic size deduction (C4Compiler-String)
@@ -628,6 +630,11 @@ inline StdSTLContainerAdapt<C, void> mkSTLContainerAdapt(C &rTarget, StdCompiler
 	return StdSTLContainerAdapt<C, void>(rTarget, eSep);
 }
 
+template<class Key>
+inline auto mkSTLContainerAdapt(std::set<Key> &rTarget, StdCompiler::Sep eSep = StdCompiler::SEP_SEP)
+{
+	return StdSTLContainerAdapt<std::set<Key>, std::pair<typename std::set<Key>::iterator, bool>>(rTarget, eSep, &std::set<Key>::insert);
+}
 // * Adaptor for maps following the std::map and std::unordered_map interfaces
 // Writes the size of the map followed by a semicolon separated list of key=value pairs
 template <class Map>

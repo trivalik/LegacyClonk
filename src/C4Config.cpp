@@ -104,14 +104,7 @@ void C4ConfigGeneral::CompileFunc(StdCompiler *pComp)
 
 	if (MissionAccess.empty())
 	{
-		typedef decltype(MissionAccess) T;
-		typedef typename T::iterator It;
-		pComp->Value(mkNamingAdapt(
-						mkSTLContainerAdapt(
-							 MissionAccess,
-							 StdCompiler::SEP_SEP,
-							 static_cast<std::pair<It, bool>(T::*)(const typename T::value_type &)>(&decltype(MissionAccess)::insert)
-							 ), "MissionAccess", decltype(MissionAccess)(), false, true));
+		pComp->Value(mkNamingAdapt(mkSTLContainerAdapt(MissionAccess), "MissionAccess", decltype(MissionAccess)(), false, true));
 	}
 #endif
 	pComp->Value(mkNamingAdapt(FPS,              "FPS",              false,         false, true));
