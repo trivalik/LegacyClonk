@@ -2322,14 +2322,12 @@ void C4Player::SyncHomebaseMaterialToTeam()
 	C4Team *pTeam;
 	if (Team && ((pTeam = Game.Teams.GetTeamByID(Team))))
 	{
-		int32_t iTeamSize = pTeam->GetPlayerCount();
-		for (int32_t i = 0; i < iTeamSize; ++i)
+		for (const auto &player : *pTeam)
 		{
-			int32_t iTeammate = pTeam->GetIndexedPlayer(i);
-			C4Player *pTeammate;
-			if (iTeammate != ID && ((pTeammate = Game.Players.GetByInfoID(iTeammate))))
+			C4Player *teammate;
+			if (player != ID && ((teammate = Game.Players.GetByInfoID(player))))
 			{
-				pTeammate->HomeBaseMaterial = HomeBaseMaterial;
+				teammate->HomeBaseMaterial = HomeBaseMaterial;
 			}
 		}
 	}

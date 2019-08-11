@@ -6078,16 +6078,16 @@ static bool FnOnOwnerRemoved(C4AulContext *cthr)
 		C4Team *pTeam;
 		if (pPlr->Team) if (pTeam = Game.Teams.GetTeamByID(pPlr->Team))
 		{
-			for (int32_t i = 0; i < pTeam->GetPlayerCount(); ++i)
+			for (const auto &player : *pTeam)
 			{
-				int32_t iPlrID = pTeam->GetIndexedPlayer(i);
-				if (iPlrID && iPlrID != pPlr->ID)
+				assert(player);
+				if (player != pPlr->ID)
 				{
-					C4PlayerInfo *pPlrInfo = Game.PlayerInfos.GetPlayerInfoByID(iPlrID);
-					if (pPlrInfo) if (pPlrInfo->IsJoined())
+					if (C4PlayerInfo *info = Game.PlayerInfos.GetPlayerInfoByID(player); info && info->IsJoined())
 					{
+
 						// this looks like a good new owner
-						iNewOwner = pPlrInfo->GetInGameNumber();
+						iNewOwner = info->GetInGameNumber();
 						break;
 					}
 				}

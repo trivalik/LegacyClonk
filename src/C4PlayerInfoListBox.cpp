@@ -1426,14 +1426,20 @@ void C4PlayerInfoListBox::UpdatePlayersByTeam(ListItem **ppCurrInList)
 		// the team label
 		if (!PlrListItemUpdate(ListItem::ID::PLI_TEAM, pTeam->GetID(), ppCurrInList))
 			new TeamListItem(this, pTeam->GetID(), *ppCurrInList);
+
 		// players for this team
-		int32_t idPlr, j = 0; int32_t idClient; C4Client *pClient; C4PlayerInfo *pPlrInfo;
-		while (idPlr = pTeam->GetIndexedPlayer(j++))
-			if (pPlrInfo = Game.PlayerInfos.GetPlayerInfoByID(idPlr, &idClient))
-				if (!pPlrInfo->IsInvisible())
-					if ((pClient = Game.Clients.getClientByID(idClient)) && pClient->isActivated())
-						if (!PlrListItemUpdate(ListItem::ID::PLI_PLAYER, idPlr, ppCurrInList))
-							new PlayerListItem(this, idClient, idPlr, false, *ppCurrInList);
+		for (const auto &player : *pTeam)
+		{
+			int32_t clientID;
+			if (C4PlayerInfo *info = Game.PlayerInfos.GetPlayerInfoByID(player, &clientID); info && !info->IsInvisible())
+			{
+				if (C4Client *client = Game.Clients.getClientByID(clientID); client && client->isActivated() && !PlrListItemUpdate(ListItem::ID::PLI_PLAYER, player, ppCurrInList))
+				{
+						new PlayerListItem(this, clientID, player, false, *ppCurrInList);
+
+				}
+			}
+		}
 	}
 }
 

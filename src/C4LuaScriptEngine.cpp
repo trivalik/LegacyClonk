@@ -328,6 +328,7 @@ PTR(C4Object)
 PTR(C4ObjectList)
 PTR(C4PlayerInfoCore)
 PTR(C4Player)
+PTR(C4Team)
 #undef PTR
 
 // https://gist.github.com/5at/3671566
@@ -2334,6 +2335,20 @@ std::string GetPlayerControlName(C4PlayerPtr *player, int32_t control, lua_State
 }
 }
 
+// C4TeamPtr
+namespace C4Team
+{
+#undef PREFIX
+#define PREFIX C4Team
+
+GET(int32_t, iID)
+PROPERTY(std::string, Name)
+GET(int32_t, iPlrStartIndex)
+PROPERTY(uint32_t, dwClr)
+GET(std::string, IconSpec)
+PROPERTY(size_t, MaxPlayer)
+}
+
 #undef GET
 #undef SET
 #undef PROPERTY
@@ -2736,11 +2751,22 @@ bool C4LuaScriptEngine::Init()
 			.addProperty("ContactCount", &C4Shape::ContactCount)
 
 			.addFunction("ContactCheck", &C4Shape::ContactCheck)
-		.endClass();*/
+		.endClass()*/
+
+		.beginClass<LuaScriptFn::C4TeamPtr>("C4Team")
+			.addProperty("ID", &LuaScriptFn::C4Team::GetiID)
+			.addProperty("Name", &LuaScriptFn::C4Team::GetName, &LuaScriptFn::C4Team::SetName)
+			.addProperty("PlayerStartIndex", &LuaScriptFn::C4Team::GetiPlrStartIndex)
+			.addProperty("Color", &LuaScriptFn::C4Team::GetdwClr, &LuaScriptFn::C4Team::SetdwClr)
+			.addProperty("IconSpec", &LuaScriptFn::C4Team::GetIconSpec)
+			.addProperty("MaxPlayer", &LuaScriptFn::C4Team::GetMaxPlayer, &LuaScriptFn::C4Team::SetMaxPlayer)
+		.endClass();
+
 #undef PREFIX
 #undef CONCAT
 #undef CONCAT2
 #undef C
+
 	return true;
 }
 

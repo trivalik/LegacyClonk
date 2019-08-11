@@ -19,8 +19,40 @@
 
 #pragma once
 
+#include "C4LuaScriptEngine.h"
+
+#include <set>
+
+class C4Team;
+
 // class predec
 namespace C4GUI { class ComboBox_FillCB; };
+
+namespace LuaScriptFn
+{
+
+typedef LuaHelpers::DeletableObjectPtr<::C4Team> C4TeamPtr;
+
+namespace C4Team
+{
+
+#define GET(t, x) t Get##x(const C4TeamPtr *);
+#define SET(t, x) void Set##x(C4TeamPtr *, t x);
+
+GET(int32_t, iID)
+GET(std::string, Name)
+SET(std::string, Name)
+GET(int32_t, iPlrStartIndex)
+GET(uint32_t, dwClr)
+SET(uint32_t, dwClr)
+GET(std::string, IconSpec)
+GET(size_t, MaxPlayer)
+SET(size_t, MaxPlayer)
+
+#undef GET
+#undef SET
+}
+}
 
 // constant used by lobby to indicate invisible, random team
 const int32_t TEAMID_Unknown = -1;
@@ -34,49 +66,60 @@ class C4Team
 private:
 	// std::vector...
 	// containing player info IDs
-	int32_t *piPlayers;
-	int32_t iPlayerCount;
-	int32_t iPlayerCapacity;
+	std::set<int32_t> Players;
 
 public:
 	// copying
 	C4Team(const C4Team &rCopy);
 	C4Team &operator=(const C4Team &rCopy);
 
+public:
+	LuaHelpers::DeletableObjectPtr<C4Team> *wrapper = nullptr;
+
 protected:
 	// team identification; usually > 0 for a valid team
 	int32_t iID;
-	char Name[C4MaxName + 1];
+	std::string Name;
 	int32_t iPlrStartIndex; // 0 for unassigned; 1 to 4 if all players of that team shall be assigned a specific [Player*]-section in the Scenario.txt
 	uint32_t dwClr; // team color
-	StdStrBuf sIconSpec; // icon drawing specification for offline or runtime team selection dialog
-	int32_t iMaxPlayer; // maximum number of players allowed in this team - 0 for infinite
+	std::string IconSpec; // icon drawing specification for offline or runtime team selection dialog
+	size_t MaxPlayer; // maximum number of players allowed in this team - 0 for infinite
 
 	friend class C4TeamList;
 
+	friend int32_t LuaScriptFn::C4Team::GetiID(const LuaScriptFn::C4TeamPtr *);
+	friend std::string LuaScriptFn::C4Team::GetName(const LuaScriptFn::C4TeamPtr *);
+	friend void LuaScriptFn::C4Team::SetName(LuaScriptFn::C4TeamPtr *, std::string);
+	friend int32_t LuaScriptFn::C4Team::GetiPlrStartIndex(const LuaScriptFn::C4TeamPtr *);
+	friend uint32_t LuaScriptFn::C4Team::GetdwClr(const LuaScriptFn::C4TeamPtr *);
+	friend void LuaScriptFn::C4Team::SetdwClr(LuaScriptFn::C4TeamPtr *, uint32_t);
+	friend std::string LuaScriptFn::C4Team::GetIconSpec(const LuaScriptFn::C4TeamPtr *);
+	friend size_t LuaScriptFn::C4Team::GetMaxPlayer(const LuaScriptFn::C4TeamPtr *);
+	friend void LuaScriptFn::C4Team::SetMaxPlayer(LuaScriptFn::C4TeamPtr *, size_t);
+
 public:
-	C4Team() : piPlayers(nullptr), iPlayerCount(0), iPlayerCapacity(0), iID(0), iPlrStartIndex(0), dwClr(0), iMaxPlayer(0) { *Name = 0; }
+	C4Team();
 	~C4Team() { Clear(); }
 
 	void Clear();
 	void AddPlayer(class C4PlayerInfo &rInfo, bool fAdjustPlayer); // add player by info; adjusts ID in info and at any joined player
-	void RemoveIndexedPlayer(int32_t iIndex); // remove info at index; this changes the local list only
+	void RemoveIndexedPlayer(size_t index); // remove info at index; this changes the local list only
 	void RemovePlayerByID(int32_t iID);
 
-	int32_t GetPlayerCount() const { return iPlayerCount; }
-	const char *GetName() const { return Name; }
+	size_t GetPlayerCount() const { return Players.size(); }
+	const char *GetName() const { return Name.c_str(); }
 	int32_t GetID() const { return iID; }
 	bool IsPlayerIDInTeam(int32_t iID); // search list for a player with the given ID
 	int32_t GetFirstUnjoinedPlayerID() const; // search for a player that does not have the join-flag set
 	int32_t GetFirstActivePlayerID() const; // search for a player that is still in the game
 	int32_t GetPlrStartIndex() const { return iPlrStartIndex; }
 	uint32_t GetColor() const { return dwClr; }
-	const char *GetIconSpec() const { return sIconSpec.getData(); }
-	bool IsFull() const { return iMaxPlayer && (iPlayerCount >= iMaxPlayer); } // whether no more players may join this team
+	const char *GetIconSpec() const { return IconSpec.c_str(); }
+	bool IsFull() const { return MaxPlayer && (Players.size() >= MaxPlayer); } // whether no more players may join this team
 	StdStrBuf GetNameWithParticipants() const; // compose team name like "Team 1 (boni, GhostBear, Clonko)"
 	bool HasWon() const; // return true if any member player of the team has won
 
-	int32_t GetIndexedPlayer(int32_t iIndex) const { return Inside<int32_t>(iIndex, 0, iPlayerCount - 1) ? piPlayers[iIndex] : 0; }
+	int32_t GetIndexedPlayer(size_t index);
 
 	void CompileFunc(StdCompiler *pComp);
 
@@ -85,6 +128,16 @@ public:
 
 	// this assigns a team color if it's still zero
 	void RecheckColor(C4TeamList &rForList);
+
+	decltype(Players)::iterator begin() noexcept { return Players.begin(); }
+	decltype(Players)::const_iterator begin() const noexcept { return Players.begin(); }
+	decltype(Players)::iterator end() noexcept { return Players.end(); }
+	decltype(Players)::const_iterator end() const noexcept { return Players.end(); }
+
+	decltype(Players)::reverse_iterator rbegin() noexcept { return Players.rbegin(); }
+	decltype(Players)::const_reverse_iterator rbegin() const noexcept { return Players.rbegin(); }
+	decltype(Players)::reverse_iterator rend() noexcept { return Players.rend(); }
+	decltype(Players)::const_reverse_iterator rend() const noexcept { return Players.rend(); }
 };
 
 // global team list

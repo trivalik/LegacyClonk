@@ -1305,13 +1305,13 @@ void C4ControlVote::Execute() const
 			// Votes for this team
 			int32_t iPositiveTeam = 0, iNegativeTeam = 0, iVotesTeam = 0;
 			// Check each player
-			for (int32_t j = 0; j < (pTeam ? pTeam->GetPlayerCount() : Game.PlayerInfos.GetPlayerCount()); j++)
+			for (size_t j = 0; j < (pTeam ? pTeam->GetPlayerCount() : static_cast<size_t>(Game.PlayerInfos.GetPlayerCount())); j++)
 			{
 				int32_t iClientID = C4ClientIDUnknown;
 				C4PlayerInfo *pNfo;
 				if (!pTeam)
 				{
-					pNfo = Game.PlayerInfos.GetPlayerInfoByIndex(j);
+					pNfo = Game.PlayerInfos.GetPlayerInfoByIndex(static_cast<int32_t>(j));
 					if (!pNfo) continue; // shouldn't happen
 					iClientID = Game.PlayerInfos.GetClientInfoByPlayerID(pNfo->GetID())->GetClientID();
 				}

@@ -18,36 +18,45 @@
 // player team management for teamwork melees
 
 #include <C4Include.h>
-#include <C4Teams.h>
 
-#include <C4Game.h>
-#include <C4Random.h>
-#include <C4Components.h>
-#include <C4Wrappers.h>
-#include <C4Player.h>
+#include "C4Components.h"
+#include "C4Game.h"
+#include "C4Player.h"
+#include "C4Random.h"
+#include "C4Teams.h"
+#include "C4Wrappers.h"
 
 // C4Team
 
-C4Team::C4Team(const C4Team &rCopy)
-	: piPlayers(new int32_t[rCopy.GetPlayerCount()]),
-	iPlayerCount(rCopy.GetPlayerCount()),
-	iPlayerCapacity(rCopy.GetPlayerCount()),
-	iID(rCopy.GetID()), iPlrStartIndex(rCopy.iPlrStartIndex), dwClr(rCopy.dwClr),
-	sIconSpec(rCopy.GetIconSpec()), iMaxPlayer(rCopy.iMaxPlayer)
+C4Team::C4Team() : Players{}, iID{0}, iPlrStartIndex{0}, dwClr{0}, MaxPlayer{0}
 {
-	// copy name
-	SCopy(rCopy.GetName(), Name, C4MaxName);
-	// copy players
-	for (int32_t i = 0; i < iPlayerCount; i++)
-		piPlayers[i] = rCopy.GetIndexedPlayer(i);
+	wrapper = new LuaHelpers::DeletableObjectPtr<C4Team>{nullptr, this};
+}
+
+C4Team::C4Team(const C4Team &rCopy)
+	: Players{rCopy.Players},
+	iID{rCopy.GetID()}, Name{rCopy.Name}, iPlrStartIndex{rCopy.iPlrStartIndex}, dwClr{rCopy.dwClr},
+	IconSpec{rCopy.IconSpec}, MaxPlayer{rCopy.MaxPlayer}
+{
+	if (rCopy.wrapper)
+	{
+		wrapper = rCopy.wrapper;
+		wrapper->incReferenceCount();
+	}
 }
 
 void C4Team::Clear()
 {
-	delete[] piPlayers; piPlayers = nullptr;
-	iPlayerCount = iPlayerCapacity = iMaxPlayer = 0;
-	iID = 0; *Name = 0;
-	sIconSpec.Clear();
+	iID = 0;
+	Name.clear();
+	IconSpec.clear();
+
+	if (wrapper)
+	{
+		wrapper->reset();
+		wrapper->decReferenceCount();
+		wrapper = nullptr;
+	}
 }
 
 void C4Team::AddPlayer(C4PlayerInfo &rInfo, bool fAdjustPlayer)
@@ -56,14 +65,8 @@ void C4Team::AddPlayer(C4PlayerInfo &rInfo, bool fAdjustPlayer)
 	assert(rInfo.GetID());
 	if (!rInfo.GetID()) return;
 	// add player; grow vector if necessary
-	if (iPlayerCount >= iPlayerCapacity)
-	{
-		int32_t *piNewPlayers = new int32_t[iPlayerCapacity = iPlayerCount + 4 & ~3];
-		if (iPlayerCount) memcpy(piNewPlayers, piPlayers, iPlayerCount * sizeof(int32_t));
-		delete[] piPlayers; piPlayers = piNewPlayers;
-	}
 	// store new player
-	piPlayers[iPlayerCount++] = rInfo.GetID();
+	Players.insert(rInfo.GetID());
 	if (!fAdjustPlayer) return;
 	// set values in info
 	rInfo.SetTeam(GetID());
@@ -81,97 +84,111 @@ void C4Team::AddPlayer(C4PlayerInfo &rInfo, bool fAdjustPlayer)
 	}
 }
 
-void C4Team::RemoveIndexedPlayer(int32_t iIndex)
+int32_t C4Team::GetIndexedPlayer(size_t index)
+{
+	assert(index < Players.size());
+	if (index >= Players.size()) return 0;
+
+	auto it = Players.begin();
+	std::advance(it, index);
+
+	return *it;
+}
+
+void C4Team::RemoveIndexedPlayer(size_t index)
 {
 	// safety
-	assert(Inside<int32_t>(iIndex, 0, iPlayerCount - 1));
-	if (!Inside<int32_t>(iIndex, 0, iPlayerCount - 1)) return;
-	// move other players done
-	for (int32_t i = iIndex + 1; i < iPlayerCount; ++i)
-		piPlayers[i - 1] = piPlayers[i];
-	--iPlayerCount;
+	assert(index < Players.size());
+	if (index >= Players.size()) return;
+
+	auto it = Players.begin();
+	std::advance(it, index);
+
+	Players.erase(it);
 }
 
 void C4Team::RemovePlayerByID(int32_t iID)
 {
-	// get index
-	int32_t i;
-	for (i = 0; i < iPlayerCount; ++i)
-		if (piPlayers[i] == iID) break;
-	if (i == iPlayerCount) { assert(false); return; } // ID not found
-	// remove it
-	RemoveIndexedPlayer(i);
+	auto i = std::find(Players.begin(), Players.end(), iID);
+	if (i == Players.end())
+	{
+		assert(false);
+		return;
+	}
+	Players.erase(i);
 }
 
 bool C4Team::IsPlayerIDInTeam(int32_t iID)
 {
-	int32_t i = iPlayerCount, *piPlr = piPlayers;
-	while (i--) if (*piPlr++ == iID) return true;
-	return false;
+	return Players.count(iID);
 }
 
 int32_t C4Team::GetFirstUnjoinedPlayerID() const
 {
 	// search for a player that does not have the join-flag set
-	int32_t i = iPlayerCount, idPlr, *piPlr = piPlayers;
-	C4PlayerInfo *pInfo;
-	while (i--)
-		if (pInfo = Game.PlayerInfos.GetPlayerInfoByID(idPlr = *piPlr++))
-			if (!pInfo->HasJoinIssued())
-				return idPlr;
-	// none found
+	for (const auto &player : Players)
+	{
+		if (C4PlayerInfo *info = Game.PlayerInfos.GetPlayerInfoByID(player); !info->HasJoinIssued())
+		{
+			return player;
+		}
+	}
+
 	return 0;
 }
 
 int32_t C4Team::GetFirstActivePlayerID() const
 {
 	// search for a player that is currently in the game
-	int32_t i = iPlayerCount, idPlr, *piPlr = piPlayers;
-	C4Player *pPlr;
-	while (i--)
-		if (pPlr = Game.Players.GetByInfoID((idPlr = *piPlr++)))
-			return idPlr;
-	// none found
+	for (const auto &player : Players)
+	{
+		if (C4Player *p = Game.Players.GetByInfoID(player); p)
+		{
+			return player;
+		}
+	}
+
 	return 0;
 }
 
 void C4Team::CompileFunc(StdCompiler *pComp)
 {
 	if (pComp->isCompiler()) Clear();
-	pComp->Value(mkNamingAdapt(iID,                   "id",            0));
-	pComp->Value(mkNamingAdapt(mkStringAdaptMA(Name), "Name",          ""));
-	pComp->Value(mkNamingAdapt(iPlrStartIndex,        "PlrStartIndex", 0));
-	pComp->Value(mkNamingAdapt(iPlayerCount,          "PlayerCount",   0));
-	if (pComp->isCompiler()) { delete[] piPlayers; piPlayers = new int32_t[iPlayerCapacity = iPlayerCount]{}; }
-	pComp->Value(mkNamingAdapt(mkArrayAdapt(piPlayers, iPlayerCount, -1), "Players"));
-	pComp->Value(mkNamingAdapt(dwClr,                 "Color",         0u));
-	pComp->Value(mkNamingAdapt(sIconSpec,             "IconSpec",      StdStrBuf()));
-	pComp->Value(mkNamingAdapt(iMaxPlayer,            "MaxPlayer",     0));
+	pComp->Value(mkNamingAdapt(iID,                          "id",            0));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(Name),         "Name",          ""));
+	pComp->Value(mkNamingAdapt(iPlrStartIndex,               "PlrStartIndex", 0));
+	pComp->Value(mkNamingAdapt(Players.size(),               "PlayerCount",   0));
+	if (pComp->isCompiler()) { Players.clear(); }
+	pComp->Value(mkNamingAdapt(mkSTLContainerAdapt(Players), "Players",       decltype(Players){}));
+	pComp->Value(mkNamingAdapt(dwClr,                        "Color",         0u));
+	pComp->Value(mkNamingAdapt(mkStringAdaptA(IconSpec),     "IconSpec",      ""));
+	pComp->Value(mkNamingAdapt(MaxPlayer,                    "MaxPlayer",     0));
 }
 
 void C4Team::RecheckPlayers()
 {
-	// check all players within the team
-	for (int32_t i = 0; i < iPlayerCount; ++i)
+	Players.erase(std::remove_if(Players.begin(), Players.end(), [this](const auto &id)
 	{
-		bool fIsValid = false; int32_t id; C4PlayerInfo *pInfo;
-		if (id = piPlayers[i])
-			if (pInfo = Game.PlayerInfos.GetPlayerInfoByID(id))
-				if (pInfo->GetTeam() == GetID())
-					if (pInfo->IsUsingTeam())
-						fIsValid = true;
-		// removal will decrease iPlayerCount, which will abort the loop earlier
-		if (!fIsValid) RemoveIndexedPlayer(i--);
-	}
+		if (id == 0)
+		{
+			return true;
+		}
+
+		else if(C4PlayerInfo *info = Game.PlayerInfos.GetPlayerInfoByID(id); !info && info->IsUsingTeam() && info->GetTeam() == GetID())
+		{
+			return true;
+		}
+	}));
+
 	// now check for any new players in the team
-	int32_t id = 0; C4PlayerInfo *pInfo;
-	while (pInfo = Game.PlayerInfos.GetNextPlayerInfoByID(id))
+	int32_t id = 0; C4PlayerInfo *info;
+	while ((info = Game.PlayerInfos.GetNextPlayerInfoByID(id)))
 	{
-		id = pInfo->GetID();
-		if (pInfo->GetTeam() == GetID())
-			if (pInfo->IsUsingTeam())
-				if (!IsPlayerIDInTeam(id))
-					AddPlayer(*pInfo, false);
+		id = info->GetID();
+		if (info->IsUsingTeam() && info->GetTeam() == GetID() && !IsPlayerIDInTeam(id))
+		{
+			AddPlayer(*info, false);
+		}
 	}
 }
 
@@ -224,43 +241,43 @@ StdStrBuf C4Team::GetNameWithParticipants() const
 {
 	// compose team name like "Team 1 (boni, GhostBear, Clonko)"
 	// or just "Team 1" for empty team
-	StdStrBuf sTeamName;
-	sTeamName.Copy(GetName());
+	StdStrBuf teamName;
+	teamName.Copy(GetName());
 	if (GetPlayerCount())
 	{
-		sTeamName.Append(" (");
-		int32_t iTeamPlrCount = 0;
-		for (int32_t j = 0; j < GetPlayerCount(); ++j)
+		teamName.Append(" (");
+
+		size_t teamPlayerCount = 0;
+		for (const auto &player : Players)
 		{
-			int32_t iPlr = GetIndexedPlayer(j);
-			C4PlayerInfo *pPlrInfo;
-			if (iPlr) if (pPlrInfo = Game.PlayerInfos.GetPlayerInfoByID(iPlr))
+			if (C4PlayerInfo *info = Game.PlayerInfos.GetPlayerInfoByID(player))
 			{
-				if (iTeamPlrCount++) sTeamName.Append(", ");
-				sTeamName.Append(pPlrInfo->GetName());
+				if (teamPlayerCount++)
+				{
+					teamName.Append(", ");
+					teamName.Append(info->GetName());
+				}
 			}
 		}
-		sTeamName.AppendChar(')');
+
+		teamName.AppendChar(')');
 	}
-	return sTeamName;
+	return teamName;
 }
 
 bool C4Team::HasWon() const
 {
 	// return true if any member player of the team has won
-	bool fHasWon = false;
-	for (int32_t i = 0; i < iPlayerCount; ++i)
+
+	for (const auto &player : Players)
 	{
-		int32_t id; C4PlayerInfo *pInfo;
-		if (id = piPlayers[i])
-			if (pInfo = Game.PlayerInfos.GetPlayerInfoByID(id))
-				if (pInfo->HasWon())
-				{
-					fHasWon = true;
-					break;
-				}
+		if (C4PlayerInfo *info = Game.PlayerInfos.GetPlayerInfoByID(player); info->HasWon())
+		{
+			return true;
+		}
 	}
-	return fHasWon;
+
+	return false;
 }
 
 // C4TeamList
@@ -373,7 +390,7 @@ C4Team *C4TeamList::CreateTeam(const char *szName)
 	// custom team
 	C4Team *pNewTeam = new C4Team();
 	pNewTeam->iID = iLastTeamID + 1;
-	SCopy(szName, pNewTeam->Name, C4MaxName);
+	pNewTeam->Name = szName;
 	AddTeam(pNewTeam);
 	pNewTeam->RecheckColor(*this);
 	return pNewTeam;
