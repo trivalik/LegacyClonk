@@ -23,6 +23,8 @@
 #include "C4Gui.h"
 #include "C4Wrappers.h"
 
+#include <filesystem>
+
 // C4GameRes
 
 C4GameRes::C4GameRes()
@@ -200,15 +202,52 @@ void C4GameResList::Clear()
 	iResCount = iResCapacity = 0;
 }
 
-bool C4GameResList::Load(const std::vector<std::string> &DefinitionFilenames)
+bool C4GameResList::Load(std::vector<std::string> &DefinitionFilenames)
 {
 	// clear any prev
 	Clear();
 	// no defs to be added? that's OK (LocalOnly)
 	if (DefinitionFilenames.size())
 	{
-		for (const auto &def : DefinitionFilenames)
+		for (auto &def : DefinitionFilenames)
 		{
+			char CRCBuffer[8 + 1];
+			bool hasCRC = false;
+			uint32_t CRC;
+
+			if (SCopyEnclosed(def.c_str(), '[', ']', CRCBuffer, 8))
+			{
+				SClearFrontBack(CRCBuffer);
+				char *endptr;
+				CRC = strtoul(CRCBuffer, &endptr, 16);
+				hasCRC = CRC != 0 || (errno == 0 && CRCBuffer != endptr);
+				def.resize(def.find('['));
+			}
+
+			if (hasCRC)
+			{
+				namespace fs = std::filesystem;
+
+				for (auto it = fs::recursive_directory_iterator{Config.AtExePath(Config.General.DefinitionPath)}; it != fs::recursive_directory_iterator{}; ++it)
+				{
+					if (it.depth() > Config.Network.MaxResSearchRecursion)
+					{
+						break;
+					}
+
+					else if (it->path().filename().string() == def)
+					{
+						std::string path{it->path().string()};
+
+						if (C4Group group; group.Open(path.c_str()) && group.EntryCRC32() == CRC)
+						{
+							def.assign(group.GetFullName().getData());
+							break;
+						}
+					}
+				}
+			}
+
 			C4Group Def;
 			if (!Def.Open(def.c_str()))
 			{
@@ -330,7 +369,7 @@ void C4GameParameters::Clear()
 	Teams.Clear();
 }
 
-bool C4GameParameters::Load(C4Group &hGroup, C4Scenario *pScenario, const char *szGameText, C4LangStringTable *pLang, const std::vector<std::string> &DefinitionFilenames)
+bool C4GameParameters::Load(C4Group &hGroup, C4Scenario *pScenario, const char *szGameText, C4LangStringTable *pLang, std::vector<std::string> &DefinitionFilenames)
 {
 	// Clear previous data
 	Clear();
