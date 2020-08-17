@@ -1369,6 +1369,9 @@ bool C4Group::View(const char *szFiles)
 	uint32_t crc = 0;
 	C4Group_GetFileCRC(GetFullName().getData(), &crc);
 
+	uint32_t contentsCRC = 0;
+	C4Group_GetFileContentsCRC(GetFullName().getData(), &contentsCRC);
+
 	// Display list
 	ResetSearch();
 	while (centry = SearchNextEntry(szFiles))
@@ -1379,12 +1382,13 @@ bool C4Group::View(const char *szFiles)
 	}
 	sprintf(oformat, "%%%ds %%8ld Bytes %%02d.%%02d.%%02d %%02d:%%02d:%%02d %%s%%08X %%s\n", maxfnlen);
 
-	printf("Maker: %s  Creation: %i  %s\n\rVersion: %d.%d  CRC: %u (%X)\n",
+	printf("Maker: %s  Creation: %i  %s\n\rVersion: %d.%d  CRC: %u (%X)  ContentsCRC: %u (%X)\n",
 		GetMaker(),
 		Head.Creation,
 		GetOriginal() ? "Original" : "",
 		Head.Ver1, Head.Ver2,
-		crc, crc);
+		crc, crc,
+		contentsCRC, contentsCRC);
 	ResetSearch();
 	while (centry = SearchNextEntry(szFiles))
 	{
