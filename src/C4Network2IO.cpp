@@ -254,12 +254,27 @@ bool C4Network2IO::ConnectWithSocket(const C4NetIO::addr_t &addr, C4Network2IOPr
 		pConn->SetSocket(std::move(socket));
 	AddConnection(pConn);
 	// connect
+
+	auto checkErrorHeap = [pNetIO]
+	{
+		static HANDLE heap{GetProcessHeap()};
+		if (!HeapValidate(heap, 0, pNetIO->GetError()))
+		{
+			RaiseException(EXCEPTION_ACCESS_VIOLATION, EXCEPTION_NONCONTINUABLE, 0, nullptr);
+		}
+	};
+
+	checkErrorHeap();
+
 	if (!pConn->Connect())
 	{
+		checkErrorHeap();
 		// show error
 		LogSilentF("Network: could not connect to %s using %s: %s", addr.ToString().getData(),
 			getNetIOName(pNetIO), pNetIO->GetError() ? pNetIO->GetError() : "");
+		checkErrorHeap();
 		pNetIO->ResetError();
+		checkErrorHeap();
 		// remove class
 		RemoveConnection(pConn);
 		return false;
