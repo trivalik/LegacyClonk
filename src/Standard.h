@@ -32,13 +32,8 @@
 #include <stdint.h>
 
 #ifdef __GNUC__
-	// Allow checks for correct printf-usage
-	#define GNUC_FORMAT_ATTRIBUTE __attribute__ ((format (printf, 1, 2)))
-	#define GNUC_FORMAT_ATTRIBUTE_O __attribute__ ((format (printf, 2, 3)))
 	#define ALWAYS_INLINE inline __attribute__ ((always_inline))
 #else
-	#define GNUC_FORMAT_ATTRIBUTE
-	#define GNUC_FORMAT_ATTRIBUTE_O
 	#define ALWAYS_INLINE __forceinline
 #endif
 
@@ -58,6 +53,7 @@
 
 #include <string.h>
 #include <string>
+#include <utility>
 
 #ifdef _WIN32
 #include "C4Windows.h"
@@ -85,8 +81,6 @@ constexpr uint32_t RGB(uint8_t r, uint8_t g, uint8_t b) { return r | (g << 8) | 
 // These functions have to be provided by the application.
 bool Log(const char *szMessage);
 bool LogSilent(const char *szMessage);
-bool LogF(const char *strMessage, ...) GNUC_FORMAT_ATTRIBUTE;
-bool LogSilentF(const char *strMessage, ...) GNUC_FORMAT_ATTRIBUTE;
 
 #include <memory.h>
 #include <math.h>
@@ -198,14 +192,12 @@ bool SWildcardMatchEx(const char *szString, const char *szWildcard);
 // sprintf wrapper
 
 #include <stdio.h>
-#include <stdarg.h>
 
 // old, insecure sprintf
-inline int osprintf(char *str, const char *fmt, ...) GNUC_FORMAT_ATTRIBUTE_O;
-inline int osprintf(char *str, const char *fmt, ...)
+template<class ...Args>
+inline int osprintf(char *str, const char *fmt, Args &&...args)
 {
-	va_list args; va_start(args, fmt);
-	return vsprintf(str, fmt, args);
+	return sprintf(str, fmt, std::forward<Args>(args)...);
 }
 
 // wrapper to detect "char *"
@@ -217,10 +209,8 @@ bool IsSafeFormatString(const char *szFmt);
 
 // secure sprintf
 #define sprintf ssprintf
-template <typename T>
-inline int ssprintf(T &str, const char *fmt, ...) GNUC_FORMAT_ATTRIBUTE_O;
-template <typename T>
-inline int ssprintf(T &str, const char *fmt, ...)
+template <typename T, class ...Args>
+inline int ssprintf(T &str, const char *fmt, Args &&...args)
 {
 	// Check parameters
 	NoPointer<T>::noPointer();
@@ -231,8 +221,7 @@ inline int ssprintf(T &str, const char *fmt, ...)
 	}
 	int n = sizeof(str);
 	// Build string
-	va_list args; va_start(args, fmt);
-	int m = vsnprintf(str, n, fmt, args);
+	int m = snprintf(str, n, fmt, std::forward<Args>(args)...);
 	if (m >= n) { m = n - 1; str[m] = 0; }
 	return m;
 }

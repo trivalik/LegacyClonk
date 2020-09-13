@@ -38,6 +38,7 @@
 #include <C4Version.h>
 #include <C4Update.h>
 #include <C4Config.h>
+#include "StdLogF.h"
 
 // from http://cboard.cprogramming.com/archive/index.php/t-27714.html
 #include <stdio.h>
@@ -80,17 +81,6 @@ bool Log(const char *msg)
 	if (!fQuiet)
 		printf("%s\n", msg);
 	return 1;
-}
-
-bool LogF(const char *strMessage, ...)
-{
-	va_list args;
-	va_start(args, strMessage);
-	// Compose formatted message
-	StdStrBuf Buf;
-	Buf.FormatV(strMessage, args);
-	// Log
-	return Log(Buf.getData());
 }
 
 bool ProcessGroup(const char *FilenamePar)

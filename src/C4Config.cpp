@@ -26,6 +26,7 @@
 #include <C4Application.h>
 #include <C4Network2.h>
 #include <C4Language.h>
+#include "StdLogF.h"
 #include <StdResStr2.h>
 #endif
 

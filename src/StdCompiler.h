@@ -237,32 +237,36 @@ public:
 	};
 
 	// Throw helpers (might redirect)
-	void excNotFound(const char *szMessage, ...)
+	template<class ...Args>
+	void excNotFound(const char *const fmt, Args &&...args)
 	{
-		// Throw the appropriate exception
-		va_list args; va_start(args, szMessage);
-		throw NotFoundException(getPosition(), FormatStringV(szMessage, args));
+		throw NotFoundException{getPosition(), FormatString(fmt, std::forward<Args>(args)...)};
 	}
 
-	void excEOF(const char *szMessage = "EOF", ...)
+	template<class ...Args>
+	void excEOF(const char *const fmt = "EOF", Args &&...args)
 	{
-		// Throw the appropriate exception
-		va_list args; va_start(args, szMessage);
-		throw EOFException(getPosition(), FormatStringV(szMessage, args));
+		throw EOFException{getPosition(), FormatString(fmt, std::forward<Args>(args)...)};
 	}
 
-	void excCorrupt(const char *szMessage, ...)
+	template<class ...Args>
+	void excCorrupt(const char *const fmt, Args &&...args)
 	{
-		// Throw the appropriate exception
-		va_list args; va_start(args, szMessage);
-		throw CorruptException(getPosition(), FormatStringV(szMessage, args));
+		throw CorruptException{getPosition(), FormatString(fmt, std::forward<Args>(args)...)};
 	}
 
 public:
 	// * Warnings
 	typedef void(*WarnCBT)(void *, const char *, const char *);
 	void setWarnCallback(WarnCBT pnWarnCB, void *pData) { pWarnCB = pnWarnCB; pWarnData = pData; }
-	void Warn(const char *szWarning, ...);
+
+	template<class ...Args>
+	void Warn(const char *const fmt, Args &&...args)
+	{
+		if (!pWarnCB) return;
+		pWarnCB(pWarnData, getPosition().getData(),
+			FormatString(fmt, std::forward<Args>(args)...).getData());
+	}
 
 private:
 	// Warnings

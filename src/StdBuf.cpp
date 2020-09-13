@@ -20,15 +20,12 @@
 #include <StdAdaptors.h>
 #include <StdFile.h>
 
-#include <stdarg.h>
-#include <stdio.h>
 #ifdef _WIN32
 #include <io.h>
 #else
 #define O_BINARY 0
 #define O_SEQUENTIAL 0
 #include <unistd.h>
-#include <stdlib.h>
 #endif
 #include <ctype.h>
 #include <fcntl.h>
@@ -123,79 +120,6 @@ void StdBuf::CompileFunc(StdCompiler *pComp, int iType)
 
 // *** StdStringBuf
 
-void StdStrBuf::Format(const char *szFmt, ...)
-{
-	// Create argument list
-	va_list args; va_start(args, szFmt);
-	// Format
-	FormatV(szFmt, args);
-}
-
-void StdStrBuf::FormatV(const char *szFmt, va_list args)
-{
-	// Clear previous contents
-	Clear();
-	// Format
-	AppendFormatV(szFmt, args);
-}
-
-void StdStrBuf::AppendFormat(const char *szFmt, ...)
-{
-	// Create argument list
-	va_list args; va_start(args, szFmt);
-	// Format
-	AppendFormatV(szFmt, args);
-}
-
-void StdStrBuf::AppendFormatV(const char *szFmt, va_list args)
-{
-	if (!IsSafeFormatString(szFmt))
-	{
-		BREAKPOINT_HERE
-		szFmt = "<UNSAFE FORMAT STRING>";
-	}
-
-	// Save append start
-	int iStart = getLength();
-#ifdef HAVE_VSCPRINTF
-	// Calculate size, allocate
-	int iLength = vscprintf(szFmt, args);
-	Grow(iLength);
-	// Format
-	char *pPos = getMElem<char>(*this, iSize - iLength - 1);
-	vsprintf(getMPtr(iStart), szFmt, args);
-#else
-	int iBytes;
-#ifdef HAVE_VASPRINTF
-	// Format
-	char *pStr;
-	iBytes = vasprintf(&pStr, szFmt, args);
-	if (iBytes < 0 || !pStr) return;
-	// Append
-	if (isNull())
-		Take(pStr, iBytes);
-	else
-	{
-		Append(pStr, iBytes);
-		free(pStr);
-	}
-#else
-	// Save append start
-	do
-	{
-		// Grow
-		Grow(512);
-		// Try output
-		iBytes = vsnprintf(getMPtr(iStart), getLength() - iStart, szFmt, args);
-	} while (iBytes < 0 || (unsigned int)(iBytes) >= getLength() - iStart);
-	// Calculate real length, if vsnprintf didn't return anything of value
-#endif
-	iBytes = strlen(getMPtr(iStart));
-	// Shrink to fit
-	SetSize(iStart + iBytes + 1);
-#endif
-}
-
 void StdStrBuf::CompileFunc(StdCompiler *pComp, int iRawType)
 {
 	if (pComp->isCompiler())
@@ -211,19 +135,6 @@ void StdStrBuf::CompileFunc(StdCompiler *pComp, int iRawType)
 		// pData is only read anyway, since it is a decompiler
 		pComp->String(const_cast<char **>(&pData), StdCompiler::RawCompileType(iRawType));
 	}
-}
-
-StdStrBuf FormatString(const char *szFmt, ...)
-{
-	va_list args; va_start(args, szFmt);
-	return FormatStringV(szFmt, args);
-}
-
-StdStrBuf FormatStringV(const char *szFmt, va_list args)
-{
-	StdStrBuf Buf;
-	Buf.FormatV(szFmt, args);
-	return Buf;
 }
 
 // replace all occurences of one string with another. Return number of replacements.

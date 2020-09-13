@@ -23,7 +23,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
-#include <stdarg.h>
+#include <stdio.h>
 
 #include <utility>
 #include <type_traits>
@@ -609,10 +609,62 @@ public:
 		return true;
 	}
 
-	void Format(const char *szFmt, ...) GNUC_FORMAT_ATTRIBUTE_O;
-	void FormatV(const char *szFmt, va_list args);
-	void AppendFormat(const char *szFmt, ...) GNUC_FORMAT_ATTRIBUTE_O;
-	void AppendFormatV(const char *szFmt, va_list args);
+	template<class ...Args>
+	void Format(const char *szFmt, Args &&...args)
+	{
+		Clear();
+		AppendFormat(szFmt, std::forward<Args>(args)...);
+	}
+
+	template<class ...Args>
+	void AppendFormat(const char *fmt, Args &&...args)
+	{
+		if (!IsSafeFormatString(fmt))
+		{
+			BREAKPOINT_HERE
+			fmt = "<UNSAFE FORMAT STRING>";
+		}
+
+		// Save append start
+		int iStart = getLength();
+#ifdef HAVE_VSCPRINTF
+		// Calculate size, allocate
+		int iLength = scprintf(fmt, std::forward<Args>(args)...);
+		Grow(iLength);
+		// Format
+		char *pPos = getMElem<char>(*this, iSize - iLength - 1);
+		sprintf(getMPtr(iStart), fmt, std::forward<Args>(args)...);
+#else
+		int iBytes;
+#ifdef HAVE_VASPRINTF
+		// Format
+		char *pStr;
+		iBytes = asprintf(&pStr, fmt, std::forward<Args>(args)...);
+		if (iBytes < 0 || !pStr) return;
+		// Append
+		if (isNull())
+			Take(pStr, iBytes);
+		else
+		{
+			Append(pStr, iBytes);
+			free(pStr);
+		}
+#else
+		// Save append start
+		do
+		{
+			// Grow
+			Grow(512);
+			// Try output
+			iBytes = snprintf(getMPtr(iStart), getLength() - iStart, fmt, std::forward<Args>(args)...);
+		} while (iBytes < 0 || (unsigned int)(iBytes) >= getLength() - iStart);
+		// Calculate real length, if snprintf didn't return anything of value
+#endif
+		iBytes = strlen(getMPtr(iStart));
+		// Shrink to fit
+		SetSize(iStart + iBytes + 1);
+#endif
+	}
 
 	StdStrBuf copyPart(size_t iStart, size_t inSize) const
 	{
@@ -658,6 +710,11 @@ public:
 	void CompileFunc(class StdCompiler *pComp, int iRawType = 0);
 };
 
-// Wrappers
-extern StdStrBuf FormatString(const char *szFmt, ...) GNUC_FORMAT_ATTRIBUTE;
-extern StdStrBuf FormatStringV(const char *szFmt, va_list args);
+// Wrapper
+template<class ...Args>
+StdStrBuf FormatString(const char *const fmt, Args &&...args)
+{
+	StdStrBuf s;
+	s.Format(fmt, std::forward<Args>(args)...);
+	return s;
+}

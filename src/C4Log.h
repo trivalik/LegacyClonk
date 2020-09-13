@@ -21,10 +21,17 @@
 #include <StdBuf.h>
 #include <StdCompiler.h>
 
+#include <utility>
+
 bool OpenLog();
 bool CloseLog();
 bool DebugLog(const char *strMessage);
-bool DebugLogF(const char *strMessage ...) GNUC_FORMAT_ATTRIBUTE;
+
+template<class ...Args>
+bool DebugLogF(const char *const fmt, Args &&...args)
+{
+	return DebugLog(FormatString(fmt, std::forward<Args>(args)...).getData());
+}
 
 bool LogFatal(const char *szMessage); // log message and store it as a fatal error
 void ResetFatalError();               // clear any fatal error message

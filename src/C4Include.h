@@ -82,6 +82,7 @@
 #include <StdFacet.h>
 #include <StdFile.h>
 #include <StdFont.h>
+#include "StdLogF.h"
 #include <StdMarkup.h>
 #include <StdPNG.h>
 #include <StdResStr2.h>
@@ -104,4 +105,3 @@
 #include <vector>
 #include <algorithm>
 #include <assert.h>
-#include <stdarg.h>

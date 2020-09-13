@@ -20,6 +20,10 @@
 
 #include "C4Constants.h"
 #include "C4Group.h"
+#include "StdBuf.h"
+
+#include <cstdio>
+#include <utility>
 
 const int C4UP_MaxUpGrpCnt = 50;
 
@@ -66,7 +70,17 @@ protected:
 	bool MkUp(C4Group *pGrp1, C4Group *pGrp2, C4GroupEx *pUpGr, bool *fModified);
 
 	CStdFile Log;
-	void WriteLog(const char *strMsg, ...) GNUC_FORMAT_ATTRIBUTE_O;
+
+	template<class ...Args>
+	void WriteLog(const char *const fmt, Args &&...args)
+	{
+		const auto msg = FormatString(fmt, std::forward<Args>(args)...);
+		Log.WriteString(msg.getData());
+		Log.Flush();
+#ifdef C4GROUP
+		std::fputs(msg.getData(), stdout);
+#endif
+	}
 };
 
 bool C4Group_ApplyUpdate(C4Group &hGroup);

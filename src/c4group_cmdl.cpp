@@ -38,9 +38,13 @@
 #include <C4Group.h>
 #include <C4Version.h>
 #include <C4Update.h>
+#include "StdLogF.h"
 
 #include <shellapi.h>
 #include <conio.h>
+
+#include <cstdio>
+#include <utility>
 
 int globalArgC;
 char **globalArgV;
@@ -60,15 +64,12 @@ C4Config *GetCfg() { return &Config; }
 
 #ifdef _WIN32
 #ifdef _DEBUG
-int dbg_printf(const char *strMessage, ...)
+template<class ...Args>
+int dbg_printf(const char *const fmt, Args &&...args)
 {
-	va_list args; va_start(args, strMessage);
-	// Compose formatted message
-	StdStrBuf Buf;
-	Buf.FormatV(strMessage, args);
-	// Log
-	OutputDebugString(Buf.getData());
-	return printf(Buf.getData());
+	const auto msg = FormatString(fmt, std::forward<Args>(args)...);
+	OutputDebugString(msg.getData());
+	return std::fputs(msg.getData(), stdout);
 }
 #define printf dbg_printf
 #endif
@@ -423,16 +424,6 @@ bool Log(const char *msg)
 }
 
 bool LogFatal(const char *msg) { return Log(msg); }
-
-bool LogF(const char *strMessage, ...)
-{
-	va_list args; va_start(args, strMessage);
-	// Compose formatted message
-	StdStrBuf Buf;
-	Buf.FormatV(strMessage, args);
-	// Log
-	return Log(Buf.getData());
-}
 
 void StdCompilerWarnCallback(void *pData, const char *szPosition, const char *szError)
 {

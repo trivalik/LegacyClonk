@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include "StdBuf.h"
 #include "StdScheduler.h"
 #include "StdSync.h"
 
 #include <any>
+#include <utility>
 
 // Event types
 enum C4InteractiveEventType
@@ -90,9 +92,21 @@ public:
 
 	// special events
 	bool ThreadLog(const char *szMessage);
-	bool ThreadLogF(const char *szMessage, ...) GNUC_FORMAT_ATTRIBUTE_O;
 	bool ThreadLogS(const char *szMessage);
-	bool ThreadLogSF(const char *szMessage, ...) GNUC_FORMAT_ATTRIBUTE_O;
+
+	template<class ...Args>
+	bool ThreadLogF(const char *const fmt, Args &&...args)
+	{
+		// Format message and send to main thread
+		return PushEvent(Ev_Log, FormatString(fmt, std::forward<Args>(args)...));
+	}
+
+	template<class ...Args>
+	bool ThreadLogSF(const char *const fmt, Args &&...args)
+	{
+		// Format message and send to main thread
+		return PushEvent(Ev_LogSilent, FormatString(fmt, std::forward<Args>(args)...));
+	}
 
 	// event handlers
 	void SetCallback(C4InteractiveEventType eEvent, Callback *pnNetworkCallback)

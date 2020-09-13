@@ -37,6 +37,8 @@
 #include "StdResStr2.h"
 #include "StdWindow.h"
 
+#include <utility>
+
 class C4GroupSet;
 
 template<typename T>
@@ -2419,7 +2421,12 @@ protected:
 
 	// add text to the info window
 	void AddLine(const char *szText);
-	void AddLineFmt(const char *szFmtString, ...) GNUC_FORMAT_ATTRIBUTE_O;
+
+	template<class ...Args>
+	void AddLineFmt(const char *const fmt, Args &&...args)
+	{
+		AddLine(FormatString(fmt, std::forward<Args>(args)...).getData());
+	}
 
 	void BeginUpdateText(); // backup scrolling and clear text window
 	void EndUpdateText();   // restore scroll pos; set last update time
