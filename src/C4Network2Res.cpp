@@ -447,8 +447,6 @@ bool C4Network2Res::SetByCore(const C4Network2ResCore &nCore, bool fSilent, cons
 	const char *szFilenameC4 = GetC4Filename(szFilename);
 	if (szFilenameOnly != szFilenameC4)
 	{
-		sFilename.Copy(szFilename, SLen(szFilename) - SLen(szFilenameC4));
-		sFilename.Append(szFilenameOnly);
 		if (SetByCore(nCore, fSilent, szFilenameOnly, Config.Network.MaxResSearchRecursion)) return true;
 	}
 	// if it could still not be set, try within all folders of root (ignoring special folders), and try as file outside the folder
