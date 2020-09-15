@@ -173,7 +173,7 @@ bool C4Game::OpenScenario()
 	// Check minimum engine version
 	if (CompareVersion(C4S.Head.C4XVer[0], C4S.Head.C4XVer[1], C4S.Head.C4XVer[2], C4S.Head.C4XVer[3], C4S.Head.C4XVer[4]) > 0)
 	{
-		LogFatal(FormatString(LoadResStr("IDS_PRC_NOREQC4X"), C4S.Head.C4XVer[0], C4S.Head.C4XVer[1], C4S.Head.C4XVer[2], C4S.Head.C4XVer[3], C4S.Head.C4XVer[4]).getData());
+		LogFatal(FormatString(LoadResStr("IDS_PRC_NOREQC4X"), C4S.Head.C4XVer[0], C4S.Head.C4XVer[1], C4S.Head.C4XVer[2], C4S.Head.C4XVer[3], C4S.Head.C4XVer[4]).c_str());
 		return false;
 	}
 
@@ -290,7 +290,7 @@ bool C4Game::PreInit()
 	// System
 	if (!InitSystem())
 	{
-		LogFatal(FormatString("%s(InitSystem)", LoadResStr("IDS_PRC_FAIL")).getData()); return false;
+		LogFatal(FormatString("%s(InitSystem)", LoadResStr("IDS_PRC_FAIL")).c_str()); return false;
 	}
 
 	// Startup message board
@@ -1599,7 +1599,7 @@ bool C4Game::DropFile(const char *szFilename, int32_t iX, int32_t iY)
 				return DropDef(c_id, iX, iY);
 			}
 		// Failure
-		Console.Out(FormatString(LoadResStr("IDS_CNS_DROPNODEF"), GetFilename(szFilename)).getData());
+		Console.Out(FormatString(LoadResStr("IDS_CNS_DROPNODEF"), GetFilename(szFilename)).c_str());
 		return false;
 	}
 	return false;
@@ -1616,7 +1616,7 @@ bool C4Game::DropDef(C4ID id, int32_t iX, int32_t iY)
 	else
 	{
 		// Failure
-		Console.Out(FormatString(LoadResStr("IDS_CNS_DROPNODEF"), C4IdText(id)).getData());
+		Console.Out(FormatString(LoadResStr("IDS_CNS_DROPNODEF"), C4IdText(id)).c_str());
 	}
 	return false;
 }
@@ -1807,7 +1807,7 @@ void C4Game::DrawCursors(C4FacetEx &cgo, int32_t iPlayer)
 							int32_t texthgt = Game.GraphicsResource.FontRegular.GetLineHeight();
 							if (cursor->Info->Rank > 0)
 							{
-								text = FormatString("%s|%s", cursor->Info->sRankName.getData(), cursor->GetName()).getData();
+								text = FormatString("%s|%s", cursor->Info->sRankName.getData(), cursor->GetName());
 								texthgt += texthgt;
 							}
 
@@ -1913,7 +1913,7 @@ void C4Game::CompileFunc(StdCompiler *pComp, CompileSettings comp)
 		// Primary player ininitialization (also setting ID) is done by player info list
 		// Won't work this way for binary mode!
 		for (C4Player *pPlr = Players.First; pPlr; pPlr = pPlr->Next)
-			pComp->Value(mkNamingAdapt(*pPlr, FormatString("Player%d", pPlr->ID).getData()));
+			pComp->Value(mkNamingAdapt(*pPlr, FormatString("Player%d", pPlr->ID).c_str()));
 	}
 }
 
@@ -2757,12 +2757,12 @@ bool C4Game::InitPlayers()
 		{
 			if (Application.isFullScreen)
 			{
-				LogFatal(FormatString(LoadResStr("IDS_PRC_TOOMANYPLRS"), Game.Parameters.MaxPlayers).getData());
+				LogFatal(FormatString(LoadResStr("IDS_PRC_TOOMANYPLRS"), Game.Parameters.MaxPlayers).c_str());
 				return false;
 			}
 			else
 			{
-				Console.Message(FormatString(LoadResStr("IDS_PRC_TOOMANYPLRS"), Game.Parameters.MaxPlayers).getData());
+				Console.Message(FormatString(LoadResStr("IDS_PRC_TOOMANYPLRS"), Game.Parameters.MaxPlayers).c_str());
 			}
 		}
 	}
@@ -3211,13 +3211,13 @@ bool C4Game::LoadScenarioComponents()
 		if (SLen(SctName) > C4MaxName || !*SctName)
 		{
 			DebugLog("invalid section name");
-			LogFatal(FormatString(LoadResStr("IDS_ERR_SCENSECTION"), fn).getData()); return false;
+			LogFatal(FormatString(LoadResStr("IDS_ERR_SCENSECTION"), fn).c_str()); return false;
 		}
 		// load this section into temp store
 		C4ScenarioSection *pSection = new C4ScenarioSection(SctName);
 		if (!pSection->ScenarioLoad(fn))
 		{
-			LogFatal(FormatString(LoadResStr("IDS_ERR_SCENSECTION"), fn).getData()); return false;
+			LogFatal(FormatString(LoadResStr("IDS_ERR_SCENSECTION"), fn).c_str()); return false;
 		}
 	}
 
@@ -3691,17 +3691,17 @@ bool C4Game::InitNetworkFromAddress(const char *szAddress)
 		!RefClient.SetServer(szAddress) ||
 		!RefClient.QueryReferences())
 	{
-		LogFatal(FormatString(strRefQueryFailed.getData(), RefClient.GetError()).getData()); return false;
+		LogFatal(FormatString(strRefQueryFailed.getData(), RefClient.GetError()).c_str()); return false;
 	}
 	// We have to wait for the answer
-	StdStrBuf Message = FormatString(LoadResStr("IDS_NET_REFQUERY_QUERYMSG"), szAddress);
-	Log(Message.getData());
+	const auto Message = FormatString(LoadResStr("IDS_NET_REFQUERY_QUERYMSG"), szAddress);
+	Log(Message.c_str());
 	// Set up wait dialog
 	C4GUI::MessageDialog *pDlg = nullptr;
 	if (Game.pGUI && !Console.Active)
 	{
 		// create & show
-		pDlg = new C4GUI::MessageDialog(Message.getData(), LoadResStr("IDS_NET_REFQUERY_QUERYTITLE"),
+		pDlg = new C4GUI::MessageDialog(Message.c_str(), LoadResStr("IDS_NET_REFQUERY_QUERYTITLE"),
 			C4GUI::MessageDialog::btnAbort, C4GUI::Ico_NetWait, C4GUI::MessageDialog::dsMedium);
 		if (!pDlg || !pDlg->Show(Game.pGUI, true)) return false;
 	}
@@ -3724,13 +3724,13 @@ bool C4Game::InitNetworkFromAddress(const char *szAddress)
 	// Error?
 	if (!RefClient.isSuccess())
 	{
-		LogFatal(FormatString(strRefQueryFailed.getData(), RefClient.GetError()).getData()); return false;
+		LogFatal(FormatString(strRefQueryFailed.getData(), RefClient.GetError()).c_str()); return false;
 	}
 	// Get references
 	C4Network2Reference **ppRefs = nullptr; int32_t iRefCount;
 	if (!RefClient.GetReferences(ppRefs, iRefCount) || iRefCount <= 0)
 	{
-		LogFatal(FormatString(strRefQueryFailed.getData(), LoadResStr("IDS_NET_REFQUERY_NOREF")).getData()); return false;
+		LogFatal(FormatString(strRefQueryFailed.getData(), LoadResStr("IDS_NET_REFQUERY_NOREF")).c_str()); return false;
 	}
 	// Connect to first reference
 	bool fSuccess = InitNetworkFromReference(*ppRefs[0]);
@@ -3756,7 +3756,7 @@ bool C4Game::InitNetworkFromReference(const C4Network2Reference &Reference)
 	// Connect
 	if (Network.InitClient(Reference, false) != C4Network2::IR_Success)
 	{
-		LogFatal(FormatString(LoadResStr("IDS_NET_NOHOSTCON"), pHostData->getName()).getData());
+		LogFatal(FormatString(LoadResStr("IDS_NET_NOHOSTCON"), pHostData->getName()).c_str());
 		return false;
 	}
 	// init control
@@ -4262,7 +4262,7 @@ bool C4Game::SpeedUp()
 	// Use /fast to set to even higher speeds.
 	FrameSkip = BoundBy<int32_t>(FrameSkip + 1, 1, 50);
 	FullSpeed = true;
-	GraphicsSystem.FlashMessage(FormatString(LoadResStr("IDS_MSG_SPEED"), FrameSkip).getData());
+	GraphicsSystem.FlashMessage(FormatString(LoadResStr("IDS_MSG_SPEED"), FrameSkip).c_str());
 	return true;
 }
 
@@ -4271,7 +4271,7 @@ bool C4Game::SlowDown()
 	FrameSkip = BoundBy<int32_t>(FrameSkip - 1, 1, 50);
 	if (FrameSkip == 1)
 		FullSpeed = false;
-	GraphicsSystem.FlashMessage(FormatString(LoadResStr("IDS_MSG_SPEED"), FrameSkip).getData());
+	GraphicsSystem.FlashMessage(FormatString(LoadResStr("IDS_MSG_SPEED"), FrameSkip).c_str());
 	return true;
 }
 

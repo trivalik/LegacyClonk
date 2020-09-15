@@ -407,7 +407,7 @@ bool C4Playback::Open(C4Group &rGrp)
 		if (fLoadSequential)
 		{
 			if (!rGrp.FindEntry(C4CFN_CtrlRec)) return false;
-			if (!playbackFile.Open(FormatString("%s%c%s", rGrp.GetFullName().getData(), DirectorySeparator, C4CFN_CtrlRec).getData())) return false;
+			if (!playbackFile.Open(FormatString("%s%c%s", rGrp.GetFullName().getData(), DirectorySeparator, C4CFN_CtrlRec).c_str())) return false;
 			// forcing first chunk to be read; will call ReadBinary
 			currChunk = chunks.end();
 			if (!NextSequentialChunk())
@@ -721,7 +721,7 @@ void C4Playback::Strip()
 				case CID_Script:
 				case CID_EMMoveObj:
 				case CID_EMDrawTool:
-					if (fCheckCheat) Log(DecompileToBuf<StdCompilerINIWrite>(mkNamingAdapt(*pPkt, FormatString("Frame %d", i->Frame).getData())).getData());
+					if (fCheckCheat) Log(DecompileToBuf<StdCompilerINIWrite>(mkNamingAdapt(*pPkt, FormatString("Frame %d", i->Frame).c_str())).getData());
 					break;
 				// Strip sync check
 				case CID_SyncCheck:
@@ -754,7 +754,7 @@ void C4Playback::Strip()
 			case CID_Script:
 			case CID_EMMoveObj:
 			case CID_EMDrawTool:
-				if (fCheckCheat) Log(DecompileToBuf<StdCompilerINIWrite>(mkNamingAdapt(*i->pPkt, FormatString("Frame %d", i->Frame).getData())).getData());
+				if (fCheckCheat) Log(DecompileToBuf<StdCompilerINIWrite>(mkNamingAdapt(*i->pPkt, FormatString("Frame %d", i->Frame).c_str())).getData());
 				break;
 			// Strip some stuff
 			case CID_SyncCheck:
@@ -1002,7 +1002,7 @@ void C4Playback::Check(C4RecordChunkType eType, const uint8_t *pData, int iSize)
 		// unpack directly from head
 		if (currChunk->Type != eType)
 		{
-			DebugRecError(FormatString("Playback type %x, this type %x", currChunk->Type, eType).getData());
+			DebugRecError(FormatString("Playback type %x, this type %x", currChunk->Type, eType).c_str());
 			return;
 		}
 		PktInReplay = *currChunk->pDbg;
@@ -1019,12 +1019,12 @@ void C4Playback::Check(C4RecordChunkType eType, const uint8_t *pData, int iSize)
 	// replay packet is unpacked to PktInReplay now; check it
 	if (PktInReplay.getType() != eType)
 	{
-		DebugRecError(FormatString("Type %s != %s", GetRecordChunkTypeName(PktInReplay.getType()), GetRecordChunkTypeName(eType)).getData());
+		DebugRecError(FormatString("Type %s != %s", GetRecordChunkTypeName(PktInReplay.getType()), GetRecordChunkTypeName(eType)).c_str());
 		return;
 	}
 	if (PktInReplay.getSize() != iSize)
 	{
-		DebugRecError(FormatString("Size %d != %d", static_cast<int>(PktInReplay.getSize()), static_cast<int>(iSize)).getData());
+		DebugRecError(FormatString("Size %d != %d", static_cast<int>(PktInReplay.getSize()), static_cast<int>(iSize)).c_str());
 	}
 	// check packet data
 	if (memcmp(PktInReplay.getData(), pData, iSize))

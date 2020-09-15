@@ -46,7 +46,7 @@ StdStrBuf C4PacketCountdown::GetCountdownMsg(bool fInitialMsg) const
 {
 	const char *szCountdownMsg;
 	if (iCountdown < AlmostStartCountdownTime && !fInitialMsg) szCountdownMsg = "%d..."; else szCountdownMsg = LoadResStr("IDS_PRC_COUNTDOWN");
-	return FormatString(szCountdownMsg, static_cast<int>(iCountdown));
+	return StdStrBuf{FormatString(szCountdownMsg, static_cast<int>(iCountdown)).c_str()};
 }
 
 // ScenDescs
@@ -100,7 +100,7 @@ void ScenDesc::Update()
 	}
 	else
 	{
-		pDescBox->AddTextLine(FormatString(LoadResStr("IDS_MSG_SCENARIODESC_LOADING"), static_cast<int>(pRes->getPresentPercent())).getData(),
+		pDescBox->AddTextLine(FormatString(LoadResStr("IDS_MSG_SCENARIODESC_LOADING"), static_cast<int>(pRes->getPresentPercent())).c_str(),
 			&rTextFont, C4GUI_MessageFontClr, false, true);
 	}
 	pDescBox->UpdateHeight();
@@ -131,7 +131,7 @@ void ScenDesc::Deactivate()
 MainDlg::MainDlg(bool fHost)
 	: C4GUI::FullscreenDialog(!Game.Parameters.ScenarioTitle ?
 	LoadResStr("IDS_DLG_LOBBY") :
-		FormatString("%s - %s", Game.Parameters.ScenarioTitle.getData(), LoadResStr("IDS_DLG_LOBBY")).getData(),
+		FormatString("%s - %s", Game.Parameters.ScenarioTitle.getData(), LoadResStr("IDS_DLG_LOBBY")).c_str(),
 		Game.Parameters.ScenarioTitle.getData()),
 	pPlayerList(nullptr), pResList(nullptr), pChatBox(nullptr), pRightTabLbl(nullptr), pRightTab(nullptr),
 	pEdt(nullptr), btnRun(nullptr), btnPlayers(nullptr), btnResources(nullptr), btnTeams(nullptr), btnChat(nullptr)
@@ -499,7 +499,7 @@ C4GUI::Edit::InputResult MainDlg::OnChatInput(C4GUI::Edit *pEdt, bool fPasting, 
 				// player join - check filename
 				if (!ItemExists(plrPath.getData()))
 				{
-					LobbyError(FormatString(LoadResStr("IDS_MSG_CMD_JOINPLR_NOFILE"), plrPath.getData()).getData());
+					LobbyError(FormatString(LoadResStr("IDS_MSG_CMD_JOINPLR_NOFILE"), plrPath.getData()).c_str());
 				}
 				else
 					Game.Network.Players.JoinLocalPlayer(plrPath.getData(), true);
@@ -790,13 +790,13 @@ void MainDlg::OnClientAddPlayer(const char *szFilename, int32_t idClient)
 	// check client number
 	if (idClient != Game.Clients.getLocalID())
 	{
-		LobbyError(FormatString(LoadResStr("IDS_ERR_JOINPLR_NOLOCALCLIENT"), szFilename, idClient).getData());
+		LobbyError(FormatString(LoadResStr("IDS_ERR_JOINPLR_NOLOCALCLIENT"), szFilename, idClient).c_str());
 		return;
 	}
 	// player join - check filename
 	if (!ItemExists(szFilename))
 	{
-		LobbyError(FormatString(LoadResStr("IDS_ERR_JOINPLR_NOFILE"), szFilename).getData());
+		LobbyError(FormatString(LoadResStr("IDS_ERR_JOINPLR_NOFILE"), szFilename).c_str());
 		return;
 	}
 	// check countdown state

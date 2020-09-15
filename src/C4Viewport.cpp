@@ -99,7 +99,7 @@ LRESULT APIENTRY ViewportWinProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		break;
 
 	case WM_DESTROY:
-		StoreWindowPosition(hwnd, FormatString("Viewport%i", cvp->Player + 1).getData(), Config.GetSubkeyPath("Console"));
+		StoreWindowPosition(hwnd, FormatString("Viewport%i", cvp->Player + 1).c_str(), Config.GetSubkeyPath("Console"));
 		break;
 
 	case WM_CLOSE:
@@ -958,7 +958,7 @@ void C4Viewport::DrawMenu(C4FacetEx &cgo)
 	// Player eliminated
 	if (pPlr && pPlr->Eliminated)
 	{
-		Application.DDraw->TextOut(FormatString(LoadResStr(pPlr->Surrendered ? "IDS_PLR_SURRENDERED" : "IDS_PLR_ELIMINATED"), pPlr->GetName()).getData(),
+		Application.DDraw->TextOut(FormatString(LoadResStr(pPlr->Surrendered ? "IDS_PLR_SURRENDERED" : "IDS_PLR_ELIMINATED"), pPlr->GetName()).c_str(),
 			Game.GraphicsResource.FontRegular, 1.0, cgo.Surface, cgo.X + cgo.Wdt / 2, cgo.Y + 2 * cgo.Hgt / 3, 0xfaFF0000, ACenter);
 		return;
 	}
@@ -1346,7 +1346,7 @@ bool C4Viewport::Init(CStdWindow *pParent, CStdApp *pApp, int32_t iPlayer)
 	if (!pWindow->Init(pApp, (Player == NO_OWNER) ? LoadResStr("IDS_CNS_VIEWPORT") : Game.Players.Get(Player)->GetName(), pParent, false))
 		return false;
 	// Position and size
-	pWindow->RestorePosition(FormatString("Viewport%i", Player + 1).getData(), Config.GetSubkeyPath("Console"));
+	pWindow->RestorePosition(FormatString("Viewport%i", Player + 1).c_str(), Config.GetSubkeyPath("Console"));
 	// Updates
 	UpdateOutputSize();
 	// Disable player lock on unowned viewports

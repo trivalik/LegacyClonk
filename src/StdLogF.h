@@ -21,11 +21,11 @@
 template<class ...Args>
 bool LogF(const char *const fmt, Args &&...args)
 {
-	return Log(FormatString(fmt, std::forward<Args>(args)...).getData());
+	return Log(FormatString(fmt, std::forward<Args>(args)...).c_str());
 }
 
 template<class ...Args>
 bool LogSilentF(const char *const fmt, Args &&...args)
 {
-	return LogSilent(FormatString(fmt, std::forward<Args>(args)...).getData());
+	return LogSilent(FormatString(fmt, std::forward<Args>(args)...).c_str());
 }

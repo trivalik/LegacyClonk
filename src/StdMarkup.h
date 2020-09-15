@@ -35,7 +35,7 @@ public:
 
 	virtual void Apply(CBltTransform &rBltTrf, bool fDoClr, uint32_t &dwClr) = 0; // assign markup
 	virtual const char *TagName() = 0; // get character string for this tag
-	virtual StdStrBuf ToMarkup() { return FormatString("<%s>", TagName()); }
+	virtual StdStrBuf ToMarkup() { StdStrBuf s; s.Format("<%s>", TagName()); return s; }
 };
 
 // markup tag for italic text
@@ -59,7 +59,7 @@ public:
 
 	virtual void Apply(CBltTransform &rBltTrf, bool fDoClr, uint32_t &dwClr) override; // assign markup
 	virtual const char *TagName() override { return "c"; }
-	virtual StdStrBuf ToMarkup() override { return FormatString("<%s %x>", TagName(), dwClr); }
+	virtual StdStrBuf ToMarkup() override { StdStrBuf s; s.Format("<%s %x>", TagName(), dwClr); return s; }
 };
 
 // markup rendering functionality for text

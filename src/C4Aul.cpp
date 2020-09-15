@@ -304,7 +304,7 @@ C4AulScriptFunc *C4AulScript::GetSFuncWarn(const char *pIdtf, C4AulAccess AccNee
 	// get func?
 	C4AulScriptFunc *pFn = GetSFunc(pIdtf, AccNeeded, true);
 	if (!pFn)
-		Warn(FormatString("Error getting %s function '%s'", WarnStr, pIdtf).getData(), nullptr);
+		Warn(FormatString("Error getting %s function '%s'", WarnStr, pIdtf).c_str(), nullptr);
 	return pFn;
 }
 

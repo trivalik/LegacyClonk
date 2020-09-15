@@ -37,7 +37,7 @@ StdStrBuf TimeString(int iSeconds)
 {
 	int iHours = iSeconds / 3600; iSeconds -= 3600 * iHours;
 	int iMinutes = iSeconds / 60; iSeconds -= 60 * iMinutes;
-	return FormatString("%02d:%02d:%02d", iHours, iMinutes, iSeconds);
+	return StdStrBuf{FormatString("%02d:%02d:%02d", iHours, iMinutes, iSeconds).c_str()};
 }
 
 StdStrBuf DateString(int iTime)
@@ -46,12 +46,12 @@ StdStrBuf DateString(int iTime)
 	time_t tTime = iTime;
 	struct tm *pLocalTime;
 	pLocalTime = localtime(&tTime);
-	return FormatString("%02d.%02d.%d %02d:%02d",
+	return StdStrBuf{FormatString("%02d.%02d.%d %02d:%02d",
 		pLocalTime->tm_mday,
 		pLocalTime->tm_mon + 1,
 		pLocalTime->tm_year + 1900,
 		pLocalTime->tm_hour,
-		pLocalTime->tm_min);
+		pLocalTime->tm_min).c_str()};
 }
 
 // Fixme: This should use the already open group from C4GraphicsResource
@@ -219,9 +219,9 @@ void C4StartupPlrSelDlg::PlayerListItem::Load(const StdStrBuf &rsFilename)
 	// load player info
 	C4Group PlrGroup;
 	if (!PlrGroup.Open(rsFilename.getData()))
-		throw LoadError(FormatString("Error loading player file from %s: Error opening group: %s", rsFilename.getData(), PlrGroup.GetError()));
+		throw LoadError(StdStrBuf{FormatString("Error loading player file from %s: Error opening group: %s", rsFilename.getData(), PlrGroup.GetError()).c_str()});
 	if (!Core.Load(PlrGroup))
-		throw LoadError(FormatString("Error loading player file from %s: Core data invalid or missing (Group: %s)!", rsFilename.getData(), PlrGroup.GetError()));
+		throw LoadError(StdStrBuf{FormatString("Error loading player file from %s: Core data invalid or missing (Group: %s)!", rsFilename.getData(), PlrGroup.GetError()).c_str()});
 	// load icon
 	C4FacetExSurface fctIcon;
 	if (PlrGroup.FindEntry(C4CFN_BigIcon) && fctIcon.Load(PlrGroup, C4CFN_BigIcon))
@@ -237,7 +237,7 @@ void C4StartupPlrSelDlg::PlayerListItem::Load(const StdStrBuf &rsFilename)
 	LoadPortrait(PlrGroup, true);
 	// done loading
 	if (!PlrGroup.Close())
-		throw LoadError(FormatString("Error loading player file from %s: Error closing group: %s", rsFilename.getData(), PlrGroup.GetError()));
+		throw LoadError(StdStrBuf{FormatString("Error loading player file from %s: Error closing group: %s", rsFilename.getData(), PlrGroup.GetError()).c_str()});
 	// default name
 	if (!*Core.PrefName) SCopy(GetFilenameOnly(rsFilename.getData()), Core.PrefName, sizeof(Core.PrefName) - 1);
 	SetName(Core.PrefName);
@@ -292,10 +292,10 @@ void C4StartupPlrSelDlg::PlayerListItem::SetSelectionInfo(C4GUI::TextWindow *pSe
 {
 	// write info text for player
 	pSelectionInfo->ClearText(false);
-	pSelectionInfo->AddTextLine(FormatString("%s", Core.PrefName).getData(), &C4Startup::Get()->Graphics.BookFontCapt, ClrPlayerItem, false, false);
-	pSelectionInfo->AddTextLine(FormatString(LoadResStr("IDS_DESC_PLAYER"), static_cast<int>(Core.Score), static_cast<int>(Core.Rounds), static_cast<int>(Core.RoundsWon), static_cast<int>(Core.RoundsLost), TimeString(Core.TotalPlayingTime).getData(), Core.Comment).getData(), &C4Startup::Get()->Graphics.BookFont, ClrPlayerItem, false, false);
+	pSelectionInfo->AddTextLine(FormatString("%s", Core.PrefName).c_str(), &C4Startup::Get()->Graphics.BookFontCapt, ClrPlayerItem, false, false);
+	pSelectionInfo->AddTextLine(FormatString(LoadResStr("IDS_DESC_PLAYER"), static_cast<int>(Core.Score), static_cast<int>(Core.Rounds), static_cast<int>(Core.RoundsWon), static_cast<int>(Core.RoundsLost), TimeString(Core.TotalPlayingTime).getData(), Core.Comment).c_str(), &C4Startup::Get()->Graphics.BookFont, ClrPlayerItem, false, false);
 	if (Core.LastRound.Title[0])
-		pSelectionInfo->AddTextLine(FormatString(LoadResStr("IDS_DESC_LASTGAME"), Core.LastRound.Title.getData(), DateString(Core.LastRound.Date).getData(), TimeString(Core.LastRound.Duration).getData(), static_cast<int>(Core.LastRound.FinalScore)).getData(), &C4Startup::Get()->Graphics.BookFont, ClrPlayerItem, false, false);
+		pSelectionInfo->AddTextLine(FormatString(LoadResStr("IDS_DESC_LASTGAME"), Core.LastRound.Title.getData(), DateString(Core.LastRound.Date).getData(), TimeString(Core.LastRound.Duration).getData(), static_cast<int>(Core.LastRound.FinalScore)).c_str(), &C4Startup::Get()->Graphics.BookFont, ClrPlayerItem, false, false);
 	pSelectionInfo->UpdateHeight();
 }
 
@@ -305,8 +305,8 @@ StdStrBuf C4StartupPlrSelDlg::PlayerListItem::GetDelWarning()
 	sWarning.Format(LoadResStr("IDS_MSG_DELETEPLR"), Core.PrefName);
 	int32_t iPlrTime = Core.TotalPlayingTime;
 	if (iPlrTime > 60 * 60 * 10)
-		sWarning.Append(FormatString(LoadResStr("IDS_MSG_DELETEPLR_PLAYTIME"),
-			TimeString(iPlrTime).getData()).getData());
+		sWarning.AppendFormat(LoadResStr("IDS_MSG_DELETEPLR_PLAYTIME"),
+			TimeString(iPlrTime).getData());
 	return sWarning;
 }
 
@@ -344,11 +344,11 @@ void C4StartupPlrSelDlg::CrewListItem::Load(C4Group &rGrp, const StdStrBuf &rsFi
 	// load core
 	C4Group CrewGroup;
 	if (!CrewGroup.OpenAsChild(&rGrp, rsFilename.getData()))
-		throw LoadError(FormatString("Error loading crew file from %s in %s: Error opening group: %s",
-			rsFilename.getData(), rGrp.GetFullName().getData(), CrewGroup.GetError()));
+		throw LoadError(StdStrBuf{FormatString("Error loading crew file from %s in %s: Error opening group: %s",
+			rsFilename.getData(), rGrp.GetFullName().getData(), CrewGroup.GetError()).c_str()});
 	if (!Core.Load(CrewGroup))
-		throw LoadError(FormatString("Error loading crew file from %s: Core data invalid or missing (Group: %s)!",
-			CrewGroup.GetFullName().getData(), CrewGroup.GetError()));
+		throw LoadError(StdStrBuf{FormatString("Error loading crew file from %s: Core data invalid or missing (Group: %s)!",
+			CrewGroup.GetFullName().getData(), CrewGroup.GetError()).c_str()});
 	ListItem::SetName(Core.Name);
 	pCheck->SetChecked(!!Core.Participation);
 	// load rank as icon
@@ -467,7 +467,7 @@ void C4StartupPlrSelDlg::CrewListItem::SetSelectionInfo(C4GUI::TextWindow *pSele
 {
 	// write info text for player
 	pSelectionInfo->ClearText(false);
-	pSelectionInfo->AddTextLine(FormatString("%s %s", Core.sRankName.getData(), Core.Name).getData(), &C4Startup::Get()->Graphics.BookFontCapt, ClrPlayerItem, false, false);
+	pSelectionInfo->AddTextLine(FormatString("%s %s", Core.sRankName.getData(), Core.Name).c_str(), &C4Startup::Get()->Graphics.BookFontCapt, ClrPlayerItem, false, false);
 	StdStrBuf sPromo;
 	int32_t iNextRankExp; StdStrBuf sNextRankName;
 	if (Core.GetNextRankInfo(Game.Rank, &iNextRankExp, &sNextRankName))
@@ -476,7 +476,7 @@ void C4StartupPlrSelDlg::CrewListItem::SetSelectionInfo(C4GUI::TextWindow *pSele
 		sPromo.Copy(LoadResStr("IDS_DESC_NOPROMO"));
 	pSelectionInfo->AddTextLine(FormatString(LoadResStr("IDS_DESC_OBJECT"),
 		Core.TypeName, Core.Experience, Core.Rounds, Core.DeathCount,
-		sPromo.getData(), TimeString(Core.TotalPlayingTime).getData(), DateString(Core.Birthday).getData()).getData(),
+		sPromo.getData(), TimeString(Core.TotalPlayingTime).getData(), DateString(Core.Birthday).getData()).c_str(),
 		&C4Startup::Get()->Graphics.BookFont, ClrPlayerItem, false, false);
 	pSelectionInfo->AddTextLine(GetPhysicalTextLine(Core.Physical.Energy, "IDS_DESC_ENERGY").getData(),
 		&C4Startup::Get()->Graphics.BookFont, ClrPlayerItem, false, false);
@@ -512,7 +512,7 @@ StdStrBuf C4StartupPlrSelDlg::CrewListItem::GetDelWarning()
 		Core.sRankName.getData(), Core.Name, GetFilename().getData());
 	int32_t iPlrTime = Core.TotalPlayingTime;
 	if (iPlrTime > 60 * 60 * 10)
-		sWarning.Append(static_cast<const StdStrBuf &>(FormatString(LoadResStr("IDS_MSG_DELETECLONK_PLAYTIME"), TimeString(iPlrTime).getData())));
+		sWarning.AppendFormat(LoadResStr("IDS_MSG_DELETECLONK_PLAYTIME"), TimeString(iPlrTime).getData());
 	return sWarning;
 }
 
@@ -732,7 +732,7 @@ void C4StartupPlrSelDlg::UpdatePlayerList()
 
 	case PSDM_Crew:
 	{
-		SetTitle(FormatString("%s %s", LoadResStrNoAmp("IDS_CTL_CREW"), CurrPlayer.Core.PrefName).getData());
+		SetTitle(FormatString("%s %s", LoadResStrNoAmp("IDS_CTL_CREW"), CurrPlayer.Core.PrefName).c_str());
 		// crew mode: Insert complete crew of player (2do: sort)
 		bool fSucc; char szFn[_MAX_PATH + 1];
 		for (fSucc = CurrPlayer.Grp.FindEntry(C4CFN_ObjectInfoFiles, szFn); fSucc; fSucc = CurrPlayer.Grp.FindNextEntry(C4CFN_ObjectInfoFiles, szFn, nullptr, nullptr, true))
@@ -780,12 +780,12 @@ void C4StartupPlrSelDlg::UpdateSelection()
 	if (pSel && pSel->IsActivated())
 	{
 		btnActivatePlr->SetText(LoadResStr("IDS_BTN_DEACTIVATE"));
-		btnActivatePlr->SetToolTip(FormatString(LoadResStr("IDS_MSG_NOPARTICIPATE_DESC"), pSel->GetName()).getData());
+		btnActivatePlr->SetToolTip(FormatString(LoadResStr("IDS_MSG_NOPARTICIPATE_DESC"), pSel->GetName()).c_str());
 	}
 	else
 	{
 		btnActivatePlr->SetText(LoadResStr("IDS_BTN_ACTIVATE"));
-		btnActivatePlr->SetToolTip(FormatString(LoadResStr("IDS_MSG_PARTICIPATE_DESC"), pSel ? pSel->GetName() : "").getData());
+		btnActivatePlr->SetToolTip(FormatString(LoadResStr("IDS_MSG_PARTICIPATE_DESC"), pSel ? pSel->GetName() : "").c_str());
 	}
 	// no item selected?
 	if (!pSel)
@@ -833,7 +833,7 @@ void C4StartupPlrSelDlg::UpdateActivatedPlayers()
 			else
 			{
 				pPlrItem->SetActivated(false);
-				GetScreen()->ShowMessage(FormatString(LoadResStr("IDS_ERR_PLAYERSTOOLONG"), pPlrItem->GetName()).getData(), LoadResStr("IDS_ERR_TITLE"), C4GUI::Ico_Error);
+				GetScreen()->ShowMessage(FormatString(LoadResStr("IDS_ERR_PLAYERSTOOLONG"), pPlrItem->GetName()).c_str(), LoadResStr("IDS_ERR_TITLE"), C4GUI::Ico_Error);
 			}
 		}
 }
@@ -904,7 +904,7 @@ bool C4StartupPlrSelDlg::CheckPlayerName(const StdStrBuf &Playername, StdStrBuf 
 	if (!pPrevFilename || !ItemIdentical(Path.getData(), pPrevFilename->getData())) if (ItemExists(Path.getData()))
 	{
 		C4GUI::Screen::GetScreenS()->ShowMessage(FormatString(LoadResStr("IDS_ERR_PLRNAME_TAKEN"),
-			Playername.getData()).getData(), "", C4GUI::Ico_Error);
+			Playername.getData()).c_str(), "", C4GUI::Ico_Error);
 		return false;
 	}
 	Filename.Take(Path);
@@ -940,11 +940,11 @@ void C4StartupPlrSelDlg::SetCrewMode(PlayerListItem *pSel)
 	if (!CurrPlayer.Grp.Open(pSel->GetFilename().getData())) return;
 	if (!CurrPlayer.Grp.FindEntry(C4CFN_ObjectInfoFiles))
 	{
-		StdStrBuf strCrew(FormatString("%s %s", LoadResStrNoAmp("IDS_CTL_CREW"), CurrPlayer.Core.PrefName));
+		const auto strCrew = FormatString("%s %s", LoadResStrNoAmp("IDS_CTL_CREW"), CurrPlayer.Core.PrefName);
 		// player has no crew!
 		GetScreen()->ShowMessage(FormatString(LoadResStr("IDS_ERR_PLRNOCREW"),
-			CurrPlayer.Core.PrefName).getData(),
-			strCrew.getData(), C4GUI::Ico_Player);
+			CurrPlayer.Core.PrefName).c_str(),
+			strCrew.c_str(), C4GUI::Ico_Player);
 		return;
 	}
 	C4GUI::GUISound("DoorOpen");
@@ -1147,7 +1147,7 @@ C4StartupPlrPropertiesDlg::C4StartupPlrPropertiesDlg(C4StartupPlrSelDlg::PlayerL
 	SetFocus(pNameEdit, false);
 	caMain.ExpandTop(-BetweenElementDist);
 	// place color label
-	AddElement(new C4GUI::Label(FormatString("%s:", LoadResStr("IDS_CTL_COLOR")).getData(), caMain.GetFromTop(pSmallFont->GetLineHeight()), ALeft, C4StartupFontClr, pSmallFont, false));
+	AddElement(new C4GUI::Label(FormatString("%s:", LoadResStr("IDS_CTL_COLOR")).c_str(), caMain.GetFromTop(pSmallFont->GetLineHeight()), ALeft, C4StartupFontClr, pSmallFont, false));
 	// place color controls
 	C4GUI::ComponentAligner caColorArea(caMain.GetFromTop(C4GUI::ArrowButton::GetDefaultHeight()), 2, 0);
 	caColorArea.ExpandLeft(2);
@@ -1183,7 +1183,7 @@ C4StartupPlrPropertiesDlg::C4StartupPlrPropertiesDlg(C4StartupPlrSelDlg::PlayerL
 	int32_t iControlPicSize = C4GUI::ArrowButton::GetDefaultHeight();
 	C4GUI::ComponentAligner caControlArea(caMain.GetFromTop(iControlPicSize + pSmallFont->GetLineHeight() + BetweenElementDist), 0, 0, false);
 	C4GUI::ComponentAligner caPictureArea(caControlArea.GetFromRight(iControlPicSize), 0, 0, false);
-	AddElement(new C4GUI::Label(FormatString("%s:", LoadResStr("IDS_CTL_CONTROL")).getData(), caControlArea.GetFromTop(pSmallFont->GetLineHeight()), ALeft, C4StartupFontClr, pSmallFont, false));
+	AddElement(new C4GUI::Label(FormatString("%s:", LoadResStr("IDS_CTL_CONTROL")).c_str(), caControlArea.GetFromTop(pSmallFont->GetLineHeight()), ALeft, C4StartupFontClr, pSmallFont, false));
 	AddElement(new C4GUI::Label(LoadResStr("IDS_CTL_PICTURE"), caPictureArea.GetFromTop(pSmallFont->GetLineHeight()), ACenter, C4StartupFontClr, pSmallFont, false));
 	caControlArea.ExpandTop(-BetweenElementDist); caPictureArea.ExpandTop(-BetweenElementDist);
 	// place control controls
@@ -1208,7 +1208,7 @@ C4StartupPlrPropertiesDlg::C4StartupPlrPropertiesDlg(C4StartupPlrSelDlg::PlayerL
 	UpdatePlayerColor(true);
 	caMain.ExpandTop(-BetweenElementDist);
 	// place AutoStopControl label
-	AddElement(new C4GUI::Label(FormatString("%s:", LoadResStr("IDS_DLG_MOVEMENT")).getData(), caMain.GetFromTop(pSmallFont->GetLineHeight()), ALeft, C4StartupFontClr, pSmallFont, false));
+	AddElement(new C4GUI::Label(FormatString("%s:", LoadResStr("IDS_DLG_MOVEMENT")).c_str(), caMain.GetFromTop(pSmallFont->GetLineHeight()), ALeft, C4StartupFontClr, pSmallFont, false));
 	// place AutoStopControl controls
 	C4Facet &rfctMovementIcons = C4Startup::Get()->Graphics.fctPlrCtrlType;
 	C4GUI::ComponentAligner caMovement(caMain.GetFromTop(rfctMovementIcons.Hgt), 5, 0);
@@ -1499,7 +1499,7 @@ void C4StartupPlrPropertiesDlg::SetNewPicture(const char *szFromFilename, bool f
 		if (!fSucc)
 		{
 			// error!
-			GetScreen()->ShowErrorMessage(FormatString(LoadResStr("IDS_PRC_NOGFXFILE"), szFromFilename, SrcGrp.GetError()).getData());
+			GetScreen()->ShowErrorMessage(FormatString(LoadResStr("IDS_PRC_NOGFXFILE"), szFromFilename, SrcGrp.GetError()).c_str());
 		}
 	}
 	// update icon

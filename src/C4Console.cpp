@@ -681,10 +681,10 @@ bool C4Console::UpdateStatusBars()
 		FrameCounter = Game.FrameCounter;
 		const auto &text = FormatString("Frame: %i", FrameCounter);
 #ifdef _WIN32
-		SetDlgItemText(hWindow, IDC_STATICFRAME, text.getData());
+		SetDlgItemText(hWindow, IDC_STATICFRAME, text.c_str());
 		UpdateWindow(GetDlgItem(hWindow, IDC_STATICFRAME));
 #elif WITH_DEVELOPER_MODE
-		gtk_label_set_label(GTK_LABEL(lblFrame), text.getData());
+		gtk_label_set_label(GTK_LABEL(lblFrame), text.c_str());
 #endif // WITH_DEVELOPER_MODE / _WIN32
 	}
 	// Script counter
@@ -693,10 +693,10 @@ bool C4Console::UpdateStatusBars()
 		ScriptCounter = Game.Script.Counter;
 		const auto &text = FormatString("Script: %i", ScriptCounter);
 #ifdef _WIN32
-		SetDlgItemText(hWindow, IDC_STATICSCRIPT, text.getData());
+		SetDlgItemText(hWindow, IDC_STATICSCRIPT, text.c_str());
 		UpdateWindow(GetDlgItem(hWindow, IDC_STATICSCRIPT));
 #elif WITH_DEVELOPER_MODE
-		gtk_label_set_label(GTK_LABEL(lblScript), text.getData());
+		gtk_label_set_label(GTK_LABEL(lblScript), text.c_str());
 #endif // WITH_DEVELOPER_MODE / _WIN32
 	}
 	// Time & FPS
@@ -706,10 +706,10 @@ bool C4Console::UpdateStatusBars()
 		FPS = Game.FPS;
 		const auto &text = FormatString("%02d:%02d:%02d (%i FPS)", Time / 3600, (Time % 3600) / 60, Time % 60, FPS);
 #ifdef _WIN32
-		SetDlgItemText(hWindow, IDC_STATICTIME, text.getData());
+		SetDlgItemText(hWindow, IDC_STATICTIME, text.c_str());
 		UpdateWindow(GetDlgItem(hWindow, IDC_STATICTIME));
 #elif WITH_DEVELOPER_MODE
-		gtk_label_set_label(GTK_LABEL(lblTime), text.getData());
+		gtk_label_set_label(GTK_LABEL(lblTime), text.c_str());
 #endif // WITH_DEVELOPER_MODE
 	}
 	return true;
@@ -749,7 +749,7 @@ bool C4Console::SaveGame(bool fSaveGame)
 	// Can't save to child groups
 	if (Game.ScenarioFile.GetMother())
 	{
-		Message(FormatString(LoadResStr("IDS_CNS_NOCHILDSAVE"), GetFilename(Game.ScenarioFile.GetName())).getData());
+		Message(FormatString(LoadResStr("IDS_CNS_NOCHILDSAVE"), GetFilename(Game.ScenarioFile.GetName())).c_str());
 		return false;
 	}
 
@@ -840,7 +840,7 @@ bool C4Console::FileSaveAs(bool fSaveGame)
 	// Failure message
 	if (!fOkay)
 	{
-		Message(FormatString(LoadResStr("IDS_CNS_SAVEASERROR"), Game.ScenarioFilename).getData());
+		Message(FormatString(LoadResStr("IDS_CNS_SAVEASERROR"), Game.ScenarioFilename).c_str());
 		return false;
 	}
 	// Save game
@@ -1084,7 +1084,7 @@ bool C4Console::FileSelect(char *sFilename, int iSize, const char *szFilter, uin
 
 			if ((dwFlags & OFN_FILEMUSTEXIST) && !g_file_test(filename, G_FILE_TEST_IS_REGULAR))
 			{
-				Message(FormatString("File \"%s\" does not exist", filename).getData(), false);
+				Message(FormatString("File \"%s\" does not exist", filename).c_str(), false);
 				error = true;
 			}
 
@@ -1549,9 +1549,9 @@ void C4Console::UpdateNetMenu()
 	// Host
 	const auto &text = FormatString(LoadResStr("IDS_MNU_NETHOST"), Game.Clients.getLocalName(), Game.Clients.getLocalID());
 #ifdef _WIN32
-	AddMenuItem(hMenu, IDM_NET_CLIENT1 + Game.Clients.getLocalID(), text.getData());
+	AddMenuItem(hMenu, IDM_NET_CLIENT1 + Game.Clients.getLocalID(), text.c_str());
 #elif WITH_DEVELOPER_MODE
-	GtkWidget *item = gtk_menu_item_new_with_label(text.getData());
+	GtkWidget *item = gtk_menu_item_new_with_label(text.c_str());
 	gtk_menu_shell_append(GTK_MENU_SHELL(menuNet), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(OnNetClient), GINT_TO_POINTER(Game.Clients.getLocalID()));
 #endif
@@ -1561,9 +1561,9 @@ void C4Console::UpdateNetMenu()
 		const auto &text = FormatString(LoadResStr(pClient->isActivated() ? "IDS_MNU_NETCLIENT" : "IDS_MNU_NETCLIENTDE"),
 			pClient->getName(), pClient->getID());
 #ifdef _WIN32
-		AddMenuItem(hMenu, IDM_NET_CLIENT1 + pClient->getID(), text.getData());
+		AddMenuItem(hMenu, IDM_NET_CLIENT1 + pClient->getID(), text.c_str());
 #elif WITH_DEVELOPER_MODE
-		item = gtk_menu_item_new_with_label(text.getData());
+		item = gtk_menu_item_new_with_label(text.c_str());
 		gtk_menu_shell_append(GTK_MENU_SHELL(menuNet), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(OnNetClient), GINT_TO_POINTER(pClient->getID()));
 #endif

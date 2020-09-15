@@ -652,9 +652,9 @@ C4AulTokenType C4AulParseState::GetNextToken(char *pToken, std::intptr_t *pInt, 
 				// unrecognized char
 				// show appropriate error message
 				if (C >= '!' && C <= '~')
-					throw C4AulParseError(this, FormatString("unexpected character '%c' found", C).getData());
+					throw C4AulParseError(this, FormatString("unexpected character '%c' found", C).c_str());
 				else
-					throw C4AulParseError(this, FormatString("unexpected character 0x%x found", C).getData());
+					throw C4AulParseError(this, FormatString("unexpected character 0x%x found", C).c_str());
 			}
 			break;
 		}
@@ -1370,13 +1370,13 @@ void C4AulParseState::Match(C4AulTokenType RefTokenType, const char *Message)
 	if (TokenType != RefTokenType)
 		// error
 		throw C4AulParseError(this, Message ? Message :
-			FormatString("%s expected, but found %s", GetTokenName(RefTokenType), GetTokenName(TokenType)).getData());
+			FormatString("%s expected, but found %s", GetTokenName(RefTokenType), GetTokenName(TokenType)).c_str());
 	Shift();
 }
 
 void C4AulParseState::UnexpectedToken(const char *Expected)
 {
-	throw C4AulParseError(this, FormatString("%s expected, but found %s", Expected, GetTokenName(TokenType)).getData());
+	throw C4AulParseError(this, FormatString("%s expected, but found %s", Expected, GetTokenName(TokenType)).c_str());
 }
 
 void C4AulScript::ParseFn(C4AulScriptFunc *Fn, bool fExprOnly)
@@ -1717,7 +1717,7 @@ void C4AulParseState::Parse_FuncHead()
 	SCopy(Idtf, FuncIdtf);
 	Shift();
 	if (TokenType != ATT_COLON)
-		throw C4AulParseError(this, FormatString("declaration expected, but found identifier '%s'", FuncIdtf).getData());
+		throw C4AulParseError(this, FormatString("declaration expected, but found identifier '%s'", FuncIdtf).c_str());
 	// create script fn
 	if (Acc == AA_GLOBAL)
 	{
@@ -2320,7 +2320,7 @@ int C4AulParseState::Parse_Params(int iMaxCnt, const char *sWarn, C4AulFunc *pFu
 	while (!fDone);
 	// too many parameters?
 	if (sWarn && size > iMaxCnt && Type == PARSER)
-		Warn(FormatString("%s: passing %d parameters, but only %d are used", sWarn, size, iMaxCnt).getData(), nullptr);
+		Warn(FormatString("%s: passing %d parameters, but only %d are used", sWarn, size, iMaxCnt).c_str(), nullptr);
 	// Balance stack
 	if (size != iMaxCnt)
 		AddBCC(AB_STACK, iMaxCnt - size);
@@ -2835,7 +2835,7 @@ void C4AulParseState::Parse_Expression(int iParentPrio)
 						// otherwise: fall through to error
 					default:
 					{
-						throw C4AulParseError(this, FormatString("internal error: constant %s has undefined type %d", Idtf, val.GetType()).getData());
+						throw C4AulParseError(this, FormatString("internal error: constant %s has undefined type %d", Idtf, val.GetType()).c_str());
 					}
 					}
 					Shift();
@@ -3012,7 +3012,7 @@ void C4AulParseState::Parse_Expression2(int iParentPrio)
 				default:
 					// Stuff like foo(42+,1) used to silently work
 					Strict2Error(FormatString("Operator %s: Second expression expected, but %s found",
-						C4ScriptOpMap[OpID].Identifier, GetTokenName(TokenType)).getData(), nullptr);
+						C4ScriptOpMap[OpID].Identifier, GetTokenName(TokenType)).c_str(), nullptr);
 					AddBCC(AB_INT, 0);
 					break;
 				}
@@ -3145,7 +3145,7 @@ bool C4AulParseState::Parse_Expression3()
 					// search func
 					if (!(pFunc = pDef->Script.GetSFunc(Idtf)))
 					{
-						throw C4AulParseError(this, FormatString("direct object call: function %s::%s not found", C4IdText(idNS), Idtf).getData());
+						throw C4AulParseError(this, FormatString("direct object call: function %s::%s not found", C4IdText(idNS), Idtf).c_str());
 					}
 
 					if (pFunc->SFunc() && pFunc->SFunc()->Access < pDef->Script.GetAllowedAccess(pFunc, Fn->pOrgScript))
@@ -3187,7 +3187,7 @@ bool C4AulParseState::Parse_Expression3()
 					// not failsafe?
 					if (!failSafe && Type == PARSER)
 					{
-						throw C4AulParseError(this, FormatString("direct object call: function %s not found", Idtf).getData());
+						throw C4AulParseError(this, FormatString("direct object call: function %s not found", Idtf).c_str());
 					}
 					// otherwise: nothing to call - just execute parameters and discard them
 					Shift();

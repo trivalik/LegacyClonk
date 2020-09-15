@@ -184,8 +184,8 @@ size_t C4Network2RefServer::UnpackPacket(const StdBuf &rInBuf, const C4NetIO::ad
 void C4Network2RefServer::RespondNotImplemented(const C4NetIO::addr_t &addr, const char *szMessage)
 {
 	// Send the message
-	StdStrBuf Data = FormatString("HTTP/1.0 501 %s\r\n\r\n", szMessage);
-	Send(C4NetIOPacket(Data.getData(), Data.getLength(), false, addr));
+	const auto Data = FormatString("HTTP/1.0 501 %s\r\n\r\n", szMessage);
+	Send(C4NetIOPacket(Data.c_str(), Data.length(), false, addr));
 	// Close the connection
 	Close(addr);
 }
@@ -197,7 +197,7 @@ void C4Network2RefServer::RespondReference(const C4NetIO::addr_t &addr)
 	StdStrBuf PacketData = DecompileToBuf<StdCompilerINIWrite>(mkNamingPtrAdapt(pReference, "Reference"));
 	// Create header
 	const char *szCharset = GetCharsetCodeName(Config.General.LanguageCharset);
-	StdStrBuf Header = FormatString(
+	const auto Header = FormatString(
 		"HTTP/1.1 200 Found\r\n"
 		"Content-Length: %zu\r\n"
 		"Content-Type: text/plain; charset=%s\r\n"
@@ -206,7 +206,7 @@ void C4Network2RefServer::RespondReference(const C4NetIO::addr_t &addr)
 		PacketData.getLength(),
 		szCharset);
 	// Send back
-	Send(C4NetIOPacket(Header, Header.getLength(), false, addr));
+	Send(C4NetIOPacket(Header.c_str(), Header.length(), false, addr));
 	Send(C4NetIOPacket(PacketData, PacketData.getLength(), false, addr));
 	// Close the connection
 	Close(addr);
@@ -551,7 +551,7 @@ bool C4Network2HTTPClient::SetServer(const char *szServerAddress)
 	ServerAddr.SetAddress(Server);
 	if (ServerAddr.IsNull())
 	{
-		SetError(FormatString("Could not resolve server address %s!", Server.getData()).getData());
+		SetError(FormatString("Could not resolve server address %s!", Server.getData()).c_str());
 		return false;
 	}
 	ServerAddr.SetDefaultPort(GetDefaultPort());

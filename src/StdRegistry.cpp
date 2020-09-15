@@ -450,7 +450,7 @@ void StdCompilerConfigWrite::Boolean(bool &rBool)
 
 void StdCompilerConfigWrite::Character(char &rChar)
 {
-	WriteString(FormatString("%c", rChar).getData());
+	WriteString(FormatString("%c", rChar).c_str());
 }
 
 void StdCompilerConfigWrite::String(char *szString, size_t iMaxLength, RawCompileType eType)
@@ -494,7 +494,7 @@ void StdCompilerConfigWrite::CreateKey(HKEY hParent)
 		0, nullptr, REG_OPTION_NON_VOLATILE,
 		KEY_WRITE, nullptr,
 		&pKey->Handle, nullptr) != ERROR_SUCCESS)
-		excCorrupt(0, FormatString("Could not create key %s!", pKey->Name.getData()).getData());
+		excCorrupt(0, FormatString("Could not create key %s!", pKey->Name.getData()).c_str());
 }
 
 template<typename T>
@@ -507,7 +507,7 @@ void StdCompilerConfigWrite::WriteInteger(T value)
 	if (RegSetValueEx(pKey->Parent->Handle, pKey->Name.getData(),
 		0, type, reinterpret_cast<const BYTE *>(&value),
 		sizeof(value)) != ERROR_SUCCESS)
-		excCorrupt(0, FormatString("Could not write key %s!", pKey->Name.getData()).getData());
+		excCorrupt(0, FormatString("Could not write key %s!", pKey->Name.getData()).c_str());
 }
 
 void StdCompilerConfigWrite::WriteDWord(uint32_t iVal)
@@ -521,7 +521,7 @@ void StdCompilerConfigWrite::WriteString(const char *szString)
 	if (RegSetValueEx(pKey->Parent->Handle, pKey->Name.getData(),
 		0, REG_SZ, reinterpret_cast<const BYTE *>(szString),
 		strlen(szString) + 1) != ERROR_SUCCESS)
-		excCorrupt(0, FormatString("Could not write key %s!", pKey->Name.getData()).getData());
+		excCorrupt(0, FormatString("Could not write key %s!", pKey->Name.getData()).c_str());
 }
 
 // *** StdCompilerConfigRead

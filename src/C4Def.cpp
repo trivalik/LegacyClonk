@@ -214,8 +214,8 @@ bool C4DefCore::Load(C4Group &hGroup)
 	StdStrBuf Source;
 	if (hGroup.LoadEntryString(C4CFN_DefCore, Source))
 	{
-		StdStrBuf Name = hGroup.GetFullName() + FormatString("%cDefCore.txt", DirectorySeparator);
-		if (!Compile(Source.getData(), Name.getData()))
+		const auto Name = FormatString("%s%cDefCore.txt", hGroup.GetFullName().getData(), DirectorySeparator);
+		if (!Compile(Source.getData(), Name.c_str()))
 			return false;
 		Source.Clear();
 
@@ -1103,7 +1103,7 @@ int32_t C4DefList::Load(const char *szSearch,
 	{
 		// Specified file not found (failure)
 #ifdef C4ENGINE
-		LogFatal(FormatString(LoadResStr("IDS_PRC_DEFNOTFOUND"), szSearch).getData());
+		LogFatal(FormatString(LoadResStr("IDS_PRC_DEFNOTFOUND"), szSearch).c_str());
 #endif
 		LoadFailure = true;
 		return iResult;

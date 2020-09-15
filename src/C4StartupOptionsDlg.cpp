@@ -95,7 +95,7 @@ C4StartupOptionsDlg::ResChangeConfirmDlg::ResChangeConfirmDlg()
 	C4GUI::Label *pLblMessage = new C4GUI::Label(sMsgBroken.getData(), caMain.GetFromTop(iMsgHeight), ACenter, C4GUI_MessageFontClr, &C4GUI::GetRes()->TextFont, false);
 	AddElement(pLblMessage);
 	iMsgHeight = C4GUI::GetRes()->TextFont.BreakMessage(FormatString(LoadResStr("IDS_MNU_SWITCHRESOLUTION_UNDO"),
-		static_cast<int>(iResChangeSwitchTime)).getData(),
+		static_cast<int>(iResChangeSwitchTime)).c_str(),
 		caMain.GetInnerWidth(), &sMsgBroken, true);
 	pOperationCancelLabel = new C4GUI::Label(sMsgBroken.getData(), caMain.GetFromTop(iMsgHeight), ACenter, C4GUI_MessageFontClr, &C4GUI::GetRes()->TextFont, false, false);
 	AddElement(pOperationCancelLabel);
@@ -132,7 +132,7 @@ void C4StartupOptionsDlg::ResChangeConfirmDlg::OnSec1Timer()
 	// update timer label
 	StdStrBuf sTimerText;
 	C4GUI::GetRes()->TextFont.BreakMessage(FormatString(LoadResStr("IDS_MNU_SWITCHRESOLUTION_UNDO"),
-		static_cast<int>(iResChangeSwitchTime)).getData(),
+		static_cast<int>(iResChangeSwitchTime)).c_str(),
 		pOperationCancelLabel->GetBounds().Wdt, &sTimerText, true);
 	pOperationCancelLabel->SetText(sTimerText.getData());
 }
@@ -183,7 +183,7 @@ C4GUI::Edit::InputResult C4StartupOptionsDlg::ScaleEdit::OnFinishInput(bool fPas
 {
 	char *endPtr = nullptr;
 	int val = toUl(GetText(), 0);
-	if (!Inside(val, minScale, maxScale)) SetText(FormatString("%d", pDlg->iNewScale).getData(), true);
+	if (!Inside(val, minScale, maxScale)) SetText(FormatString("%d", pDlg->iNewScale).c_str(), true);
 	else
 	{
 		auto sliderVal = val - minScale;
@@ -211,7 +211,7 @@ const char *KeyID2Desc(int32_t iKeyID)
 
 C4StartupOptionsDlg::KeySelDialog::KeySelDialog(int32_t iKeyID, int32_t iCtrlSet, bool fGamepad)
 	: C4GUI::MessageDialog(FormatString(LoadResStr(!fGamepad ? "IDS_MSG_PRESSKEY" : "IDS_MSG_PRESSBTN"),
-		KeyID2Desc(iKeyID), iCtrlSet + 1).getData(), LoadResStr("IDS_MSG_DEFINEKEY"),
+		KeyID2Desc(iKeyID), iCtrlSet + 1).c_str(), LoadResStr("IDS_MSG_DEFINEKEY"),
 		C4GUI::MessageDialog::btnAbort, fGamepad ? C4GUI::Ico_Gamepad : C4GUI::Ico_Keyboard, C4GUI::MessageDialog::dsRegular),
 	key(KEY_Undefined), fGamepad(fGamepad), iCtrlSet(iCtrlSet)
 {
@@ -497,7 +497,7 @@ C4StartupOptionsDlg::NetworkPortConfig::NetworkPortConfig(const C4Rect &rcBounds
 	pPortEdit = new C4GUI::Edit(caBottomLine.GetAll(), true);
 	pPortEdit->SetColors(C4StartupEditBGColor, C4StartupFontClr, C4StartupEditBorderColor);
 	pPortEdit->SetFont(pUseFont);
-	pPortEdit->InsertText(FormatString("%d", fEnabled ? static_cast<int>(*pConfigValue) : static_cast<int>(iDefault)).getData(), false);
+	pPortEdit->InsertText(FormatString("%d", fEnabled ? static_cast<int>(*pConfigValue) : static_cast<int>(iDefault)).c_str(), false);
 	pPortEdit->SetMaxText(10); // 65535 is five characters long - but allow some more for easier editing
 	pPortEdit->SetVisibility(fEnabled);
 	AddElement(pPortEdit);
@@ -1046,7 +1046,7 @@ C4StartupOptionsDlg::C4StartupOptionsDlg() : C4StartupDlg(LoadResStrNoAmp("IDS_D
 	for (i = 0; i < 2; ++i)
 	{
 		C4GUI::ComponentAligner caVolumeSlider(caGroupVolume.GetGridCell(0, 1, i, 2, -1, pUseFont->GetLineHeight() + iIndentY2 * 2 + C4GUI_ScrollBarHgt, true), 1, 0, false);
-		pGroupVolume->AddElement(new C4GUI::Label(FormatString("%s:", LoadResStr(i ? "IDS_CTL_SOUNDFX" : "IDS_CTL_MUSIC")).getData(), caVolumeSlider.GetFromTop(pUseFont->GetLineHeight()), ALeft, C4StartupFontClr, pUseFont, false, false));
+		pGroupVolume->AddElement(new C4GUI::Label(FormatString("%s:", LoadResStr(i ? "IDS_CTL_SOUNDFX" : "IDS_CTL_MUSIC")).c_str(), caVolumeSlider.GetFromTop(pUseFont->GetLineHeight()), ALeft, C4StartupFontClr, pUseFont, false, false));
 		sLabelTxt.Copy(LoadResStr("IDS_CTL_SILENT"));
 		w = 20; q = 12; pUseFont->GetTextExtent(sLabelTxt.getData(), w, q, true);
 		pGroupVolume->AddElement(new C4GUI::Label(sLabelTxt.getData(), caVolumeSlider.GetFromLeft(w, q), ACenter, C4StartupFontClr, pUseFont, false, false));
@@ -1161,7 +1161,7 @@ void C4StartupOptionsDlg::OnResetConfigBtn(C4GUI::Control *btn)
 void C4StartupOptionsDlg::OnScaleSliderChanged(int32_t val)
 {
 	iNewScale = val + minScale;
-	pScaleEdit->SetText(FormatString("%d", iNewScale).getData(), true);
+	pScaleEdit->SetText(FormatString("%d", iNewScale).c_str(), true);
 }
 
 void C4StartupOptionsDlg::OnTestScaleBtn(C4GUI::Control *)
@@ -1263,12 +1263,12 @@ void C4StartupOptionsDlg::UpdateLanguage()
 	C4LanguageInfo *pNfo = Languages.FindInfo(Config.General.Language);
 	if (pNfo)
 	{
-		pLangCombo->SetText(FormatString("%s - %s", pNfo->Code, pNfo->Name).getData());
+		pLangCombo->SetText(FormatString("%s - %s", pNfo->Code, pNfo->Name).c_str());
 		pLangInfoLabel->SetText(pNfo->Info);
 	}
 	else
 	{
-		pLangCombo->SetText(FormatString("unknown (%s)", Config.General.Language).getData());
+		pLangCombo->SetText(FormatString("unknown (%s)", Config.General.Language).c_str());
 		pLangInfoLabel->SetText(LoadResStr("IDS_CTL_NOLANGINFO"));
 		return; // no need to mess with fallbacks
 	}
@@ -1299,7 +1299,7 @@ void C4StartupOptionsDlg::OnLangComboFill(C4GUI::ComboBox_FillCB *pFiller)
 	C4LanguageInfo *pNfo;
 	for (int i = 0; i < Languages.GetInfoCount(); ++i)
 		if (pNfo = Languages.GetInfo(i))
-			pFiller->AddEntry(FormatString("%s - %s", pNfo->Code, pNfo->Name).getData(), static_cast<unsigned char>(pNfo->Code[0]) + (static_cast<unsigned char>(pNfo->Code[1]) << 8));
+			pFiller->AddEntry(FormatString("%s - %s", pNfo->Code, pNfo->Name).c_str(), static_cast<unsigned char>(pNfo->Code[0]) + (static_cast<unsigned char>(pNfo->Code[1]) << 8));
 }
 
 bool C4StartupOptionsDlg::OnLangComboSelChange(C4GUI::ComboBox *pForCombo, int32_t idNewSelection)

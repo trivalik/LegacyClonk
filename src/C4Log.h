@@ -30,7 +30,7 @@ bool DebugLog(const char *strMessage);
 template<class ...Args>
 bool DebugLogF(const char *const fmt, Args &&...args)
 {
-	return DebugLog(FormatString(fmt, std::forward<Args>(args)...).getData());
+	return DebugLog(FormatString(fmt, std::forward<Args>(args)...).c_str());
 }
 
 bool LogFatal(const char *szMessage); // log message and store it as a fatal error

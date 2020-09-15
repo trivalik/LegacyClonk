@@ -39,7 +39,7 @@ struct C4GameVersion
 
 	StdStrBuf GetString() const
 	{
-		return FormatString("%s %" PRId32 ".%" PRId32 ".%" PRId32 ".%" PRId32 " [%" PRId32 "]", sEngineName.getData(), iVer[0], iVer[1], iVer[2], iVer[3], iBuild);
+		return StdStrBuf{FormatString("%s %" PRId32 ".%" PRId32 ".%" PRId32 ".%" PRId32 " [%" PRId32 "]", sEngineName.getData(), iVer[0], iVer[1], iVer[2], iVer[3], iBuild).c_str()};
 	}
 
 	bool operator==(const C4GameVersion &rCmp) const

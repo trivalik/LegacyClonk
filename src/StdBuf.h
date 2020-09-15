@@ -26,6 +26,7 @@
 #include <stdio.h>
 
 #include <utility>
+#include <string>
 #include <type_traits>
 
 // debug memory management
@@ -712,9 +713,9 @@ public:
 
 // Wrapper
 template<class ...Args>
-StdStrBuf FormatString(const char *const fmt, Args &&...args)
+std::string FormatString(const char *const fmt, Args &&...args)
 {
 	StdStrBuf s;
 	s.Format(fmt, std::forward<Args>(args)...);
-	return s;
+	return {s.getData()};
 }

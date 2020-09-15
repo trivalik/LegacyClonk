@@ -276,7 +276,7 @@ static bool FnDeathAnnounce(C4AulContext *cthr)
 	else
 	{
 		char idDeathMsg[128 + 1]; sprintf(idDeathMsg, "IDS_OBJ_DEATH%d", 1 + SafeRandom(MaxDeathMsg));
-		GameMsgObject(FormatString(LoadResStr(idDeathMsg), cthr->Obj->GetName()).getData(), cthr->Obj);
+		GameMsgObject(FormatString(LoadResStr(idDeathMsg), cthr->Obj->GetName()).c_str(), cthr->Obj);
 	}
 	return true;
 }
@@ -3812,7 +3812,7 @@ static void FnSetLength(C4AulContext *cthr, C4Value *pArrayRef, long iNewSize)
 {
 	// safety
 	if (iNewSize < 0 || iNewSize > C4ValueList::MaxSize)
-		throw C4AulExecError(cthr->Obj, FormatString("SetLength: invalid array size (%ld)", iNewSize).getData());
+		throw C4AulExecError(cthr->Obj, FormatString("SetLength: invalid array size (%ld)", iNewSize).c_str());
 
 	// set new size
 	pArrayRef->SetArrayLength(iNewSize, cthr);
@@ -4022,7 +4022,7 @@ protected:
 	// get values as C4Value
 	virtual void ProcessInt(int32_t &rInt) override { Res = C4VInt(rInt); }
 	virtual void ProcessBool(bool &rBool) override { Res = C4VBool(rBool); }
-	virtual void ProcessChar(char &rChar) override { Res = C4VString(FormatString("%c", rChar)); }
+	virtual void ProcessChar(char &rChar) override { Res = C4VString(FormatString("%c", rChar).c_str()); }
 
 	virtual void ProcessString(char *szString, size_t iMaxLength, bool fIsID) override
 	{
@@ -4301,7 +4301,7 @@ static bool FnResortObjects(C4AulContext *cthr, C4String *szFunc, long Category)
 	// get function
 	C4AulFunc *pFn = cthr->Caller->Func->GetLocalSFunc(FnStringPar(szFunc));
 	if (!pFn)
-		throw C4AulExecError(cthr->Obj, FormatString("ResortObjects: Resort function %s not found", FnStringPar(szFunc)).getData());
+		throw C4AulExecError(cthr->Obj, FormatString("ResortObjects: Resort function %s not found", FnStringPar(szFunc)).c_str());
 	// create object resort
 	C4ObjResort *pObjRes = new C4ObjResort();
 	pObjRes->Category = Category;
@@ -4322,7 +4322,7 @@ static bool FnResortObject(C4AulContext *cthr, C4String *szFunc, C4Object *pObj)
 	// get function
 	C4AulFunc *pFn = cthr->Caller->Func->GetLocalSFunc(FnStringPar(szFunc));
 	if (!pFn)
-		throw C4AulExecError(cthr->Obj, FormatString("ResortObjects: Resort function %s not found", FnStringPar(szFunc)).getData());
+		throw C4AulExecError(cthr->Obj, FormatString("ResortObjects: Resort function %s not found", FnStringPar(szFunc)).c_str());
 	// create object resort
 	C4ObjResort *pObjRes = new C4ObjResort();
 	pObjRes->OrderFunc = pFn;
@@ -6057,7 +6057,7 @@ static long FnActivateGameGoalMenu(C4AulContext *ctx, long iPlayer)
 
 static void FnFatalError(C4AulContext *ctx, C4String *pErrorMsg)
 {
-	throw C4AulExecError(ctx->Obj, FormatString("User error: %s", pErrorMsg ? pErrorMsg->Data.getData() : "(no error)").getData());
+	throw C4AulExecError(ctx->Obj, FormatString("User error: %s", pErrorMsg ? pErrorMsg->Data.getData() : "(no error)").c_str());
 }
 
 static void FnStartCallTrace(C4AulContext *ctx)

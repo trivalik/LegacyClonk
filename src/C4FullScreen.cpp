@@ -454,7 +454,7 @@ bool C4FullScreen::ViewportCheck()
 			// Display message for how to open observer menu (this message will be cleared if any owned viewport opens)
 			StdStrBuf sKey;
 			sKey.Format("<c ffff00><%s></c>", Game.KeyboardInput.GetKeyCodeNameByKeyName("FullscreenMenuOpen", false).getData());
-			Game.GraphicsSystem.FlashMessage(FormatString(LoadResStr("IDS_MSG_PRESSORPUSHANYGAMEPADBUTT"), sKey.getData()).getData());
+			Game.GraphicsSystem.FlashMessage(FormatString(LoadResStr("IDS_MSG_PRESSORPUSHANYGAMEPADBUTT"), sKey.getData()).c_str());
 		}
 		break;
 	// One viewport: do nothing

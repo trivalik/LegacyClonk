@@ -543,7 +543,7 @@ C4GUI::ContextMenu *C4PlayerInfoListBox::PlayerListItem::OnContextTakeOver(C4GUI
 			if (!pInfo->HasJoinIssued())
 				if (!pInfo->GetAssociatedSavegamePlayerID())
 				{
-					pMenu->AddItem(FormatString(LoadResStr("IDS_MSG_USINGPLR"), pInfo->GetName()).getData(), LoadResStr("IDS_MSG_USINGPLR_DESC"), C4GUI::Ico_Player,
+					pMenu->AddItem(FormatString(LoadResStr("IDS_MSG_USINGPLR"), pInfo->GetName()).c_str(), LoadResStr("IDS_MSG_USINGPLR_DESC"), C4GUI::Ico_Player,
 						new C4GUI::CBMenuHandlerEx<PlayerListItem, int32_t>(this, &PlayerListItem::OnCtxTakeOver, pInfo->GetID()));
 				}
 	}
@@ -661,7 +661,7 @@ void C4PlayerInfoListBox::PlayerListItem::Update()
 			// Append "winner" or "loser" to player name
 			if (fShowWinners)
 			{
-				sShowName.Take(FormatString("%s (%s)", sShowName.getData(), LoadResStr(fHasWon ? "IDS_CTL_WON" : "IDS_CTL_LOST")));
+				sShowName.Format("%s (%s)", sShowName.getData(), LoadResStr(fHasWon ? "IDS_CTL_WON" : "IDS_CTL_LOST"));
 			}
 			// evaluation: Golden color+background for winners; gray for losers or no winner show
 			if (fHasWon)
@@ -761,7 +761,7 @@ C4PlayerInfoListBox::ClientListItem::ClientListItem(C4PlayerInfoListBox *pForLis
 	AddElement(pStatusIcon); AddElement(pNameLabel);
 	if (btnAddPlayer) AddElement(btnAddPlayer);
 	// tooltip (same for all components for now. separate tooltip for status icon later?)
-	SetToolTip(FormatString("Client %s (%s)", rClientInfo.getName(), rClientInfo.getNick()).getData());
+	SetToolTip(FormatString("Client %s (%s)", rClientInfo.getName(), rClientInfo.getNick()).c_str());
 	// insert into listbox at correct order
 	// (will eventually get resized horizontally and moved)
 	pForListBox->InsertElement(this, pInsertBefore);
@@ -1028,7 +1028,7 @@ C4PlayerInfoListBox::TeamListItem::TeamListItem(C4PlayerInfoListBox *pForListBox
 	// add components
 	AddElement(pIcon); AddElement(pNameLabel);
 	// tooltip
-	SetToolTip(FormatString(LoadResStr("IDS_DESC_TEAM"), szTeamName).getData());
+	SetToolTip(FormatString(LoadResStr("IDS_DESC_TEAM"), szTeamName).c_str());
 	// insert into listbox at correct order
 	// (will eventually get resized horizontally and moved)
 	pForListBox->InsertElement(this, pInsertBefore);

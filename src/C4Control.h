@@ -557,7 +557,7 @@ public:
 	C4ControlInitScenarioPlayer() {}
 	C4ControlInitScenarioPlayer(int32_t plr, int32_t team) : team(team), C4ControlInternalPlayerScriptBase(plr) {}
 	virtual void CompileFunc(StdCompiler *pComp) override;
-	virtual StdStrBuf FormatScript() const override { return FormatString("InitScenarioPlayer(%d,%d)", static_cast<int>(plr), static_cast<int>(team)); }
+	virtual StdStrBuf FormatScript() const override { return StdStrBuf{FormatString("InitScenarioPlayer(%d,%d)", static_cast<int>(plr), static_cast<int>(team)).c_str()}; }
 };
 
 class C4ControlActivateGameGoalMenu : public C4ControlInternalPlayerScriptBase
@@ -565,7 +565,7 @@ class C4ControlActivateGameGoalMenu : public C4ControlInternalPlayerScriptBase
 public:
 	C4ControlActivateGameGoalMenu() {}
 	C4ControlActivateGameGoalMenu(int32_t plr) : C4ControlInternalPlayerScriptBase(plr) {}
-	virtual StdStrBuf FormatScript() const override { return FormatString("ActivateGameGoalMenu(%d)", plr); }
+	virtual StdStrBuf FormatScript() const override { return StdStrBuf{FormatString("ActivateGameGoalMenu(%d)", plr).c_str()}; }
 };
 
 class C4ControlToggleHostility : public C4ControlInternalPlayerScriptBase
@@ -576,7 +576,7 @@ public:
 	C4ControlToggleHostility() {}
 	C4ControlToggleHostility(int32_t plr, int32_t opponent) : opponent(opponent), C4ControlInternalPlayerScriptBase(plr) {}
 	virtual void CompileFunc(StdCompiler *pComp) override;
-	virtual StdStrBuf FormatScript() const override { return FormatString("SetHostility(%d,%d,!Hostile(%d,%d,true))", plr, opponent, plr, opponent); }
+	virtual StdStrBuf FormatScript() const override { return StdStrBuf{FormatString("SetHostility(%d,%d,!Hostile(%d,%d,true))", plr, opponent, plr, opponent).c_str()}; }
 };
 
 class C4ControlSurrenderPlayer : public C4ControlInternalPlayerScriptBase
@@ -584,7 +584,7 @@ class C4ControlSurrenderPlayer : public C4ControlInternalPlayerScriptBase
 public:
 	C4ControlSurrenderPlayer() {}
 	C4ControlSurrenderPlayer(int32_t plr) : C4ControlInternalPlayerScriptBase(plr) {}
-	virtual StdStrBuf FormatScript() const override { return FormatString("SurrenderPlayer(%d)", plr); }
+	virtual StdStrBuf FormatScript() const override { return StdStrBuf{FormatString("SurrenderPlayer(%d)", plr).c_str()}; }
 };
 
 class C4ControlActivateGameGoalRule : public C4ControlInternalPlayerScriptBase
@@ -595,7 +595,7 @@ public:
 	C4ControlActivateGameGoalRule() {}
 	C4ControlActivateGameGoalRule(int32_t plr, int32_t obj) : obj(obj), C4ControlInternalPlayerScriptBase(plr) {}
 	virtual void CompileFunc(StdCompiler *pComp) override;
-	virtual StdStrBuf FormatScript() const override { return FormatString("Activate(%d)", plr); }
+	virtual StdStrBuf FormatScript() const override { return StdStrBuf{FormatString("Activate(%d)", plr).c_str()}; }
 	virtual int32_t Scope() const override { return obj; }
 };
 
@@ -607,7 +607,7 @@ public:
 	C4ControlSetPlayerTeam() {}
 	C4ControlSetPlayerTeam(int32_t plr, int32_t team) : team(team), C4ControlInternalPlayerScriptBase(plr) {}
 	virtual void CompileFunc(StdCompiler *pComp) override;
-	virtual StdStrBuf FormatScript() const override { return FormatString("SetPlayerTeam(%d,%d)", static_cast<int>(plr), static_cast<int>(team)); }
+	virtual StdStrBuf FormatScript() const override { return StdStrBuf{FormatString("SetPlayerTeam(%d,%d)", static_cast<int>(plr), static_cast<int>(team)).c_str()}; }
 };
 
 class C4ControlEliminatePlayer : public C4ControlInternalPlayerScriptBase
@@ -616,5 +616,5 @@ public:
 	C4ControlEliminatePlayer() {}
 	C4ControlEliminatePlayer(int32_t plr) : C4ControlInternalPlayerScriptBase(plr) {}
 	virtual bool Allowed() const override { return HostControl(); }
-	virtual StdStrBuf FormatScript() const override { return FormatString("EliminatePlayer(%d)", plr); }
+	virtual StdStrBuf FormatScript() const override { return StdStrBuf{FormatString("EliminatePlayer(%d)", plr).c_str()}; }
 };

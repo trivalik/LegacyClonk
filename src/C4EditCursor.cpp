@@ -35,6 +35,8 @@
 #include <gtk/gtkseparatormenuitem.h>
 #endif
 
+#include <string>
+
 C4EditCursor::C4EditCursor()
 {
 	Default();
@@ -163,14 +165,14 @@ bool C4EditCursor::Move(int32_t iX, int32_t iY, uint16_t wKeyFlags)
 
 bool C4EditCursor::UpdateStatusBar()
 {
-	StdStrBuf text{""};
+	std::string text;
 	switch (Mode)
 	{
 	case C4CNS_ModePlay:
 		if (Game.MouseControl.GetCaption())
 		{
 			const std::string caption{Game.MouseControl.GetCaption()};
-			text = caption.substr(0, caption.find('|') - 1).c_str();
+			text = caption.substr(0, caption.find('|') - 1);
 		}
 		break;
 
@@ -182,7 +184,7 @@ bool C4EditCursor::UpdateStatusBar()
 		text = FormatString("%i/%i (%s)", X, Y, (MatValid(GBackMat(X, Y)) ? Game.Material.Map[GBackMat(X, Y)].Name : LoadResStr("IDS_CNS_NOTHING")));
 		break;
 	}
-	return Console.UpdateCursorBar(text.getData());
+	return Console.UpdateCursorBar(text.c_str());
 }
 
 void C4EditCursor::OnSelectionChanged()

@@ -131,7 +131,7 @@ bool C4GameRes::InitNetwork(C4Network2ResList *pNetResList)
 		// Publish on network
 		if (!Publish(pNetResList))
 		{
-			LogFatal(FormatString(LoadResStr("IDS_NET_NOFILEPUBLISH"), getFile()).getData());
+			LogFatal(FormatString(LoadResStr("IDS_NET_NOFILEPUBLISH"), getFile()).c_str());
 			return false;
 		}
 	}
@@ -145,12 +145,12 @@ bool C4GameRes::InitNetwork(C4Network2ResList *pNetResList)
 			const char *szFilename = pResCore->getFileName();
 			if (!pResCore->isLoadable())
 				if (pResCore->getType() == NRT_System)
-					LogFatal(FormatString(LoadResStr("IDS_NET_NOSAMESYSTEM"), szFilename).getData());
+					LogFatal(FormatString(LoadResStr("IDS_NET_NOSAMESYSTEM"), szFilename).c_str());
 				else
-					LogFatal(FormatString(LoadResStr("IDS_NET_NOSAMEANDTOOLARGE"), szFilename).getData());
+					LogFatal(FormatString(LoadResStr("IDS_NET_NOSAMEANDTOOLARGE"), szFilename).c_str());
 			// Should not happen
 			else
-				LogFatal(FormatString(LoadResStr("IDS_NET_NOVALIDCORE"), szFilename).getData());
+				LogFatal(FormatString(LoadResStr("IDS_NET_NOVALIDCORE"), szFilename).c_str());
 			return false;
 		}
 	}
@@ -212,7 +212,7 @@ bool C4GameResList::Load(const std::vector<std::string> &DefinitionFilenames)
 			C4Group Def;
 			if (!Def.Open(def.c_str()))
 			{
-				LogFatal(FormatString(LoadResStr("IDS_PRC_DEFNOTFOUND"), def.c_str()).getData());
+				LogFatal(FormatString(LoadResStr("IDS_PRC_DEFNOTFOUND"), def.c_str()).c_str());
 				Def.Close();
 				return false;
 			}
@@ -267,8 +267,8 @@ bool C4GameResList::RetrieveFiles()
 	for (int32_t i = 0; i < iResCount; i++)
 	{
 		const C4Network2ResCore &Core = *pResList[i]->getResCore();
-		StdStrBuf ResNameBuf = FormatString("%s: %s", LoadResStr("IDS_DLG_DEFINITION"), GetFilename(Core.getFileName()));
-		if (!Game.Network.RetrieveRes(Core, C4NetResRetrieveTimeout, ResNameBuf.getData()))
+		const auto ResNameBuf = FormatString("%s: %s", LoadResStr("IDS_DLG_DEFINITION"), GetFilename(Core.getFileName()));
+		if (!Game.Network.RetrieveRes(Core, C4NetResRetrieveTimeout, ResNameBuf.c_str()))
 			return false;
 	}
 	return true;
@@ -582,7 +582,7 @@ StdStrBuf C4GameParameters::GetGameGoalString()
 	if (sResult.getLength() > C4MaxTitle) sResult.SetLength(C4MaxTitle);
 	// Compose desc string
 	if (sResult.getLength())
-		return FormatString("%s: %s", LoadResStr("IDS_MENU_CPGOALS"), sResult.getData());
+		return StdStrBuf{FormatString("%s: %s", LoadResStr("IDS_MENU_CPGOALS"), sResult.getData()).c_str()};
 	else
 		return StdStrBuf(LoadResStr("IDS_CTL_NOGOAL"));
 }

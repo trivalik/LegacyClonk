@@ -68,8 +68,8 @@ template<class ...Args>
 int dbg_printf(const char *const fmt, Args &&...args)
 {
 	const auto msg = FormatString(fmt, std::forward<Args>(args)...);
-	OutputDebugString(msg.getData());
-	return std::fputs(msg.getData(), stdout);
+	OutputDebugString(msg.c_str());
+	return std::fputs(msg.c_str(), stdout);
 }
 #define printf dbg_printf
 #endif

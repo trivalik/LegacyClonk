@@ -218,8 +218,8 @@ bool C4MainMenu::DoRefillInternal(bool &rfRefilled)
 			else
 				sTeamName.Ref(LoadResStr("IDS_PRC_NEWTEAM"));
 			const char *szOperation = (Identification == C4MN_TeamSwitch) ? "TeamSwitch" : "TeamSel";
-			Add(sTeamName.getData(), fctSymbol, FormatString("%s:%d", szOperation, pTeam ? pTeam->GetID() : TEAMID_New).getData(),
-				C4MN_Item_NoCount, nullptr, FormatString(LoadResStr("IDS_MSG_JOINTEAM"), sTeamName.getData()).getData(), C4ID(pTeam ? pTeam->GetID() : 0));
+			Add(sTeamName.getData(), fctSymbol, FormatString("%s:%d", szOperation, pTeam ? pTeam->GetID() : TEAMID_New).c_str(),
+				C4MN_Item_NoCount, nullptr, FormatString(LoadResStr("IDS_MSG_JOINTEAM"), sTeamName.getData()).c_str(), C4ID(pTeam ? pTeam->GetID() : 0));
 			fctSymbol.Default();
 		}
 		break;

@@ -35,7 +35,7 @@ StdStrBuf C4TimeMilliseconds::AsString() const
 		return StdStrBuf{"NEGATIVE INFINITY"};
 	}
 
-	return FormatString("%u:%02u:%02u:%03u:", time / 1000 / 60 / 60, (time / 1000 / 60) % 60, (time / 1000) % 60, time % 1000);
+	return StdStrBuf{FormatString("%u:%02u:%02u:%03u:", time / 1000 / 60 / 60, (time / 1000 / 60) % 60, (time / 1000) % 60, time % 1000).c_str()};
 }
 
 C4TimeMilliseconds& C4TimeMilliseconds::operator=(const C4TimeMilliseconds& rhs) = default;

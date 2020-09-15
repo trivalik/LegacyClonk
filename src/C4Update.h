@@ -75,10 +75,10 @@ protected:
 	void WriteLog(const char *const fmt, Args &&...args)
 	{
 		const auto msg = FormatString(fmt, std::forward<Args>(args)...);
-		Log.WriteString(msg.getData());
+		Log.WriteString(msg.c_str());
 		Log.Flush();
 #ifdef C4GROUP
-		std::fputs(msg.getData(), stdout);
+		std::fputs(msg.c_str(), stdout);
 #endif
 	}
 };

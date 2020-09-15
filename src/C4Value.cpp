@@ -54,7 +54,7 @@ std::optional<StdStrBuf> C4Value::toString() const
 
 	case C4V_Bool:
 	case C4V_Int:
-		return {FormatString("%d", val._getInt())};
+		return {StdStrBuf{FormatString("%d", val._getInt()).c_str()}};
 
 	case C4V_C4ID:
 		return {StdStrBuf(C4IdText(val._getC4ID()))};
@@ -625,7 +625,7 @@ StdStrBuf C4Value::GetDataString() const
 	case C4V_Any:
 		return StdStrBuf("nil");
 	case C4V_Int:
-		return FormatString("%ld", Data.Int);
+		return StdStrBuf{FormatString("%ld", Data.Int).c_str()};
 	case C4V_Bool:
 		return StdStrBuf::MakeRef(Data ? "true" : "false");
 	case C4V_C4ID:
@@ -635,17 +635,17 @@ StdStrBuf C4Value::GetDataString() const
 	{
 		// obj exists?
 		if (!Game.Objects.ObjectNumber(Data.Obj) && !Game.Objects.InactiveObjects.ObjectNumber(Data.Obj))
-			return FormatString("%ld", Data.Int);
+			return StdStrBuf{FormatString("%ld", Data.Int).c_str()};
 		else if (Data.Obj)
 			if (Data.Obj->Status == C4OS_NORMAL)
-				return FormatString("%s #%d", Data.Obj->GetName(), static_cast<int>(Data.Obj->Number));
+				return StdStrBuf{FormatString("%s #%d", Data.Obj->GetName(), static_cast<int>(Data.Obj->Number)).c_str()};
 			else
-				return FormatString("{%s #%d}", Data.Obj->GetName(), static_cast<int>(Data.Obj->Number));
+				return StdStrBuf{FormatString("{%s #%d}", Data.Obj->GetName(), static_cast<int>(Data.Obj->Number)).c_str()};
 		else
 			return StdStrBuf("0"); // (impossible)
 	}
 	case C4V_String:
-		return (Data.Str && Data.Str->Data.getData()) ? FormatString("\"%s\"", Data.Str->Data.getData()) : StdStrBuf("(nullstring)");
+		return (Data.Str && Data.Str->Data.getData()) ? StdStrBuf{FormatString("\"%s\"", Data.Str->Data.getData()).c_str()} : StdStrBuf("(nullstring)");
 	case C4V_Array:
 	{
 		StdStrBuf DataString;

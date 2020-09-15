@@ -240,19 +240,19 @@ public:
 	template<class ...Args>
 	void excNotFound(const char *const fmt, Args &&...args)
 	{
-		throw NotFoundException{getPosition(), FormatString(fmt, std::forward<Args>(args)...)};
+		throw NotFoundException{getPosition(), StdStrBuf{FormatString(fmt, std::forward<Args>(args)...).c_str()}};
 	}
 
 	template<class ...Args>
 	void excEOF(const char *const fmt = "EOF", Args &&...args)
 	{
-		throw EOFException{getPosition(), FormatString(fmt, std::forward<Args>(args)...)};
+		throw EOFException{getPosition(), StdStrBuf{FormatString(fmt, std::forward<Args>(args)...).c_str()}};
 	}
 
 	template<class ...Args>
 	void excCorrupt(const char *const fmt, Args &&...args)
 	{
-		throw CorruptException{getPosition(), FormatString(fmt, std::forward<Args>(args)...)};
+		throw CorruptException{getPosition(), StdStrBuf{FormatString(fmt, std::forward<Args>(args)...).c_str()}};
 	}
 
 public:
@@ -265,7 +265,7 @@ public:
 	{
 		if (!pWarnCB) return;
 		pWarnCB(pWarnData, getPosition().getData(),
-			FormatString(fmt, std::forward<Args>(args)...).getData());
+			FormatString(fmt, std::forward<Args>(args)...).c_str());
 	}
 
 private:

@@ -949,7 +949,7 @@ bool C4Object::ExecLife()
 				if (Info->Age != iNewAge && Info->Age)
 				{
 					// message
-					GameMsgObject(FormatString(LoadResStr("IDS_OBJ_BIRTHDAY"), GetName(), Info->TotalPlayingTime / 3600 / 5).getData(), this);
+					GameMsgObject(FormatString(LoadResStr("IDS_OBJ_BIRTHDAY"), GetName(), Info->TotalPlayingTime / 3600 / 5).c_str(), this);
 					StartSoundEffect("Trumpet", false, 100, this);
 				}
 
@@ -1617,7 +1617,7 @@ bool C4Object::ActivateEntrance(int32_t by_plr, C4Object *by_obj)
 	{
 		if (ValidPlr(Owner))
 		{
-			GameMsgObject(FormatString(LoadResStr("IDS_OBJ_HOSTILENOENTRANCE"), Game.Players.Get(Owner)->GetName()).getData(), this);
+			GameMsgObject(FormatString(LoadResStr("IDS_OBJ_HOSTILENOENTRANCE"), Game.Players.Get(Owner)->GetName()).c_str(), this);
 		}
 		return false;
 	}
@@ -1786,7 +1786,7 @@ bool C4Object::Push(FIXED txdir, FIXED dforce, bool fStraighten)
 	if (!Tick35) if (txdir) if (!Def->NoHorizontalMove)
 		if (ContactCheck(x, y)) // Resets t_contact
 		{
-			GameMsgObject(FormatString(LoadResStr("IDS_OBJ_STUCK"), GetName()).getData(), this);
+			GameMsgObject(FormatString(LoadResStr("IDS_OBJ_STUCK"), GetName()).c_str(), this);
 			Call(PSF_Stuck);
 		}
 
@@ -1816,7 +1816,7 @@ bool C4Object::Lift(FIXED tydir, FIXED dforce)
 	if (tydir != -GravAccel)
 		if (ContactCheck(x, y)) // Resets t_contact
 		{
-			GameMsgObject(FormatString(LoadResStr("IDS_OBJ_STUCK"), GetName()).getData(), this);
+			GameMsgObject(FormatString(LoadResStr("IDS_OBJ_STUCK"), GetName()).c_str(), this);
 			Call(PSF_Stuck);
 		}
 	return true;
@@ -1944,7 +1944,7 @@ bool C4Object::ActivateMenu(int32_t iMenu, int32_t iMenuSelect,
 		fctSymbol.Create(C4SymbolSize, C4SymbolSize);
 		DrawMenuSymbol(C4MN_Construction, fctSymbol, -1, nullptr);
 		// Init menu
-		Menu->Init(fctSymbol, FormatString(LoadResStr("IDS_PLR_NOBKNOW"), pPlayer->GetName()).getData(), this, C4MN_Extra_Components, 0, iMenu);
+		Menu->Init(fctSymbol, FormatString(LoadResStr("IDS_PLR_NOBKNOW"), pPlayer->GetName()).c_str(), this, C4MN_Extra_Components, 0, iMenu);
 		// Add player's structure build knowledge
 		for (cnt = 0; pDef = C4Id2Def(pPlayer->Knowledge.GetID(Game.Defs, C4D_Structure, cnt, &iCount)); cnt++)
 		{
@@ -2139,7 +2139,7 @@ bool C4Object::Promote(int32_t torank, bool fForceRankName)
 	Info->Promote(torank, *pRankSys, fForceRankName);
 	// silent update?
 	if (!pRankSys->GetRankName(torank, false)) return false;
-	GameMsgObject(FormatString(LoadResStr("IDS_OBJ_PROMOTION"), GetName(), Info->sRankName.getData()).getData(), this);
+	GameMsgObject(FormatString(LoadResStr("IDS_OBJ_PROMOTION"), GetName(), Info->sRankName.getData()).c_str(), this);
 	StartSoundEffect("Trumpet", 0, 100, this);
 	return true;
 }
@@ -2509,8 +2509,8 @@ void C4Object::Draw(C4FacetEx &cgo, int32_t iByPlayer, DrawMode eDrawMode)
 		{
 			const auto &message = FormatString("%s (%d)", Def->ActMap[Action.Act].Name, Action.Phase);
 			int32_t cmwdt, cmhgt;
-			Game.GraphicsResource.FontRegular.GetTextExtent(message.getData(), cmwdt, cmhgt, true);
-			Application.DDraw->TextOut(message.getData(), Game.GraphicsResource.FontRegular, 1.0, cgo.Surface, cgo.X + cox - Shape.x, cgo.Y + coy - cmhgt, InLiquid ? 0xfa0000FF : CStdDDraw::DEFAULT_MESSAGE_COLOR, ACenter);
+			Game.GraphicsResource.FontRegular.GetTextExtent(message.c_str(), cmwdt, cmhgt, true);
+			Application.DDraw->TextOut(message.c_str(), Game.GraphicsResource.FontRegular, 1.0, cgo.Surface, cgo.X + cox - Shape.x, cgo.Y + coy - cmhgt, InLiquid ? 0xfa0000FF : CStdDDraw::DEFAULT_MESSAGE_COLOR, ACenter);
 		}
 	}
 
@@ -2784,8 +2784,8 @@ void C4Object::CompileFunc(StdCompiler *pComp)
 			for (int i = 1; ; i++)
 			{
 				// Every command has its own naming environment
-				StdStrBuf Naming = FormatString("Command%d", i);
-				pComp->Value(mkNamingPtrAdapt(pCmd ? pCmd->Next : Command, Naming.getData()));
+				const auto Naming = FormatString("Command%d", i);
+				pComp->Value(mkNamingPtrAdapt(pCmd ? pCmd->Next : Command, Naming.c_str()));
 				// Last command?
 				pCmd = (pCmd ? pCmd->Next : Command);
 				if (!pCmd)
@@ -2798,8 +2798,8 @@ void C4Object::CompileFunc(StdCompiler *pComp)
 			C4Command *pCmd = Command;
 			for (int i = 1; pCmd; i++, pCmd = pCmd->Next)
 			{
-				StdStrBuf Naming = FormatString("Command%d", i);
-				pComp->Value(mkNamingAdapt(*pCmd, Naming.getData()));
+				const auto Naming = FormatString("Command%d", i);
+				pComp->Value(mkNamingAdapt(*pCmd, Naming.c_str()));
 			}
 		}
 
@@ -2927,7 +2927,7 @@ void C4Object::DrawCommands(C4Facet &cgoBottom, C4Facet &cgoSide, C4RegionList *
 		int32_t com = COM_Down_D;
 		if (Game.Players.Get(Controller)->ControlStyle) com = COM_Down;
 
-		tObj->DrawCommand(cgoBottom, C4FCT_Right, nullptr, com, pRegions, Owner, FormatString(LoadResStr("IDS_CON_BUILD"), tObj->GetName()).getData(), &ccgo);
+		tObj->DrawCommand(cgoBottom, C4FCT_Right, nullptr, com, pRegions, Owner, FormatString(LoadResStr("IDS_CON_BUILD"), tObj->GetName()).c_str(), &ccgo);
 		tObj->Def->Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Right, C4FCT_Top), false, tObj->Color, tObj);
 		Game.GraphicsResource.fctBuild.Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Left, C4FCT_Bottom), true);
 	}
@@ -2943,7 +2943,7 @@ void C4Object::DrawCommands(C4Facet &cgoBottom, C4Facet &cgoSide, C4RegionList *
 			else if (ComOrder(cnt) == COM_Down_D)
 			{
 				// Let Go
-				Action.Target->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Down_D, pRegions, Owner, FormatString(LoadResStr("IDS_CON_UNGRAB"), Action.Target->GetName()).getData(), &ccgo);
+				Action.Target->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Down_D, pRegions, Owner, FormatString(LoadResStr("IDS_CON_UNGRAB"), Action.Target->GetName()).c_str(), &ccgo);
 				Action.Target->Def->Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Right, C4FCT_Top), false, Action.Target->Color, Action.Target);
 				Game.GraphicsResource.fctHand.Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Left, C4FCT_Bottom), true, 6);
 			}
@@ -2952,14 +2952,14 @@ void C4Object::DrawCommands(C4Facet &cgoBottom, C4Facet &cgoSide, C4RegionList *
 				// Put
 				if ((tObj = Contents.GetObject()) && (Action.Target->Def->GrabPutGet & C4D_Grab_Put))
 				{
-					Action.Target->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Throw, pRegions, Owner, FormatString(LoadResStr("IDS_CON_PUT"), tObj->GetName(), Action.Target->GetName()).getData(), &ccgo);
+					Action.Target->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Throw, pRegions, Owner, FormatString(LoadResStr("IDS_CON_PUT"), tObj->GetName(), Action.Target->GetName()).c_str(), &ccgo);
 					tObj->Def->Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Right, C4FCT_Top), false, tObj->Color, tObj);
 					Game.GraphicsResource.fctHand.Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Left, C4FCT_Bottom), true, 0);
 				}
 				// Get
 				else if (Action.Target->Contents.ListIDCount(C4D_Get) && (Action.Target->Def->GrabPutGet & C4D_Grab_Get))
 				{
-					Action.Target->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Throw, pRegions, Owner, FormatString(LoadResStr("IDS_CON_GET"), Action.Target->GetName()).getData(), &ccgo);
+					Action.Target->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Throw, pRegions, Owner, FormatString(LoadResStr("IDS_CON_GET"), Action.Target->GetName()).c_str(), &ccgo);
 					Action.Target->Def->Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Right, C4FCT_Top), false, Action.Target->Color, Action.Target);
 					Game.GraphicsResource.fctHand.Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Left, C4FCT_Bottom), true, 1);
 				}
@@ -3010,14 +3010,14 @@ void C4Object::DrawCommands(C4Facet &cgoBottom, C4Facet &cgoSide, C4RegionList *
 			// carlo: Direct get ("Take2")
 			if (!fContainedRightOverride)
 			{
-				Contained->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Right, pRegions, Owner, FormatString(LoadResStr("IDS_CON_GET"), Contained->GetName()).getData(), &ccgo);
+				Contained->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Right, pRegions, Owner, FormatString(LoadResStr("IDS_CON_GET"), Contained->GetName()).c_str(), &ccgo);
 				Contained->Def->Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Right, C4FCT_Top), false, Contained->Color, Contained);
 				Game.GraphicsResource.fctHand.Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Left, C4FCT_Bottom), true, 1);
 			}
 			// carlo: Get ("Take")
 			if (!fContainedLeftOverride)
 			{
-				Contained->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Left, pRegions, Owner, FormatString(LoadResStr("IDS_CON_ACTIVATEFROM"), Contained->GetName()).getData(), &ccgo);
+				Contained->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Left, pRegions, Owner, FormatString(LoadResStr("IDS_CON_ACTIVATEFROM"), Contained->GetName()).c_str(), &ccgo);
 				Contained->Def->Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Right, C4FCT_Top), false, Contained->Color, Contained);
 				Game.GraphicsResource.fctHand.Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Left, C4FCT_Bottom), true, 0);
 			}
@@ -3025,14 +3025,14 @@ void C4Object::DrawCommands(C4Facet &cgoBottom, C4Facet &cgoSide, C4RegionList *
 		if (tObj = Contents.GetObject())
 		{
 			// Put
-			Contained->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Throw, pRegions, Owner, FormatString(LoadResStr("IDS_CON_PUT"), tObj->GetName(), Contained->GetName()).getData(), &ccgo);
+			Contained->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Throw, pRegions, Owner, FormatString(LoadResStr("IDS_CON_PUT"), tObj->GetName(), Contained->GetName()).c_str(), &ccgo);
 			tObj->Def->Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Right, C4FCT_Top), false, tObj->Color, tObj);
 			Game.GraphicsResource.fctHand.Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Left, C4FCT_Bottom), true, 0);
 		}
 		else if (nContents)
 		{
 			// Get
-			Contained->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Throw, pRegions, Owner, FormatString(LoadResStr("IDS_CON_ACTIVATEFROM"), Contained->GetName()).getData(), &ccgo);
+			Contained->DrawCommand(cgoBottom, C4FCT_Right, nullptr, COM_Throw, pRegions, Owner, FormatString(LoadResStr("IDS_CON_ACTIVATEFROM"), Contained->GetName()).c_str(), &ccgo);
 			Contained->Def->Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Right, C4FCT_Top), false, Contained->Color, Contained);
 			Game.GraphicsResource.fctHand.Draw(ccgo2 = ccgo.GetFraction(85, 85, C4FCT_Left, C4FCT_Bottom), true, 0);
 		}
@@ -3203,7 +3203,7 @@ bool C4Object::ContainedControl(uint8_t byCom)
 			if (Contained->Category & C4D_Structure)
 				return false; // or true? Currently it doesn't matter.
 	// get script function if defined
-	C4AulFunc *sf = Contained->Def->Script.GetSFunc(FormatString(PSF_ContainedControl, ComName(byCom)).getData());
+	C4AulFunc *sf = Contained->Def->Script.GetSFunc(FormatString(PSF_ContainedControl, ComName(byCom)).c_str());
 	// in old versions, do hardcoded actions first (until gwe3)
 	// new objects may overload them
 	C4Def *pCDef = Contained->Def;
@@ -3275,7 +3275,7 @@ bool C4Object::CallControl(C4Player *pPlr, uint8_t byCom, const C4AulParSet &pPa
 {
 	assert(pPlr);
 
-	bool result = !!Call(FormatString(PSF_Control, ComName(byCom)).getData(), pPars);
+	bool result = !!Call(FormatString(PSF_Control, ComName(byCom)).c_str(), pPars);
 
 	// Call ControlUpdate when using Jump'n'Run control
 	if (pPlr->ControlStyle)

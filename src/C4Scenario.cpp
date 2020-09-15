@@ -126,7 +126,7 @@ void C4Scenario::CompileFunc(StdCompiler *pComp, bool fSection)
 	if (!fSection) pComp->Value(mkNamingAdapt(Definitions, "Definitions"));
 	pComp->Value(mkNamingAdapt(mkParAdapt(Game, fSection), "Game"));
 	for (int32_t i = 0; i < C4S_MaxPlayer; i++)
-		pComp->Value(mkNamingAdapt(PlrStart[i], FormatString("Player%d", i + 1).getData()));
+		pComp->Value(mkNamingAdapt(PlrStart[i], FormatString("Player%d", i + 1).c_str()));
 	pComp->Value(mkNamingAdapt(Landscape,   "Landscape"));
 	pComp->Value(mkNamingAdapt(Animals,     "Animals"));
 	pComp->Value(mkNamingAdapt(Weather,     "Weather"));
@@ -502,7 +502,7 @@ void C4SDefinitions::CompileFunc(StdCompiler *pComp)
 		for (size_t i = 0; i < C4S_MaxDefinitions; ++i)
 		{
 			std::string def;
-			pComp->Value(mkNamingAdapt(mkStringAdaptA(def), FormatString("Definition%zu", i + 1).getData(), ""));
+			pComp->Value(mkNamingAdapt(mkStringAdaptA(def), FormatString("Definition%zu", i + 1).c_str(), ""));
 
 			if (!def.empty())
 			{

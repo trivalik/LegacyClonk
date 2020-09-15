@@ -339,27 +339,27 @@ StdStrBuf C4KeyCodeEx::KeyCode2String(C4KeyCode wCode, bool fHumanReadable, bool
 		int iGamepadButton = Key_GetGamepadButton(wCode);
 		switch (iGamepadButton)
 		{
-		case KEY_JOY_Left:  return FormatString("Joy%dLeft",  iGamepad + 1);
-		case KEY_JOY_Up:    return FormatString("Joy%dUp",    iGamepad + 1);
-		case KEY_JOY_Down:  return FormatString("Joy%dDown",  iGamepad + 1);
-		case KEY_JOY_Right: return FormatString("Joy%dRight", iGamepad + 1);
+		case KEY_JOY_Left:  return StdStrBuf{FormatString("Joy%dLeft",  iGamepad + 1).c_str()};
+		case KEY_JOY_Up:    return StdStrBuf{FormatString("Joy%dUp",    iGamepad + 1).c_str()};
+		case KEY_JOY_Down:  return StdStrBuf{FormatString("Joy%dDown",  iGamepad + 1).c_str()};
+		case KEY_JOY_Right: return StdStrBuf{FormatString("Joy%dRight", iGamepad + 1).c_str()};
 		default:
 			if (Key_IsGamepadAxis(wCode))
 			{
 				if (fHumanReadable)
 					// This is still not great, but it is not really possible to assign unknown axes to "left/right" "up/down"...
-					return FormatString("[%d] %s", 1 + Key_GetGamepadAxisIndex(wCode), Key_IsGamepadAxisHigh(wCode) ? "Max" : "Min");
+					return StdStrBuf{FormatString("[%d] %s", 1 + Key_GetGamepadAxisIndex(wCode), Key_IsGamepadAxisHigh(wCode) ? "Max" : "Min").c_str()};
 				else
-					return FormatString("Joy%dAxis%d%s", iGamepad + 1, Key_GetGamepadAxisIndex(wCode), Key_IsGamepadAxisHigh(wCode) ? "Max" : "Min");
+					return StdStrBuf{FormatString("Joy%dAxis%d%s", iGamepad + 1, Key_GetGamepadAxisIndex(wCode), Key_IsGamepadAxisHigh(wCode) ? "Max" : "Min").c_str()};
 			}
 			else
 			{
 				// button
 				if (fHumanReadable)
 					// If there should be gamepads around with A B C D... on the buttons, we might create a display option to show letters instead...
-					return FormatString("< %d >", 1 + Key_GetGamepadButtonIndex(wCode));
+					return StdStrBuf{FormatString("< %d >", 1 + Key_GetGamepadButtonIndex(wCode)).c_str()};
 				else
-					return FormatString("Joy%d%c", iGamepad + 1, static_cast<char>(Key_GetGamepadButtonIndex(wCode) + 'A'));
+					return StdStrBuf{FormatString("Joy%d%c", iGamepad + 1, static_cast<char>(Key_GetGamepadButtonIndex(wCode) + 'A')).c_str()};
 			}
 		}
 	}
@@ -369,7 +369,7 @@ StdStrBuf C4KeyCodeEx::KeyCode2String(C4KeyCode wCode, bool fHumanReadable, bool
 	while (pCheck->szName)
 		if (wCode == pCheck->wCode) return StdStrBuf::MakeRef((pCheck->szShortName && fShort) ? pCheck->szShortName : pCheck->szName); else ++pCheck;
 	// not found: Compose as direct code
-	return FormatString("\\x%x", static_cast<uint32_t>(wCode));
+	return StdStrBuf{FormatString("\\x%x", static_cast<uint32_t>(wCode)).c_str()};
 #elif defined(USE_X11)
 	return StdStrBuf::MakeRef(XKeysymToString(wCode));
 #elif defined(USE_SDL_MAINLOOP)

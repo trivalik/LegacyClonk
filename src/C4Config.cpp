@@ -252,9 +252,9 @@ void C4ConfigGamepad::CompileFunc(StdCompiler *pComp, bool fButtonsOnly)
 	{
 		for (int i = 0; i < 6; ++i)
 		{
-			pComp->Value(mkNamingAdapt(AxisMin[i],        FormatString("Axis%dMin",        i).getData(), 0u));
-			pComp->Value(mkNamingAdapt(AxisMax[i],        FormatString("Axis%dMax",        i).getData(), 0u));
-			pComp->Value(mkNamingAdapt(AxisCalibrated[i], FormatString("Axis%dCalibrated", i).getData(), false));
+			pComp->Value(mkNamingAdapt(AxisMin[i],        FormatString("Axis%dMin",        i).c_str(), 0u));
+			pComp->Value(mkNamingAdapt(AxisMax[i],        FormatString("Axis%dMax",        i).c_str(), 0u));
+			pComp->Value(mkNamingAdapt(AxisCalibrated[i], FormatString("Axis%dCalibrated", i).c_str(), false));
 		}
 	}
 	pComp->Value(mkNamingAdapt(Button[0],  "Button1",  -1));
@@ -764,7 +764,7 @@ void C4Config::CompileFunc(StdCompiler *pComp)
 	pComp->Value(mkNamingAdapt(General,   "General"));
 	pComp->Value(mkNamingAdapt(Controls,  "Controls"));
 	for (int i = 0; i < C4ConfigMaxGamepads; ++i)
-		pComp->Value(mkNamingAdapt(Gamepads[i], FormatString("Gamepad%d", i).getData()));
+		pComp->Value(mkNamingAdapt(Gamepads[i], FormatString("Gamepad%d", i).c_str()));
 #ifdef C4ENGINE
 	pComp->Value(mkNamingAdapt(Graphics,  "Graphics"));
 #endif

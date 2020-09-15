@@ -98,14 +98,14 @@ public:
 	bool ThreadLogF(const char *const fmt, Args &&...args)
 	{
 		// Format message and send to main thread
-		return PushEvent(Ev_Log, FormatString(fmt, std::forward<Args>(args)...));
+		return PushEvent(Ev_Log, FormatString(fmt, std::forward<Args>(args)...).c_str());
 	}
 
 	template<class ...Args>
 	bool ThreadLogSF(const char *const fmt, Args &&...args)
 	{
 		// Format message and send to main thread
-		return PushEvent(Ev_LogSilent, FormatString(fmt, std::forward<Args>(args)...));
+		return PushEvent(Ev_LogSilent, FormatString(fmt, std::forward<Args>(args)...).c_str());
 	}
 
 	// event handlers

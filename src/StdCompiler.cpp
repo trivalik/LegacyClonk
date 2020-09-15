@@ -196,7 +196,7 @@ void StdCompilerBinRead::Raw(void *pData, size_t iSize, RawCompileType eType)
 
 StdStrBuf StdCompilerBinRead::getPosition() const
 {
-	return FormatString("byte %zu", iPos);
+	return StdStrBuf{FormatString("byte %zu", iPos).c_str()};
 }
 
 template <class T>
@@ -744,13 +744,13 @@ void StdCompilerINIRead::Raw(void *pData, size_t iSize, RawCompileType eType)
 StdStrBuf StdCompilerINIRead::getPosition() const
 {
 	if (pPos)
-		return FormatString("line %d", SGetLine(Buf.getData(), pPos));
+		return StdStrBuf{FormatString("line %d", SGetLine(Buf.getData(), pPos)).c_str()};
 	else if (iDepth == iRealDepth)
-		return FormatString(pName->Section ? "section \"%s\", after line %d" : "value \"%s\", line %d", pName->Name.getData(), SGetLine(Buf.getData(), pName->Pos));
+		return StdStrBuf{FormatString(pName->Section ? "section \"%s\", after line %d" : "value \"%s\", line %d", pName->Name.getData(), SGetLine(Buf.getData(), pName->Pos)).c_str()};
 	else if (iRealDepth)
-		return FormatString("missing value/section \"%s\" inside section \"%s\" (line %d)", NotFoundName.getData(), pName->Name.getData(), SGetLine(Buf.getData(), pName->Pos));
+		return StdStrBuf{FormatString("missing value/section \"%s\" inside section \"%s\" (line %d)", NotFoundName.getData(), pName->Name.getData(), SGetLine(Buf.getData(), pName->Pos)).c_str()};
 	else
-		return FormatString("missing value/section \"%s\"", NotFoundName.getData());
+		return StdStrBuf{FormatString("missing value/section \"%s\"", NotFoundName.getData()).c_str()};
 }
 
 void StdCompilerINIRead::Begin()

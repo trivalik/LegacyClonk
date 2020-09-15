@@ -323,7 +323,7 @@ void C4PlayerInfoListAttributeConflictResolver::ResolveInInfo()
 				break;
 			// generate new name by appending an index
 			if (++iTries > C4MaxPlayerNameChangeTries) break;
-			pResolveInfo->SetForcedName(FormatString("%s (%d)", pResolveInfo->GetOriginalName(), iTries + 1).getData());
+			pResolveInfo->SetForcedName(FormatString("%s (%d)", pResolveInfo->GetOriginalName(), iTries + 1).c_str());
 		}
 	}
 }

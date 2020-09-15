@@ -654,8 +654,8 @@ StdStrBuf C4NetIO::EndpointAddress::ToString(const int flags) const
 
 	switch (GetFamily())
 	{
-	case IPv4: return FormatString("%s:%d", HostAddress::ToString(flags).getData(), GetPort());
-	case IPv6: return FormatString("[%s]:%d", HostAddress::ToString(flags).getData(), GetPort());
+	case IPv4: return StdStrBuf{FormatString("%s:%d", HostAddress::ToString(flags).getData(), GetPort()).c_str()};
+	case IPv6: return StdStrBuf{FormatString("[%s]:%d", HostAddress::ToString(flags).getData(), GetPort()).c_str()};
 	default: assert(!"Shouldn't reach this");
 	}
 	return {};

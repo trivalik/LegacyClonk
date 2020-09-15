@@ -76,7 +76,7 @@ void C4MaterialReaction::ResolveScriptFuncs(const char *szMatName)
 {
 	// get script func for script-defined behaviour
 	if (pFunc == &C4MaterialMap::mrfScript)
-		pScriptFunc = Game.ScriptEngine.GetSFuncWarn(this->ScriptFunc.getData(), AA_PROTECTED, FormatString("Material reaction of \"%s\"", szMatName).getData());
+		pScriptFunc = Game.ScriptEngine.GetSFuncWarn(this->ScriptFunc.getData(), AA_PROTECTED, FormatString("Material reaction of \"%s\"", szMatName).c_str());
 	else
 		pScriptFunc = nullptr;
 }
@@ -387,7 +387,7 @@ void C4MaterialMap::CrossMapMaterials() // Called after load
 			szTextureOverlay = "Smooth";
 		// search/create entry in texmap
 		Map[cnt].DefaultMatTex = Game.TextureMap.GetIndex(Map[cnt].Name, szTextureOverlay, true,
-			FormatString("DefaultMatTex of mat %s", Map[cnt].Name).getData());
+			FormatString("DefaultMatTex of mat %s", Map[cnt].Name).c_str());
 		const C4TexMapEntry *pTex = Game.TextureMap.GetEntry(Map[cnt].DefaultMatTex);
 		if (pTex)
 		{
@@ -485,13 +485,13 @@ void C4MaterialMap::CrossMapMaterials() // Called after load
 	for (cnt = 0; cnt < Num; cnt++)
 	{
 		if (Map[cnt].sBlastShiftTo.getLength())
-			Map[cnt].BlastShiftTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sBlastShiftTo.getData(), nullptr, true, FormatString("BlastShiftTo of mat %s", Map[cnt].Name).getData());
+			Map[cnt].BlastShiftTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sBlastShiftTo.getData(), nullptr, true, FormatString("BlastShiftTo of mat %s", Map[cnt].Name).c_str());
 		if (Map[cnt].sInMatConvertTo.getLength())
 			Map[cnt].InMatConvertTo = Get(Map[cnt].sInMatConvertTo.getData());
 		if (Map[cnt].sBelowTempConvertTo.getLength())
-			Map[cnt].BelowTempConvertTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sBelowTempConvertTo.getData(), nullptr, true, FormatString("BelowTempConvertTo of mat %s", Map[cnt].Name).getData());
+			Map[cnt].BelowTempConvertTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sBelowTempConvertTo.getData(), nullptr, true, FormatString("BelowTempConvertTo of mat %s", Map[cnt].Name).c_str());
 		if (Map[cnt].sAboveTempConvertTo.getLength())
-			Map[cnt].AboveTempConvertTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sAboveTempConvertTo.getData(), nullptr, true, FormatString("AboveTempConvertTo of mat %s", Map[cnt].Name).getData());
+			Map[cnt].AboveTempConvertTo = Game.TextureMap.GetIndexMatTex(Map[cnt].sAboveTempConvertTo.getData(), nullptr, true, FormatString("AboveTempConvertTo of mat %s", Map[cnt].Name).c_str());
 	}
 }
 

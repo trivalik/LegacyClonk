@@ -79,11 +79,11 @@ bool FrameDecoration::SetByDef(C4ID idSourceDef)
 	Clear();
 	this->idSourceDef = idSourceDef;
 	// query values
-	dwBackClr = pSrcDef->Script.Call(FormatString(PSF_FrameDecoration, "BackClr").getData()).getInt();
-	iBorderTop = pSrcDef->Script.Call(FormatString(PSF_FrameDecoration, "BorderTop").getData()).getInt();
-	iBorderLeft = pSrcDef->Script.Call(FormatString(PSF_FrameDecoration, "BorderLeft").getData()).getInt();
-	iBorderRight = pSrcDef->Script.Call(FormatString(PSF_FrameDecoration, "BorderRight").getData()).getInt();
-	iBorderBottom = pSrcDef->Script.Call(FormatString(PSF_FrameDecoration, "BorderBottom").getData()).getInt();
+	dwBackClr = pSrcDef->Script.Call(FormatString(PSF_FrameDecoration, "BackClr").c_str()).getInt();
+	iBorderTop = pSrcDef->Script.Call(FormatString(PSF_FrameDecoration, "BorderTop").c_str()).getInt();
+	iBorderLeft = pSrcDef->Script.Call(FormatString(PSF_FrameDecoration, "BorderLeft").c_str()).getInt();
+	iBorderRight = pSrcDef->Script.Call(FormatString(PSF_FrameDecoration, "BorderRight").c_str()).getInt();
+	iBorderBottom = pSrcDef->Script.Call(FormatString(PSF_FrameDecoration, "BorderBottom").c_str()).getInt();
 	// get gfx
 	SetFacetByAction(pSrcDef, fctTop, "Top");
 	SetFacetByAction(pSrcDef, fctTopRight, "TopRight");
@@ -192,7 +192,7 @@ CStdWindow *DialogWindow::Init(CStdApp *pApp, const char *Title, CStdWindow *pPa
 	{
 		// update pos
 		if (szID && *szID)
-			RestoreWindowPosition(hWindow, FormatString("ConsoleGUI_%s", szID).getData(), Config.GetSubkeyPath("Console"), false);
+			RestoreWindowPosition(hWindow, FormatString("ConsoleGUI_%s", szID).c_str(), Config.GetSubkeyPath("Console"), false);
 		// and show
 		::ShowWindow(hWindow, SW_SHOW);
 	}
@@ -227,7 +227,7 @@ LRESULT APIENTRY DialogWinProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	{
 		const char *szID = pDlg->GetID();
 		if (szID && *szID)
-			StoreWindowPosition(hwnd, FormatString("ConsoleGUI_%s", szID).getData(), Config.GetSubkeyPath("Console"), false);
+			StoreWindowPosition(hwnd, FormatString("ConsoleGUI_%s", szID).c_str(), Config.GetSubkeyPath("Console"), false);
 	}
 	break;
 
@@ -286,7 +286,7 @@ CStdWindow *DialogWindow::Init(CStdApp *pApp, const char *Title, CStdWindow *pPa
 	{
 		// update pos
 		if (szID && *szID)
-			RestorePosition(FormatString("ConsoleGUI_%s", szID).getData(), Config.GetSubkeyPath("Console"), false);
+			RestorePosition(FormatString("ConsoleGUI_%s", szID).c_str(), Config.GetSubkeyPath("Console"), false);
 		else
 			SetSize(rcBounds.Wdt, rcBounds.Hgt);
 		return this;

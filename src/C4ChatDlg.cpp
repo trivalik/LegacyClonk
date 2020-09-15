@@ -82,7 +82,7 @@ void C4ChatControl::ChatSheet::NickItem::Update(class C4Network2IRCUser *pByUser
 	// set name
 	pNameLabel->SetText(pByUser->getName());
 	// tooltip is status+name
-	SetToolTip(FormatString("%s%s", szPrefix, pByUser->getName()).getData());
+	SetToolTip(FormatString("%s%s", szPrefix, pByUser->getName()).c_str());
 }
 
 int32_t C4ChatControl::ChatSheet::NickItem::SortFunc(const C4GUI::Element *pEl1, const C4GUI::Element *pEl2, void *)
@@ -536,7 +536,7 @@ void C4ChatControl::OnConnectBtn(C4GUI::Control *btn)
 	// initiate connection
 	if (!pIRCClient->Connect(sServer.getData(), sNick.getData(), sRealName.getData(), sPass.getData(), sChannel.getData()))
 	{
-		GetScreen()->ShowErrorMessage(FormatString(LoadResStr("IDS_ERR_IRCCONNECTIONFAILED"), pIRCClient->GetError()).getData());
+		GetScreen()->ShowErrorMessage(FormatString(LoadResStr("IDS_ERR_IRCCONNECTIONFAILED"), pIRCClient->GetError()).c_str());
 		return;
 	}
 	// enable client execution
@@ -548,7 +548,7 @@ void C4ChatControl::OnConnectBtn(C4GUI::Control *btn)
 	if (pServerSheet)
 	{
 		pServerSheet->SetChatTitle(sServer.getData());
-		pServerSheet->AddTextLine(FormatString(LoadResStr("IDS_NET_CONNECTING"), sServer.getData(), "").getData(), C4GUI_MessageFontClr);
+		pServerSheet->AddTextLine(FormatString(LoadResStr("IDS_NET_CONNECTING"), sServer.getData(), "").c_str(), C4GUI_MessageFontClr);
 	}
 	// switch to server window
 	UpdateShownPage();
@@ -849,7 +849,7 @@ bool C4ChatControl::ProcessInput(const char *szInput, ChatSheet *pChatSheet)
 			StdStrBuf sMsg;
 			if (!sParam.SplitAtChar(' ', &sMsg) || !sMsg.getLength())
 			{
-				pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_INSUFFICIENTPARAMETERS"), sCommand.getData()).getData());
+				pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_INSUFFICIENTPARAMETERS"), sCommand.getData()).c_str());
 			}
 			else
 			{
@@ -862,14 +862,14 @@ bool C4ChatControl::ProcessInput(const char *szInput, ChatSheet *pChatSheet)
 		else if (SEqualNoCase(sCommand.getData(), "raw"))
 		{
 			if (!sParam.getLength())
-				pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_INSUFFICIENTPARAMETERS"), sCommand.getData()).getData());
+				pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_INSUFFICIENTPARAMETERS"), sCommand.getData()).c_str());
 			else
 				fIRCSuccess = pIRCClient->Send(sParam.getData());
 		}
 		else if (SEqualNoCase(sCommand.getData(), "ns") || SEqualNoCase(sCommand.getData(), "cs") || SEqualNoCase(sCommand.getData(), "ms"))
 		{
 			if (!sParam.getLength())
-				pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_INSUFFICIENTPARAMETERS"), sCommand.getData()).getData());
+				pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_INSUFFICIENTPARAMETERS"), sCommand.getData()).c_str());
 			else
 			{
 				const char *szMsgTarget;
@@ -882,21 +882,21 @@ bool C4ChatControl::ProcessInput(const char *szInput, ChatSheet *pChatSheet)
 		else if (SEqualNoCase(sCommand.getData(), "query") || SEqualNoCase(sCommand.getData(), "q"))
 		{
 			if (!sParam.getLength())
-				pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_INSUFFICIENTPARAMETERS"), sCommand.getData()).getData());
+				pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_INSUFFICIENTPARAMETERS"), sCommand.getData()).c_str());
 			else
 				OpenQuery(sParam.getData(), true, nullptr);
 		}
 		else if (SEqualNoCase(sCommand.getData(), "nick"))
 		{
 			if (C4InVal::ValidateString(sParam, C4InVal::VAL_IRCName))
-				pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_INVALIDNICKNAME2"), sCommand.getData()).getData());
+				pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_INVALIDNICKNAME2"), sCommand.getData()).c_str());
 			else
 				fIRCSuccess = pIRCClient->ChangeNick(sParam.getData());
 		}
 		else
 		{
 			// unknown command
-			pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_UNKNOWNCMD"), sCommand.getData()).getData());
+			pChatSheet->DoError(FormatString(LoadResStr("IDS_ERR_UNKNOWNCMD"), sCommand.getData()).c_str());
 		}
 	}
 	else
@@ -1047,5 +1047,5 @@ void C4ChatDlg::UpdateSize()
 
 void C4ChatDlg::OnChatTitleChange(const StdStrBuf &sNewTitle)
 {
-	SetTitle(FormatString("%s - %s", LoadResStr("IDS_DLG_CHAT"), sNewTitle.getData()).getData());
+	SetTitle(FormatString("%s - %s", LoadResStr("IDS_DLG_CHAT"), sNewTitle.getData()).c_str());
 }

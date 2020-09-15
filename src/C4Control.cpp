@@ -30,6 +30,7 @@
 
 #include <cassert>
 #include <cinttypes>
+#include <string>
 
 // *** C4ControlPacket
 C4ControlPacket::C4ControlPacket()
@@ -137,7 +138,7 @@ void C4ControlSet::Execute() const
 		if (Game.Control.isCtrlHost() && !Game.Control.isReplay() && Game.Control.isNetwork())
 			Config.Network.ControlRate = Game.Control.ControlRate;
 		// always show msg
-		Game.GraphicsSystem.FlashMessage(FormatString(LoadResStr("IDS_NET_CONTROLRATE"), Game.Control.ControlRate, Game.FrameCounter).getData());
+		Game.GraphicsSystem.FlashMessage(FormatString(LoadResStr("IDS_NET_CONTROLRATE"), Game.Control.ControlRate, Game.FrameCounter).c_str());
 		break;
 
 	case C4CVT_DisableDebug: // force debug mode disabled
@@ -216,7 +217,7 @@ void C4ControlSet::Execute() const
 			if (Game.Parameters.UseFairCrew)
 			{
 				int iRank = Game.Rank.RankByExperience(Game.Parameters.FairCrewStrength);
-				Game.GraphicsSystem.FlashMessage(FormatString(LoadResStr("IDS_MSG_FAIRCREW_ACTIVATED"), Game.Rank.GetRankName(iRank, true).getData()).getData());
+				Game.GraphicsSystem.FlashMessage(FormatString(LoadResStr("IDS_MSG_FAIRCREW_ACTIVATED"), Game.Rank.GetRankName(iRank, true).getData()).c_str());
 			}
 			else
 				Game.GraphicsSystem.FlashMessage(LoadResStr("IDS_MSG_FAIRCREW_DEACTIVATED"));
@@ -467,8 +468,8 @@ void C4ControlSyncCheck::Execute() const
 		}
 		// Message
 		LogFatal("Network: Synchronization loss!");
-		LogFatal(FormatString("Network: %s Frm %i Ctrl %i Rnc %i Rn3 %i Cpx %i PXS %i MMi %i Obc %i Oei %i Sct %i", szThis,            Frame,           ControlTick,           RandomCount,           Random3,           AllCrewPosX,           PXSCount,           MassMoverIndex,           ObjectCount,           ObjectEnumerationIndex,           SectShapeSum).getData());
-		LogFatal(FormatString("Network: %s Frm %i Ctrl %i Rnc %i Rn3 %i Cpx %i PXS %i MMi %i Obc %i Oei %i Sct %i", szOther, SyncCheck.Frame, SyncCheck.ControlTick, SyncCheck.RandomCount, SyncCheck.Random3, SyncCheck.AllCrewPosX, SyncCheck.PXSCount, SyncCheck.MassMoverIndex, SyncCheck.ObjectCount, SyncCheck.ObjectEnumerationIndex, SyncCheck.SectShapeSum).getData());
+		LogFatal(FormatString("Network: %s Frm %i Ctrl %i Rnc %i Rn3 %i Cpx %i PXS %i MMi %i Obc %i Oei %i Sct %i", szThis,            Frame,           ControlTick,           RandomCount,           Random3,           AllCrewPosX,           PXSCount,           MassMoverIndex,           ObjectCount,           ObjectEnumerationIndex,           SectShapeSum).c_str());
+		LogFatal(FormatString("Network: %s Frm %i Ctrl %i Rnc %i Rn3 %i Cpx %i PXS %i MMi %i Obc %i Oei %i Sct %i", szOther, SyncCheck.Frame, SyncCheck.ControlTick, SyncCheck.RandomCount, SyncCheck.Random3, SyncCheck.AllCrewPosX, SyncCheck.PXSCount, SyncCheck.MassMoverIndex, SyncCheck.ObjectCount, SyncCheck.ObjectEnumerationIndex, SyncCheck.SectShapeSum).c_str());
 		StartSoundEffect("SyncError");
 #ifdef _DEBUG
 		// Debug safe
@@ -821,8 +822,8 @@ void C4ControlJoinPlayer::PreRec(C4Record *pRecord)
 		if (C4Group_CopyItem(pRes->getFile(), szTemp.getData()))
 		{
 			// add to record
-			StdStrBuf szTarget = FormatString("%d-%s", ResCore.getID(), GetFilename(ResCore.getFileName()));
-			pRecord->AddFile(szTemp.getData(), szTarget.getData(), true);
+			const auto szTarget = FormatString("%d-%s", ResCore.getID(), GetFilename(ResCore.getFileName()));
+			pRecord->AddFile(szTemp.getData(), szTarget.c_str(), true);
 		}
 	}
 	else
@@ -1083,7 +1084,7 @@ void C4ControlMessage::Execute() const
 	case C4CMT_Normal:
 	case C4CMT_Me:
 	{
-		StdStrBuf log;
+		std::string log;
 		// log it
 		if (pPlr)
 		{
@@ -1100,10 +1101,10 @@ void C4ControlMessage::Execute() const
 		}
 		// 2 lobby
 		if (pLobby)
-			pLobby->OnMessage(Game.Clients.getClientByID(iByClient), log.getData());
+			pLobby->OnMessage(Game.Clients.getClientByID(iByClient), log.c_str());
 		// or 2 log
 		else
-			Log(log.getData());
+			Log(log.c_str());
 
 		checkAlert();
 		break;
@@ -1146,7 +1147,7 @@ void C4ControlMessage::Execute() const
 			// OK - permit message
 			C4Client *pClient = Game.Clients.getClientByID(iByClient);
 			pLobby->OnMessage(Game.Clients.getClientByID(iByClient),
-				FormatString(Config.General.UseWhiteLobbyChat ? "{%s} <c ffffff>%s" : "{%s} %s", pClient ? pClient->getNick() : "???", szMessage).getData());
+				FormatString(Config.General.UseWhiteLobbyChat ? "{%s} <c ffffff>%s" : "{%s} %s", pClient ? pClient->getNick() : "???", szMessage).c_str());
 		}
 
 		checkAlert();
@@ -1451,7 +1452,7 @@ void C4ControlVoteEnd::Execute() const
 		{
 			// otherwise, we have been kicked by the host.
 			// Do a regular disconnect and display reason in game over dialog, so the client knows what has happened!
-			Game.RoundResults.EvaluateNetwork(C4RoundResults::NR_NetError, FormatString(LoadResStr("IDS_ERR_YOUHAVEBEENREMOVEDBYVOTIN"), sMsg.getData()).getData());
+			Game.RoundResults.EvaluateNetwork(C4RoundResults::NR_NetError, FormatString(LoadResStr("IDS_ERR_YOUHAVEBEENREMOVEDBYVOTIN"), sMsg.getData()).c_str());
 			Game.Network.Clear();
 			// Game over immediately, so poor player won't continue game alone
 			Game.DoGameOver();
@@ -1490,9 +1491,9 @@ StdStrBuf C4ControlEMDropDef::FormatScript() const
 {
 	const auto def = C4Id2Def(id);
 	if (def->Category & C4D_Structure)
-		return FormatString("CreateConstruction(%s,%d,%d,-1,%d,true)", C4IdText(id), x, y, FullCon);
+		return StdStrBuf{FormatString("CreateConstruction(%s,%d,%d,-1,%d,true)", C4IdText(id), x, y, FullCon).c_str()};
 	else
-		return FormatString("CreateObject(%s,%d,%d,-1)", C4IdText(id), x, y);
+		return StdStrBuf{FormatString("CreateObject(%s,%d,%d,-1)", C4IdText(id), x, y).c_str()};
 }
 
 void C4ControlInternalScriptBase::Execute() const
@@ -1538,11 +1539,11 @@ void C4ControlMessageBoardAnswer::CompileFunc(StdCompiler *pComp)
 
 StdStrBuf C4ControlMessageBoardAnswer::FormatScript() const
 {
-	if (answer.empty()) return FormatString("OnMessageBoardAnswer(Object(%d),%d,)", obj, plr);
+	if (answer.empty()) return StdStrBuf{FormatString("OnMessageBoardAnswer(Object(%d),%d,)", obj, plr).c_str()};
 
 	StdStrBuf escapedAnswer(answer.c_str(), false);
 	escapedAnswer.EscapeString();
-	return FormatString("OnMessageBoardAnswer(Object(%d),%d,\"%s\")", obj, plr, escapedAnswer.getData());
+	return StdStrBuf{FormatString("OnMessageBoardAnswer(Object(%d),%d,\"%s\")", obj, plr, escapedAnswer.getData()).c_str()};
 }
 
 void C4ControlCustomCommand::CompileFunc(StdCompiler *pComp)
@@ -1568,7 +1569,7 @@ StdStrBuf C4ControlCustomCommand::FormatScript() const
 	if (SSearch(cmd->script.c_str(), "%player%"))
 	{
 		CmdScript.Copy(cmd->script.c_str());
-		CmdScript.Replace("%player%", FormatString("%d", plr).getData());
+		CmdScript.Replace("%player%", FormatString("%d", plr).c_str());
 	}
 	else
 	{

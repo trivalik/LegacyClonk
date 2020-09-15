@@ -65,9 +65,9 @@ void C4UpdateDlg::UpdateText()
 	{
 		if (errno == EAGAIN)
 			return;
-		StdStrBuf Errormessage = FormatString("read error from c4group: %s", strerror(errno));
-		Log(Errormessage.getData());
-		AddLine(Errormessage.getData());
+		const auto Errormessage = FormatString("read error from c4group: %s", strerror(errno));
+		Log(Errormessage.c_str());
+		AddLine(Errormessage.c_str());
 		UpdateRunning = false;
 		succeeded = false;
 	}
@@ -179,7 +179,7 @@ bool C4UpdateDlg::ApplyUpdate(const char *strUpdateFile, bool fDeleteUpdate, C4G
 	// Look for update program at top level
 	if (!UpdateGroup.ExtractEntry(strUpdateProg.getData(), strUpdateProg.getData()))
 		// Not found: look for an engine update pack one level down
-		if (UpdateGroup.FindEntry(FormatString("cr_*_%s.c4u", C4_OS).getData(), strSubGroup))
+		if (UpdateGroup.FindEntry(FormatString("cr_*_%s.c4u", C4_OS).c_str(), strSubGroup))
 			// Extract update program from sub group
 			if (SubGroup.OpenAsChild(&UpdateGroup, strSubGroup))
 			{

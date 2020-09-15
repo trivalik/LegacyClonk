@@ -2425,7 +2425,7 @@ protected:
 	template<class ...Args>
 	void AddLineFmt(const char *const fmt, Args &&...args)
 	{
-		AddLine(FormatString(fmt, std::forward<Args>(args)...).getData());
+		AddLine(FormatString(fmt, std::forward<Args>(args)...).c_str());
 	}
 
 	void BeginUpdateText(); // backup scrolling and clear text window

@@ -263,7 +263,7 @@ void C4FileSelDlg::UpdateFileList()
 	EndFileListUpdate();
 	// path into title
 	const char *szPath = sPath.getData();
-	SetTitle(*szPath ? FormatString("%s [%s]", sTitle.getData(), szPath).getData() : sTitle.getData());
+	SetTitle(*szPath ? FormatString("%s [%s]", sTitle.getData(), szPath).c_str() : sTitle.getData());
 	// initial no-selection
 	UpdateSelection();
 }
@@ -384,7 +384,7 @@ C4PlayerSelDlg::C4PlayerSelDlg(C4FileSel_BaseCB *pSelCallback)
 // C4DefinitionSelDlg
 
 C4DefinitionSelDlg::C4DefinitionSelDlg(C4FileSel_BaseCB *pSelCallback, const std::vector<std::string> &fixedSelection)
-	: C4FileSelDlg(Config.AtExePath(Config.General.DefinitionPath), FormatString(LoadResStr("IDS_MSG_SELECT"), LoadResStr("IDS_DLG_DEFINITIONS")).getData(), pSelCallback), fixedSelection(fixedSelection)
+	: C4FileSelDlg(Config.AtExePath(Config.General.DefinitionPath), FormatString(LoadResStr("IDS_MSG_SELECT"), LoadResStr("IDS_DLG_DEFINITIONS")).c_str(), pSelCallback), fixedSelection(fixedSelection)
 {
 }
 
@@ -527,7 +527,7 @@ void C4PortraitSelDlg::ImageLoader::Execute()
 // C4PortraitSelDlg
 
 C4PortraitSelDlg::C4PortraitSelDlg(C4FileSel_BaseCB *pSelCallback, bool fSetPicture, bool fSetBigIcon)
-	: C4FileSelDlg(Config.General.ExePath, FormatString(LoadResStr("IDS_MSG_SELECT"), LoadResStr("IDS_TYPE_PORTRAIT")).getData(), pSelCallback, false)
+	: C4FileSelDlg(Config.General.ExePath, FormatString(LoadResStr("IDS_MSG_SELECT"), LoadResStr("IDS_TYPE_PORTRAIT")).c_str(), pSelCallback, false)
 	, pCheckSetPicture(nullptr), pCheckSetBigIcon(nullptr), fDefSetPicture(fSetPicture), fDefSetBigIcon(fSetBigIcon)
 {
 	char path[_MAX_PATH + 1];

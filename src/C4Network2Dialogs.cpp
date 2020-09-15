@@ -150,7 +150,7 @@ C4Network2ClientListBox::ClientListItem::ClientListItem(class C4Network2ClientLi
 	{
 		// mute button
 		pMuteBtn = new C4GUI::CallbackButtonEx<C4Network2ClientListBox::ClientListItem, C4GUI::IconButton>{C4GUI::Ico_Sound, GetToprightCornerRect((std::max)(iIconSize, 16), (std::max)(iIconSize, 16), 2, 1, pos++), 0, this, &ClientListItem::OnButtonToggleMute};
-		pMuteBtn->SetToolTip(FormatString(LoadResStrNoAmp(pClient && pClient->isMuted() ? "IDS_NET_UNMUTE_DESC" : "IDS_NET_MUTE_DESC"), sNameLabel.getData()).getData());
+		pMuteBtn->SetToolTip(FormatString(LoadResStrNoAmp(pClient && pClient->isMuted() ? "IDS_NET_UNMUTE_DESC" : "IDS_NET_MUTE_DESC"), sNameLabel.getData()).c_str());
 
 		// wait time
 		pPing = new C4GUI::Label("???", GetBounds().Wdt - IconLabelSpacing - pos * 24, iVerticalIndent, ARight);
@@ -278,7 +278,7 @@ void C4Network2ClientListBox::ClientListItem::UpdateMuteButton()
 {
 	auto *client = GetClient();
 	pMuteBtn->SetIcon(client->isMuted() ? C4GUI::Ico_NoSound : C4GUI::Ico_Sound);
-	pMuteBtn->SetToolTip(FormatString(LoadResStrNoAmp(client && client->isMuted() ? "IDS_NET_UNMUTE_DESC" : "IDS_NET_MUTE_DESC"), GetNameLabel().getData()).getData());
+	pMuteBtn->SetToolTip(FormatString(LoadResStrNoAmp(client && client->isMuted() ? "IDS_NET_UNMUTE_DESC" : "IDS_NET_MUTE_DESC"), GetNameLabel().getData()).c_str());
 }
 
 const StdStrBuf C4Network2ClientListBox::ClientListItem::GetNameLabel() const
@@ -291,7 +291,7 @@ const StdStrBuf C4Network2ClientListBox::ClientListItem::GetNameLabel() const
 		}
 		else
 		{
-			return FormatString("%s:%s", client->getName(), client->getNick());
+			return StdStrBuf{FormatString("%s:%s", client->getName(), client->getNick()).c_str()};
 		}
 	}
 	else
@@ -378,7 +378,7 @@ void C4Network2ClientListBox::ConnectionListItem::Update()
 		szConnType,
 		Game.Network.NetIO.getNetIOName(pConn->getNetClass()),
 		pConn->getPeerAddr().ToString().getData(),
-		pConn->getPacketLoss()).getData());
+		pConn->getPacketLoss()).c_str());
 }
 
 void C4Network2ClientListBox::ConnectionListItem::OnButtonDisconnect(C4GUI::Control *pButton)

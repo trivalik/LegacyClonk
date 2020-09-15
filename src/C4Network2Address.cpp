@@ -50,8 +50,8 @@ StdStrBuf C4Network2Address::toString() const
 {
 	switch (protocol)
 	{
-	case P_UDP: return FormatString("UDP:%s", addr.ToString().getData());
-	case P_TCP: return FormatString("TCP:%s", addr.ToString().getData());
+	case P_UDP: return StdStrBuf{FormatString("UDP:%s", addr.ToString().getData()).c_str()};
+	case P_TCP: return StdStrBuf{FormatString("TCP:%s", addr.ToString().getData()).c_str()};
 	default:    return StdStrBuf("INVALID");
 	}
 }
