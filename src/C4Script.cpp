@@ -6532,7 +6532,8 @@ static constexpr C4ScriptConstDef C4ScriptConstMap[] =
 
 	{ "AA_PRIVATE",   C4V_Int, AA_PRIVATE },
 	{ "AA_PROTECTED", C4V_Int, AA_PROTECTED },
-	{ "AA_PUBLIC",    C4V_Int, AA_PUBLIC }
+	{ "AA_PUBLIC",    C4V_Int, AA_PUBLIC },
+	{ "AA_GLOBAL",    C4V_Int, AA_GLOBAL }
 };
 
 template <> struct C4ValueConv<C4Value>
