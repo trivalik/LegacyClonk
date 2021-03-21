@@ -3751,8 +3751,7 @@ bool C4Game::InitNetworkFromReference(const C4Network2Reference &Reference)
 	// Log
 	LogF(LoadResStr("IDS_NET_JOINGAMEBY"), pHostData->getName());
 	// Init clients
-	if (!Clients.Init())
-		return false;
+	Clients.Init();
 	// Connect
 	if (Network.InitClient(Reference, false) != C4Network2::IR_Success)
 	{
