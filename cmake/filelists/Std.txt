@@ -1,16 +1,7 @@
 src/BuildConfig.h
 src/CStdFile.cpp
 src/CStdFile.h
-src/Standard.cpp
-src/Standard.h
-src/StdAdaptors.h
-src/StdBuf.cpp
-src/StdBuf.h
-src/StdCompiler.cpp
-src/StdCompiler.h
 src/StdConfig.h
-src/StdFile.cpp
-src/StdFile.h
 src/StdGzCompressedFile.cpp
 src/StdGzCompressedFile.h
 src/StdHelpers.h

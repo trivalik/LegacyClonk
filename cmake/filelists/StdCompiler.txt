@@ -1,0 +1,10 @@
+src/BuildConfig.h
+src/Standard.cpp
+src/Standard.h
+src/StdAdaptors.h
+src/StdBuf.cpp
+src/StdBuf.h
+src/StdCompiler.cpp
+src/StdCompiler.h
+src/StdFile.cpp
+src/StdFile.h

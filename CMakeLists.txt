@@ -11,16 +11,10 @@
 # To redistribute this file separately, substitute the full license texts
 # for the above references.
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.12)
 cmake_policy(SET CMP0042 NEW) # enable MACOSX_RPATH by default
-
-if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
-	cmake_policy(SET CMP0074 NEW) # enable <PackageName>_ROOT for find_package
-endif ()
-
-if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
-	cmake_policy(SET CMP0072 NEW) # prefer GLVND OpenGL libraries
-endif ()
+cmake_policy(SET CMP0074 NEW) # enable <PackageName>_ROOT for find_package
+cmake_policy(SET CMP0072 NEW) # prefer GLVND OpenGL libraries
 
 if (WIN32)
 	set(CMAKE_SYSTEM_VERSION 6.1) # Windows 7
@@ -131,6 +125,29 @@ function(make_includable input_file output_file)
 	file(WRITE ${output_file} "${content}")
 endfunction()
 
+# Add libstdcompiler target
+
+append_filelist(LIBSTDCOMPILER_SOURCES StdCompiler.txt)
+add_library(stdcompiler_obj OBJECT ${LIBSTDCOMPILER_SOURCES})
+target_compile_definitions(stdcompiler_obj PRIVATE HAVE_CONFIG_H)
+
+add_library(stdcompiler SHARED)
+set_target_properties(stdcompiler PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD TRUE EXCLUDE_FROM_ALL TRUE POSITION_INDEPENDENT_CODE TRUE)
+target_link_libraries(stdcompiler PUBLIC stdcompiler_obj)
+
+# Add libstandard target
+
+append_filelist(LIBSTANDARD_SOURCES Std.txt)
+
+if (USE_MSCAPI)
+	list(APPEND LIBSTANDARD_SOURCES src/StdSha1MSCapi.cpp)
+else ()
+	list(APPEND LIBSTANDARD_SOURCES src/StdSha1OpenSSL.cpp)
+endif ()
+
+add_library(standard_obj OBJECT ${LIBSTANDARD_SOURCES})
+target_compile_definitions(standard_obj PRIVATE HAVE_CONFIG_H)
+
 # Add engine target
 
 append_filelist(CLONK_SOURCES Engine.txt)
@@ -189,7 +206,9 @@ if (USE_CONSOLE)
 else ()
 	add_executable(clonk WIN32 MACOSX_BUNDLE ${CLONK_SOURCES})
 endif ()
+
 target_compile_definitions(clonk PRIVATE C4ENGINE)
+target_link_libraries(clonk PUBLIC standard_obj stdcompiler_obj)
 
 # Add c4group target
 
@@ -199,22 +218,10 @@ if (WIN32)
 else ()
 	list(APPEND C4GROUP_SOURCES src/c4group_ng.cpp)
 endif ()
-add_executable(c4group ${C4GROUP_SOURCES})
-target_link_libraries(c4group standard)
+add_executable(c4group ${C4GROUP_SOURCES}>)
 target_compile_definitions(c4group PRIVATE USE_CONSOLE)
+target_link_libraries(c4group PUBLIC standard_obj stdcompiler_obj)
 
-# Add libstandard target
-
-append_filelist(LIBSTANDARD_SOURCES Std.txt)
-
-if (USE_MSCAPI)
-	list(APPEND LIBSTANDARD_SOURCES src/StdSha1MSCapi.cpp)
-else ()
-	list(APPEND LIBSTANDARD_SOURCES src/StdSha1OpenSSL.cpp)
-endif ()
-
-add_library(standard STATIC ${LIBSTANDARD_SOURCES})
-target_compile_definitions(standard PRIVATE C4ENGINE HAVE_CONFIG_H)
 
 # Link OpenSSL crypto library
 if (NOT USE_MSCAPI)
@@ -222,10 +229,8 @@ if (NOT USE_MSCAPI)
 	if (NOT TARGET OpenSSL::Crypto)
 		message(FATAL_ERROR "Cannot find OpenSSL crypto library")
 	endif ()
-	target_link_libraries(standard OpenSSL::Crypto)
+	target_link_libraries(standard_obj PUBLIC OpenSSL::Crypto)
 endif ()
-
-target_link_libraries(clonk standard)
 
 # Link libraries
 
@@ -233,7 +238,7 @@ target_link_libraries(clonk standard)
 if (NOT USE_CONSOLE)
 	find_package(Freetype REQUIRED)
 	target_include_directories(clonk PRIVATE ${FREETYPE_INCLUDE_DIRS})
-	target_link_libraries(clonk ${FREETYPE_LIBRARIES})
+	target_link_libraries(clonk PRIVATE ${FREETYPE_LIBRARIES})
 	set(HAVE_FREETYPE ${FREETYPE_FOUND})
 endif ()
 
@@ -242,19 +247,19 @@ if (WITH_DEVELOPER_MODE)
 	set(WITH_GLIB 1)
 	find_package(GTK2 2.4 REQUIRED gtk)
 	target_include_directories(clonk PRIVATE ${GTK2_INCLUDE_DIRS})
-	target_link_libraries(clonk ${GTK2_LIBRARIES})
+	target_link_libraries(clonk PRIVATE ${GTK2_LIBRARIES})
 endif ()
 
 # Link iconv
 if (HAVE_ICONV AND APPLE)
-	target_link_libraries(clonk iconv)
+	target_link_libraries(clonk PRIVATE iconv)
 endif ()
 
 # Link libjpeg
 if (NOT USE_WIC)
 	find_package(JPEG REQUIRED)
 	target_include_directories(clonk PRIVATE ${JPEG_INCLUDE_DIR})
-	target_link_libraries(clonk ${JPEG_LIBRARIES})
+	target_link_libraries(clonk PRIVATE ${JPEG_LIBRARIES})
 endif ()
 
 # Link OpenGL and GLEW
@@ -264,13 +269,13 @@ if (NOT USE_CONSOLE)
 		message(FATAL_ERROR "Cannot find GLU library")
 	endif ()
 	find_package(GLEW REQUIRED)
-	target_link_libraries(clonk OpenGL::GL OpenGL::GLU GLEW::GLEW)
+	target_link_libraries(clonk PRIVATE OpenGL::GL OpenGL::GLU GLEW::GLEW)
 endif ()
 
 # Link libpng
 if (NOT USE_WIC)
 	find_package(PNG REQUIRED)
-	target_link_libraries(clonk PNG::PNG)
+	target_link_libraries(clonk PRIVATE PNG::PNG)
 endif ()
 
 # Link SDL2
@@ -280,38 +285,38 @@ if (USE_SDL_MAINLOOP OR USE_SDL_MIXER)
 		set(USE_SDL_FOR_GAMEPAD ON)
 	endif ()
 	target_include_directories(clonk PRIVATE ${SDL2_INCLUDE_DIRS})
-	target_link_libraries(clonk ${SDL2_LIBRARIES})
+	target_link_libraries(clonk PRIVATE ${SDL2_LIBRARIES})
 endif ()
 
 # Link SDL2_mixer
 if (USE_SDL_MIXER)
 	find_package(SDL2Mixer REQUIRED)
 	target_include_directories(clonk PRIVATE ${SDL2Mixer_INCLUDE_DIRS})
-	target_link_libraries(clonk ${SDL2Mixer_LIBRARIES})
+	target_link_libraries(clonk PRIVATE ${SDL2Mixer_LIBRARIES})
 endif ()
 
 # Link Windows Imaging Component
 if (USE_WIC)
-	target_link_libraries(clonk windowscodecs)
+	target_link_libraries(clonk PRIVATE windowscodecs)
 endif ()
 
 # Link thread library
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads)
 if (THREADS_FOUND)
-	target_link_libraries(clonk Threads::Threads)
+	target_link_libraries(clonk PRIVATE Threads::Threads)
 endif ()
 
 # Link Windows libraries
 if (WIN32)
-	target_link_libraries(clonk dbghelp iphlpapi winmm ws2_32)
+	target_link_libraries(clonk PRIVATE dbghelp iphlpapi winmm ws2_32)
 endif ()
 
 if (APPLE)
-	target_link_libraries(clonk "-framework AppKit")
+	target_link_libraries(clonk PRIVATE "-framework AppKit")
 endif ()
 
-target_link_libraries(clonk ${EXTRA_LINK_LIBS})
+target_link_libraries(clonk PRIVATE ${EXTRA_LINK_LIBS})
 
 # Link X11
 if (USE_X11)
@@ -327,13 +332,13 @@ if (USE_X11)
 	endif ()
 	target_include_directories(clonk PRIVATE
 		${X11_X11_INCLUDE_PATH} ${X11_Xpm_INCLUDE_PATH} ${X11_xf86vmode_INCLUDE_PATH})
-	target_link_libraries(clonk
+	target_link_libraries(clonk PRIVATE
 		${X11_X11_LIB}          ${X11_Xpm_LIB}          ${X11_Xxf86vm_LIB})
 endif ()
 
 # Link zlib
 find_package(ZLIB REQUIRED)
-target_link_libraries(standard ZLIB::ZLIB)
+target_link_libraries(standard_obj PUBLIC ZLIB::ZLIB)
 
 # Define _DEBUG or NDEBUG depending on project configuration (Already defined by MSVC)
 if (NOT MSVC)

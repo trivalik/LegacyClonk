@@ -17,10 +17,6 @@
 /* All kinds of valuable helpers */
 
 #include <Standard.h>
-#ifdef C4ENGINE
-// c4group is single-threaded
-#include <StdSync.h>
-#endif
 
 #ifdef _WIN32
 #include <shellapi.h>
