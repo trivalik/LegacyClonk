@@ -108,6 +108,9 @@ void C4ConfigGeneral::CompileFunc(StdCompiler *pComp)
 	pComp->Value(mkNamingAdapt(UseWhiteLobbyChat,    "UseWhiteLobbyChat",    false, false, true));
 	pComp->Value(mkNamingAdapt(ShowLogTimestamps,    "ShowLogTimestamps",    false, false, true));
 	pComp->Value(mkNamingAdapt(Preloading,           "Preloading",           true));
+#if defined(_WIN32) && !defined(USE_CONSOLE)
+	pComp->Value(mkNamingAdapt(DefaultShellCommand,  "DefaultShellCommand",  "Open"));
+#endif
 }
 
 void C4ConfigDeveloper::CompileFunc(StdCompiler *pComp)
