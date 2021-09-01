@@ -2792,6 +2792,9 @@ void C4Object::CompileFunc(StdCompiler *pComp)
 		pComp->Value(TemporaryPhysical);
 	}
 
+	pComp->NameEnd();
+	auto name = pComp->Name("Commands");
+	name.Disarm();
 	// Commands
 	if (pComp->FollowName("Commands"))
 		if (fCompiler)

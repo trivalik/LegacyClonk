@@ -151,7 +151,7 @@ void C4ConfigGraphics::CompileFunc(StdCompiler *pComp)
 
 	if (pComp->isCompiler())
 	{
-		if(pComp->Name("NewGfxCfg"))
+		if(auto name = pComp->Name("NewGfxCfg"); name)
 		{
 			try
 			{
@@ -166,13 +166,12 @@ void C4ConfigGraphics::CompileFunc(StdCompiler *pComp)
 			}
 			catch (const StdCompiler::Exception &)
 			{
-				pComp->NameEnd(true);
+				name.Abort();
 				throw;
 			}
 
 			pComp->Default("NewGfxCfg");
 		}
-		pComp->NameEnd();
 	}
 
 	pComp->Value(mkNamingAdapt(NoAlphaAdd,           "NoAlphaAdd",           false));
