@@ -196,7 +196,7 @@ int C4GamePadControl::GetGamePadCount()
 	return iCnt;
 }
 
-const int MaxGamePadButton = 10;
+const int MaxGamePadButton = 22;
 
 void C4GamePadControl::Execute()
 {
