@@ -36,9 +36,12 @@ static uint32_t POV2Position(DWORD dwPOV, bool fVertical)
 		dAxis = 0.0;
 	// Angle: convert to linear value -100 to +100
 	else
-		dAxis = (fVertical ? -cos((dwPOV / 100) * M_PI / 180.0) : sin((dwPOV / 100) * M_PI / 180.0)) * 100.0;
+	{
+		const auto angleRad = dwPOV * M_PI / (180.0 * 100);
+		dAxis = (fVertical ? -cos(angleRad) : sin(angleRad)) * 100.0;
+	}
 	// Gamepad configuration wants unsigned and gets 0 to 200
-	return (uint32_t)(dAxis + 100.0);
+	return static_cast<uint32_t>(dAxis + 100.0);
 }
 
 C4GamePad::C4GamePad(int id) : iRefCount{1}, Buttons{0}, id{id}
@@ -86,13 +89,28 @@ uint32_t C4GamePad::GetCurrentButtons()
 	return joynfo.dwButtons;
 }
 
+constexpr DWORD GetAxisValue(const JOYINFOEX &info, const int axis) noexcept
+{
+	assert(Inside(axis, 0, C4GamePad::MaxCalAxis - 1));
+	switch (axis)
+	{
+		case 0: return info.dwXpos;
+		case 1: return info.dwYpos;
+		case 2: return info.dwZpos;
+		case 3: return info.dwRpos;
+		case 4: return info.dwUpos;
+		case 5: return info.dwVpos;
+	}
+	return -1;
+}
+
 C4GamePad::AxisPos C4GamePad::GetAxisPos(int idAxis)
 {
 	if (idAxis < 0 || idAxis >= MaxAxis) return Mid; // wrong axis
 	// get raw axis data
 	if (idAxis < MaxCalAxis)
 	{
-		uint32_t dwPos = (&joynfo.dwXpos)[idAxis];
+		uint32_t dwPos = GetAxisValue(joynfo, idAxis);
 		// evaluate axis calibration
 		if (fAxisCalibrated[idAxis])
 		{
@@ -201,12 +219,9 @@ const int MaxGamePadButton = 22;
 void C4GamePadControl::Execute()
 {
 	// Get gamepad inputs
-	int iNum = iNumGamepads;
 	for (auto &pad : Gamepads)
 	{
-		if (!pad) continue;
-		--iNum;
-		if (!pad->Update()) continue;
+		if (!pad || !pad->Update()) continue;
 		for (int iAxis = 0; iAxis < C4GamePad::MaxAxis; ++iAxis)
 		{
 			C4GamePad::AxisPos eAxisPos = pad->GetAxisPos(iAxis), ePrevAxisPos = pad->AxisPosis[iAxis];
@@ -222,8 +237,8 @@ void C4GamePadControl::Execute()
 			}
 		}
 
-		uint32_t Buttons = pad->GetCurrentButtons();
-		uint32_t PrevButtons = pad->Buttons;
+		const uint32_t Buttons = pad->GetCurrentButtons();
+		const uint32_t PrevButtons = pad->Buttons;
 		if (Buttons != PrevButtons)
 		{
 			pad->Buttons = Buttons;
