@@ -102,16 +102,20 @@ CMAKE_DEPENDENT_OPTION(USE_WIC "Use WIC instead of libjpeg and libpng" ON
 CMAKE_DEPENDENT_OPTION(WITH_DEVELOPER_MODE "Use GTK for the developer mode" OFF
 	"NOT USE_CONSOLE" OFF)
 
-# Use Microsoft CryptoAPI instead of OpenSSL when compiling for Windows
 if (WIN32)
+	# Use Microsoft CryptoAPI instead of OpenSSL when compiling for Windows
 	set(USE_MSCAPI ON)
-endif ()
 
-# Disable some Visual C++ warnings
-if (MSVC)
+	# Disable some Visual C++ warnings
 	add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS)
-	# "multiple copy constructors specified"
-	add_compile_options(/wd4521)
+
+	if (MSVC)
+		# "multiple copy constructors specified"
+		add_compile_options(/wd4521)
+	else ()
+		# Set flags for the resource compiler in case rc.exe isn't used
+		set(CMAKE_RC_FLAGS "-C 1252")
+	endif ()
 endif ()
 
 # Adds the lines of file LIST_FILE to variable TARGET_LIST
@@ -347,7 +351,7 @@ if (NOT MSVC)
 endif ()
 
 # Get non-standard <cmath> constants (M_PI etc.)
-if (MSVC)
+if (WIN32)
 	set(_USE_MATH_DEFINES ON)
 endif ()
 
