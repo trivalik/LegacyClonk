@@ -26,7 +26,11 @@ if (WIN32)
 	set(CMAKE_SYSTEM_VERSION 6.1) # Windows 7
 endif ()
 
-project("LegacyClonk")
+project("LegacyClonk" CXX)
+
+if (APPLE)
+        enable_language(OBJCXX)
+endif ()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
